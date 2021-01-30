@@ -19,11 +19,15 @@ import security as sqr
 # valid periods: 1d,5d,1mo,3mo,6mo,1y,2y,3y,5y,10y,ytd,max
 NDAYS     = 252 # Number of days in the year
 PERIOD    = '1y'
-NUM_PORTS = 10000 # number of portfolios
+NUM_PORTS = 100000000 # number of portfolios
 #PRECISION = 100 # percent = 100 / per 1000 = 1000, etc
 
-TICKERS = ['MSFT', 'AAPL', 'BRK-B', 'AMZN', 'NFLX', 'XOM']
-Q_S     = [100, 200, 250, 150, 50, 75]
+#TICKERS = ['MSFT', 'AAPL', 'BRK-B', 'AMZN', 'NFLX', 'XOM']
+TICKERS = ['SPIE.PA', 'ALO.PA', 'ELIS.PA', 'BNP.PA',
+            'ORA.PA', 'BN.PA', 'FP.PA', 'HO.PA', 'NK.PA', 'SGO.PA',
+            'KORI.PA', 'NXI.PA', 'TRI.PA', 'CA.PA' ]
+# SKIPPED STLA.PA & GLE.PA
+Q_S     = [100 for i in range(len(TICKERS))]
 INDEX   = '^GSPC' # ^GSPC (S&P 500), ^IXIC (Nasdaq), ^DJI (Dow Jones)
 
 #Helper utilities
@@ -36,8 +40,8 @@ def sample_space(returns_df):
     p_sharpe  = np.zeros(NUM_PORTS)
 
     for port in range(NUM_PORTS):
-        if port % 20000 == 0:
-            print(f'Iteration {port}/{NUM_PORTS}', end='\r', flush=True)
+        if port % 1000000 == 0:
+            print(f'Iteration {port}/{NUM_PORTS}', end='\r10', flush=True)
 
         weights = np.array(np.random.random(ncolumns))
         #weights = np.array(np.random.randint(PRECISION, size=ncolumns))
@@ -49,7 +53,7 @@ def sample_space(returns_df):
         # Expected return
         p_returns[port] = np.sum( (returns_df.mean() * weights * NDAYS))
 
-        # Expected volatility
+        # Expected volatility = W^T . COV . W
         p_volat[port] = np.sqrt(np.dot(weights.T, np.dot(returns_df.cov() * NDAYS, weights)))
 
         p_sharpe[port] = p_returns[port]/p_volat[port]
@@ -57,16 +61,16 @@ def sample_space(returns_df):
     return p_weights, p_returns, p_volat, p_sharpe
 
 
-def display_result(description, opt_value, p_returns, p_volat, wts, index):
+def display_result(description, p_returns, p_volat, wts, index):
     opt_ret = p_returns[index]
     opt_vol = p_volat[index]
 
-    print(f'{description} = {opt_value:.4f}')
+    print(f'{description} portfolio:')
     print(f'{NUM_PORTS} portfolio combinations')
-    print(f'weights: {wts[index,:]}, '
-          f'ret={opt_ret:.4f}, '
-          f'vol={opt_vol:.4f}, '
-          f'Sharpe={opt_ret/opt_vol:.4f}')
+    print(f'weights: {wts[index,:]}\n'
+          f'Return={np.exp(opt_ret):.4f}, '
+          f'Volatility={opt_vol:.4f}, '
+          f'Sharpe ratio={opt_ret/opt_vol:.4f}')
 
 def display_allocation(description, portfolio, wts, index):
     print(f"{description} asset allocation ({portfolio.value:.2f} {portfolio.currency}):")
@@ -80,33 +84,38 @@ def display_allocation(description, portfolio, wts, index):
     print()
 
 
-def plot_rvs(ret, volat, sharpe, max_i_s, max_i_r, min_i_v, period):
+def plot_rvs(sharpe, volat, ret, idx, period):
     ''' Plot distribution '''
     SHAPE_SZ    = 75
     SHAPE_COLOR = 'red'
+    markers = ('o', 's', 'd') # markers for max Sharpe, min volatility and max return
 
-    shr_ret = ret[max_i_s] # Sharpe
-    shr_vol = volat[max_i_s]
-    max_ret = ret[max_i_r] # Revenue
-    max_vol = volat[max_i_r]
-    min_ret = ret[min_i_v] # Volatility
-    min_vol = volat[min_i_v]
+    # shr_ret = ret[idx[0]] # Sharpe
+    # shr_vol = volat[idx[0]]
+    # min_ret = ret[idx[1]] # Volatility
+    # min_vol = volat[idx[1]]
+    # max_ret = ret[idx[2]] # Revenue
+    # max_vol = volat[idx[2]]
 
     plt.figure(figsize=(12,8))
 
     # plot all portfolios
     plt.scatter(volat, ret, c=sharpe, cmap='viridis')
     # plot max sharpe portfolio
-    plt.scatter(shr_vol, shr_ret, c=SHAPE_COLOR, s=SHAPE_SZ, marker='o') # red dot
-    # plot min volatility portfolio
-    plt.scatter(min_vol, min_ret, c=SHAPE_COLOR, s=SHAPE_SZ, marker='s') # red square
-    # plot max revenue portfolio
-    plt.scatter(max_vol, max_ret, c=SHAPE_COLOR, s=SHAPE_SZ, marker='d') # red diamond
+    # plt.scatter(shr_vol, shr_ret, c=SHAPE_COLOR, s=SHAPE_SZ, marker='o') # red dot
+    # # plot min volatility portfolio
+    # plt.scatter(min_vol, min_ret, c=SHAPE_COLOR, s=SHAPE_SZ, marker='s') # red square
+    # # plot max revenue portfolio
+    # plt.scatter(max_vol, max_ret, c=SHAPE_COLOR, s=SHAPE_SZ, marker='d') # red diamond
+
+    # Plot max sharpe, min volatility and max return portfolios
+    for i in range(3):
+        plt.scatter(volat[idx[i]], ret[idx[i]], c=SHAPE_COLOR, s=SHAPE_SZ, marker=markers[i])
 
     plt.colorbar(label = 'Sharpe Ratio')
     plt.xlabel('Volatility')
     plt.ylabel('Return (log)')
-    plt.title(f'{NUM_PORTS} portfolios ({period})')
+    plt.title(f'{NUM_PORTS} portfolios (basis={period})')
 
     plt.show()
 
@@ -186,32 +195,26 @@ class Portfolio():
         return(self.get_rvs(weights)[1])
 
 
-
     def efficient_frontier(self):
         ''' WIP '''
         # Sample portfolio space. Returns weights, returns, volatility & sharpe ratios
         all_weights, ret_arr, vol_arr, sharpe_arr = sample_space(self.log_ret)
 
-        max_s      = sharpe_arr.argmax() # index of maximum Sharpe ratio
-        max_r      = ret_arr.argmax() # index of maximum revenue
-        min_v      = vol_arr.argmin() # index of minimum volatility
-
         print('\n')
-        display_result('Max Sharpe ratio', sharpe_arr.max(), ret_arr, vol_arr, all_weights, max_s)
-        display_allocation('Max Sharpe', self, all_weights, max_s)
+        # #indices = list() # 0:Max Sharpe 1:Max Revenue 2:Min volatility
+        indices = (sharpe_arr.argmax(), vol_arr.argmin(), ret_arr.argmax())
+        descrip = ('Max Sharpe', 'Min volatility', 'Max revenue')
 
-        display_result('Min volatiliy', vol_arr.min(), ret_arr, vol_arr, all_weights, min_v)
-        display_allocation('Min volatility', self, all_weights, min_v)
+        for i in range(3):
+            display_result(descrip[i], ret_arr, vol_arr, all_weights, indices[i])
+            display_allocation(descrip[i], self, all_weights, indices[i])
 
-        display_result('Max revenue', ret_arr.max(), ret_arr, vol_arr, all_weights, max_r)
-        display_allocation('Max revenue', self, all_weights, min_v)
+        plot_rvs(sharpe_arr, vol_arr, ret_arr, indices, self.period)
 
-        plot_rvs(ret_arr, vol_arr, sharpe_arr, max_s, max_r, min_v, self.period)
-
-        # constraints = ({'type':'eq', 'fun':check_sum})
-        # bounds = list()
-        # for asset in self.assets:
-        #     bounds.append((0, 1))
+        constraints = ({'type':'eq', 'fun':self.check_sum})
+        bounds = list()
+        for asset in self.assets:
+            bounds.append((0, 1))
 
         # init_guess = list()
         # for asset in self.assets:
