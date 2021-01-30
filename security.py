@@ -25,21 +25,23 @@ def absolute_change(df_column):
 
 
 class Security():
-    ''' A Security is an object downloaded from Yahoo finance
-        - Computes & stores expected return for any given period
-        - Computes & stores beta for any given period
+    ''' A Security is an object resulting from Yahoo finance download using yfinance
         - Provides simplified access to several variables
     '''
     # pylint: disable=too-many-instance-attributes
 
     def __init__(self, symbol, period):
+        print(f'Loading ticker {symbol}')
         self.symbol   = symbol
         self.period   = period
-        self.ticker   = yf.Ticker(self.symbol)
-        self.name     = self.ticker.info['shortName']
-        self.currency = self.ticker.info['currency']
-        self.type     = self.ticker.info['quoteType']
-        self._extract_history()
+        try:
+            self.ticker   = yf.Ticker(self.symbol)
+            self.name     = self.ticker.info['shortName']
+            self.currency = self.ticker.info['currency']
+            self.type     = self.ticker.info['quoteType']
+            self._extract_history()
+        except:
+            print(f"Couldn't load {symbol}")
 
 
     def _extract_history(self):
@@ -69,7 +71,7 @@ class Security():
 
 #### Driver ####
 if __name__ == '__main__':
-    TICKER = 'AAPL'
+    TICKER = 'CA.PA'
     period = '5d'
     security = Security(TICKER, period)
     security.display_details()
