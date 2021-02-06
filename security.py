@@ -3,12 +3,14 @@
 """
 Created on Wed Jan 27 20:50:46 2021
 
-@author: charly
+Security object encapsulates yfinance download and provides
+convenience shortcuts
+
+@author: charles mégnin
 """
 import yfinance as yf
 
 ### Helper utilities ###
-
 def annualized_return(rate, ndays):
     ''' Returns annnualized daily return '''
     return ndays * (pow(1. + rate/ndays, ndays) - 1.)
@@ -36,12 +38,13 @@ class Security():
         self.period   = period
         try:
             self.ticker   = yf.Ticker(self.symbol)
+        except:
+            print(f"Couldn't load {symbol}")
+        else:
             self.name     = self.ticker.info['shortName']
             self.currency = self.ticker.info['currency']
             self.type     = self.ticker.info['quoteType']
             self._extract_history()
-        except:
-            print(f"Couldn't load {symbol}")
 
 
     def _extract_history(self):
@@ -71,8 +74,8 @@ class Security():
 
 #### Driver ####
 if __name__ == '__main__':
-    TICKER = 'CA.PA'
-    period = '5d'
+    TICKER = 'PEU.HA'
+    period = '1y'
     security = Security(TICKER, period)
     security.display_details()
     security.describe()

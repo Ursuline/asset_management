@@ -3,45 +3,46 @@
 """
 Created on Fri Jan 22 17:34:49 2021
 
-List of securities downloaded from:
-ftp://ftp.nasdaqtrader.com/symboldirectory
+A Portfolio object is a collection of Assets
 
 @author: charly
 """
 import time
+import os
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 import scipy.optimize as opt
+from tqdm import tqdm
 import asset as ast
 import security as sqr
 
-# valid periods: 1d,5d,1mo,3mo,6mo,1y,2y,3y,5y,10y,ytd,max
-NDAYS     = 252 # Number of days in the year
-PERIOD    = '1y'
-NUM_PORTS = 100000000 # number of portfolios
-#PRECISION = 100 # percent = 100 / per 1000 = 1000, etc
+# TICKERS = ['SPIE.PA', 'ALO.PA', 'ELIS.PA', 'BNP.PA',
+#             'ORA.PA', 'BN.PA', 'FP.PA', 'HO.PA', 'NK.PA', 'SGO.PA',
+#             'KORI.PA', 'NXI.PA', 'TRI.PA', 'CA.PA' ]
+# TICKERS = ['MSFT', 'AAPL', 'BRK-B', 'AMZN', 'NFLX']
+#Q_S     = [10 for i in range(len(TICKERS))]
+#Q_S     = [500, 210, 100]
 
-#TICKERS = ['MSFT', 'AAPL', 'BRK-B', 'AMZN', 'NFLX', 'XOM']
-TICKERS = ['SPIE.PA', 'ALO.PA', 'ELIS.PA', 'BNP.PA',
-            'ORA.PA', 'BN.PA', 'FP.PA', 'HO.PA', 'NK.PA', 'SGO.PA',
-            'KORI.PA', 'NXI.PA', 'TRI.PA', 'CA.PA' ]
-# SKIPPED STLA.PA & GLE.PA
-Q_S     = [100 for i in range(len(TICKERS))]
-INDEX   = '^GSPC' # ^GSPC (S&P 500), ^IXIC (Nasdaq), ^DJI (Dow Jones)
+#INDEX   = '^GSPC' # ^GSPC (S&P 500), ^IXIC (Nasdaq), ^DJI (Dow Jones)
 
 #Helper utilities
-def sample_space(returns_df):
+def list_to_string(str_list):
+    ''' Converts a list of strings to singe string'''
+    return ', '.join(map(str, str_list))
+
+
+def sample_space(portfolio):
     ''' Explore NUM_PORTS portfolio combinations returns_df is log(returns) '''
-    ncolumns  = len(returns_df.columns)
+    returns   = portfolio.log_ret
+    ncolumns  = len(returns.columns)
+    ndays     = portfolio.ndays
     p_weights = np.zeros((NUM_PORTS, ncolumns))
     p_returns = np.zeros(NUM_PORTS)
     p_volat   = np.zeros(NUM_PORTS)
     p_sharpe  = np.zeros(NUM_PORTS)
 
-    for port in range(NUM_PORTS):
-        if port % 1000000 == 0:
-            print(f'Iteration {port}/{NUM_PORTS}', end='\r10', flush=True)
+    for port in tqdm(range(NUM_PORTS)):
 
         weights = np.array(np.random.random(ncolumns))
         #weights = np.array(np.random.randint(PRECISION, size=ncolumns))
@@ -51,28 +52,51 @@ def sample_space(returns_df):
         p_weights[port,:] = weights
 
         # Expected return
-        p_returns[port] = np.sum( (returns_df.mean() * weights * NDAYS))
+        p_returns[port] = np.sum( (returns.mean() * weights * ndays))
 
-        # Expected volatility = W^T . COV . W
-        p_volat[port] = np.sqrt(np.dot(weights.T, np.dot(returns_df.cov() * NDAYS, weights)))
+        # Expected volatility = SQRT(W^T . COV . W)
+        p_volat[port] = np.sqrt(np.dot(weights.T, np.dot(returns.cov() * ndays, weights)))
 
         p_sharpe[port] = p_returns[port]/p_volat[port]
+
+        #print(port, p_returns[port], p_volat[port], p_sharpe[port])
+    print(p_returns.max(), p_sharpe.max(), p_returns.argmax(), p_sharpe.argmax())
 
     return p_weights, p_returns, p_volat, p_sharpe
 
 
+def get_portfolio_stats(portfolio):
+    ''' Compute existing portfolio weights, return, volatility & Sharpe
+        ratio from Q_S '''
+    ndays      = portfolio.ndays
+    weights    = np.zeros(portfolio.nassets)
+    returns_df = portfolio.log_ret
+    for i in range(portfolio.nassets):
+        weights[i]  = portfolio.assets[i].price * portfolio.assets[i].quantity
+        weights[i] /= portfolio.value
+
+    p_returns = np.sum( (returns_df.mean() * weights * ndays))
+    p_volat   = np.sqrt(np.dot(weights.T, np.dot(returns_df.cov() * ndays, weights)))
+    p_sharpe  = p_returns/p_volat
+
+    return weights, p_returns, p_volat, p_sharpe
+
+
 def display_result(description, p_returns, p_volat, wts, index):
+    ''' Descriptor '''
     opt_ret = p_returns[index]
     opt_vol = p_volat[index]
 
     print(f'{description} portfolio:')
     print(f'{NUM_PORTS} portfolio combinations')
     print(f'weights: {wts[index,:]}\n'
-          f'Return={np.exp(opt_ret):.4f}, '
+          f'Return={opt_ret:.4f}, '
           f'Volatility={opt_vol:.4f}, '
           f'Sharpe ratio={opt_ret/opt_vol:.4f}')
 
+
 def display_allocation(description, portfolio, wts, index):
+    ''' Displays allocation results '''
     print(f"{description} asset allocation ({portfolio.value:.2f} {portfolio.currency}):")
     for i, weight in enumerate(wts[index,:]):
         name = portfolio.assets[i].symbol
@@ -84,44 +108,47 @@ def display_allocation(description, portfolio, wts, index):
     print()
 
 
-def plot_rvs(sharpe, volat, ret, idx, period):
-    ''' Plot distribution '''
-    SHAPE_SZ    = 75
-    SHAPE_COLOR = 'red'
-    markers = ('o', 's', 'd') # markers for max Sharpe, min volatility and max return
+def plot_rvs(portfolio, title, descr, sharpe, volat, ret, idx):
+    ''' Plot distribution idx has indices of the 4 portfoios of interest
+        idx[0]=Sharpe idx[1]=Volat idx[2]=Return idx[3]:portfolio
+    '''
+    MARKER_SZ  = 100
+    TITLE_SZ   = 18
+    LABEL_SZ   = 12
+    CAPTION_SZ = 12
+    COLOR     = 'red'
+    # markers for max Sharpe, min volatility, max return, portfoio
+    markers  = ('o', 's', 'd', '*')
+    period   = portfolio.period
+    end_date = portfolio.end_date.date()
 
-    # shr_ret = ret[idx[0]] # Sharpe
-    # shr_vol = volat[idx[0]]
-    # min_ret = ret[idx[1]] # Volatility
-    # min_vol = volat[idx[1]]
-    # max_ret = ret[idx[2]] # Revenue
-    # max_vol = volat[idx[2]]
-
-    plt.figure(figsize=(12,8))
+    #plt.figure(figsize=(12,8))
+    fig, ax = plt.subplots(figsize=(12,8), tight_layout=True)
 
     # plot all portfolios
-    plt.scatter(volat, ret, c=sharpe, cmap='viridis')
-    # plot max sharpe portfolio
-    # plt.scatter(shr_vol, shr_ret, c=SHAPE_COLOR, s=SHAPE_SZ, marker='o') # red dot
-    # # plot min volatility portfolio
-    # plt.scatter(min_vol, min_ret, c=SHAPE_COLOR, s=SHAPE_SZ, marker='s') # red square
-    # # plot max revenue portfolio
-    # plt.scatter(max_vol, max_ret, c=SHAPE_COLOR, s=SHAPE_SZ, marker='d') # red diamond
+    scat = ax.scatter(volat, ret, c=sharpe, cmap='viridis')
 
     # Plot max sharpe, min volatility and max return portfolios
-    for i in range(3):
-        plt.scatter(volat[idx[i]], ret[idx[i]], c=SHAPE_COLOR, s=SHAPE_SZ, marker=markers[i])
+    x_offset = .0025
+    for i in range(len(idx)):
+        ax.scatter(volat[idx[i]], ret[idx[i]], c=COLOR, s=MARKER_SZ, marker=markers[i])
+        ax.annotate(descr[i], xy =(volat[idx[i]], ret[idx[i]]),
+                xytext =(volat[idx[i]] + x_offset, ret[idx[i]]))
 
-    plt.colorbar(label = 'Sharpe Ratio')
-    plt.xlabel('Volatility')
-    plt.ylabel('Return (log)')
-    plt.title(f'{NUM_PORTS} portfolios (basis={period})')
+    fig.colorbar(scat, label='Sharpe Ratio')
+    ax.set_xlabel('Volatility', size=LABEL_SZ)
+    ax.set_ylabel('Return (log)', size=LABEL_SZ)
+    ax.set_title('Asset allocation ' + title, size=TITLE_SZ)
+
+    caption = list_to_string(portfolio.get_asset_names()) + '\n'
+    caption += f'{NUM_PORTS} portfolios (basis: {period} ending on {end_date})'
+    fig.text(.01, -0.05, caption, ha='left', wrap=True, size=CAPTION_SZ, style='italic')
 
     plt.show()
 
 
 class Portfolio():
-    '''Portfolio of assets for a given currency'''
+    '''Portfolio of Assets for a given currency'''
 
     def __init__(self, asset_list):
         self.value    = 0.0
@@ -134,7 +161,8 @@ class Portfolio():
 
 
     def _build_return_matrix(self):
-        ''' Build log returns matrix '''
+        ''' Build log returns matrix
+            Extract & stores end date and # of days '''
         for i, asset in enumerate(self.assets):
             if i == 0:
                 stocks = asset.close
@@ -143,10 +171,10 @@ class Portfolio():
             stocks = stocks.rename(columns = {'Close_' + asset.symbol : asset.symbol})
         self.end_date = stocks.Date.iloc[-1]
 
-        print(f'End date={self.end_date.date()}')
-
-        stocks = stocks.set_index('Date')
+        stocks       = stocks.set_index('Date')
         self.log_ret = np.log(stocks/stocks.shift(1))
+        self.ndays   = stocks.shape[0]
+        print(f"Number of days in portfolio: {self.period}/{self.ndays} days")
 
 
     def _set_value(self):
@@ -158,6 +186,13 @@ class Portfolio():
                 self.value += asset.value
             else:
                 raise Exception(f'Inconsistent currency: {asset.curency} ')
+
+
+    def get_asset_names(self):
+        names = list()
+        for asset in self.assets:
+            names.append(asset.name)
+        return names
 
 
     def describe(self):
@@ -174,8 +209,8 @@ class Portfolio():
     def get_rvs(self, weights):
         ''' returns return, volatility & sharpe ratio for a given weight distribution '''
         weights = np.array(weights)
-        ret     = np.sum(self.log_ret.mean() * weights) * NDAYS
-        vol     = np.sqrt(np.dot(weights.T, np.dot(self.log_ret.cov() * NDAYS, weights)))
+        ret     = np.sum(self.log_ret.mean() * weights) * self.ndays
+        vol     = np.sqrt(np.dot(weights.T, np.dot(self.log_ret.cov() * self.ndays, weights)))
         sharpe  = ret/vol
         return np.array([ret, vol, sharpe])
 
@@ -192,29 +227,38 @@ class Portfolio():
 
 
     def minimize_volatility(self, weights):
-        return(self.get_rvs(weights)[1])
+        ''' return minimum volatility '''
+        return self.get_rvs(weights)[1]
 
 
-    def efficient_frontier(self):
+    def efficient_frontier(self, title):
         ''' WIP '''
         # Sample portfolio space. Returns weights, returns, volatility & sharpe ratios
-        all_weights, ret_arr, vol_arr, sharpe_arr = sample_space(self.log_ret)
+        all_weights, ret_arr, vol_arr, sharpe_arr = sample_space(self)
+
+        # add portfolio from Q_S as last value im arrays
+        p_weights, p_returns, p_volat, p_sharpe = get_portfolio_stats(self)
+        all_weights = np.vstack([all_weights, p_weights])
+        ret_arr     = np.append(ret_arr, p_returns)
+        vol_arr     = np.append(vol_arr, p_volat)
+        sharpe_arr  = np.append(sharpe_arr, p_sharpe)
 
         print('\n')
-        # #indices = list() # 0:Max Sharpe 1:Max Revenue 2:Min volatility
-        indices = (sharpe_arr.argmax(), vol_arr.argmin(), ret_arr.argmax())
-        descrip = ('Max Sharpe', 'Min volatility', 'Max revenue')
+        # 0:Max Sharpe 1:Min volatility 2:Max Revenue 3: Portfolio
+        indices = (sharpe_arr.argmax(), vol_arr.argmin(), ret_arr.argmax(), sharpe_arr.shape[0]-1)
+        print(f'Indices: {sharpe_arr.argmax()} {vol_arr.argmin()} {ret_arr.argmax()} {sharpe_arr.shape[0]-1}')
+        descrip = ('Max Sharpe', 'Min volatility', 'Max revenue', 'Present')
 
-        for i in range(3):
+        for i in range(len(descrip)):
             display_result(descrip[i], ret_arr, vol_arr, all_weights, indices[i])
             display_allocation(descrip[i], self, all_weights, indices[i])
 
-        plot_rvs(sharpe_arr, vol_arr, ret_arr, indices, self.period)
+        plot_rvs(self, title, descrip, sharpe_arr, vol_arr, ret_arr, indices)
 
-        constraints = ({'type':'eq', 'fun':self.check_sum})
-        bounds = list()
-        for asset in self.assets:
-            bounds.append((0, 1))
+        # constraints = ({'type':'eq', 'fun':self.check_sum})
+        # bounds = list()
+        # for asset in self.assets:
+        #     bounds.append((0, 1))
 
         # init_guess = list()
         # for asset in self.assets:
@@ -251,20 +295,36 @@ class Portfolio():
         # plt.savefig('cover.png')
         # plt.show()
 
+DIR_NAME = './'
 
-
+def load_csv(prefix):
+    '''Load csv data & return as a dataframe'''
+    filename = os.path.join(DIR_NAME, prefix + ".csv")
+    return pd.read_csv(filename, sep=';')
 
 #### Driver ####
 if __name__ == '__main__':
+    SEED       = 42
+    PREFIX     = 'Adrien_ptf'
+    NUM_PORTS  = int( 1.5e6 ) # number of portfolios
+
     start_time = time.time()
-    np.random.seed(42)
+    np.random.seed(SEED)
 
-    assets = list()
+    ptf = load_csv(PREFIX)
 
-    for q, ticker in enumerate(TICKERS):
-        assets.append(ast.Asset(sqr.Security(ticker, PERIOD), Q_S[q]))
+    # periods: 1d,5d,1mo,3mo,6mo,1y,2y,3y,5y,10y,ytd,max
+    periods = ('1y', '5y', '10y')
+    for period in periods:
+        assets = list()
+        print(f'Processing {period} period')
+        for i, ticker in enumerate(ptf.Valeur):
+            quantity = ptf.iloc[i,1]
+            print(f'{ticker} Q={ptf.iloc[i,1]}')
+            assets.append(ast.Asset(sqr.Security(ticker, period), quantity))
 
-    portfolio = Portfolio(assets)
-    portfolio.describe()
-    portfolio.efficient_frontier()
-    print(f"Run time : {(time.time() - start_time):.0f}s ---")
+        portfolio = Portfolio(assets)
+        portfolio.describe()
+
+        portfolio.efficient_frontier(PREFIX.replace('_ptf', ''))
+    print(f"--- Total run time: {(time.time() - start_time):.0f}s ---")
