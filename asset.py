@@ -3,10 +3,7 @@
 """
 Created on Fri Jan 22 17:34:49 2021
 
-List of securities downloaded from:
-ftp://ftp.nasdaqtrader.com/symboldirectory
-
-@author: charly
+@author: charles mégnin
 """
 
 class Asset():
@@ -21,31 +18,34 @@ class Asset():
 
     def __init__(self, sec, quant):
         '''sec is Security object, quant is number of assets held'''
-        self.security   = sec
-        self.currency   = self.security.currency
-        self.close      = self.security.close
-        self.name       = self.security.name
-        self.symbol     = self.security.symbol
-        self.type       = self.security.type
-        self.period     = self.security.period
-        self.quantity   = quant
+        self.data             = {}
+        self.security         = sec
+        self.data['currency'] = self.security.data['currency']
+        self.data['close']    = self.security.close
+        self.data['name']     = self.security.data['name']
+        self.data['symbol']   = self.security.data['symbol']
+        self.data['type']     = self.security.data['type']
+        self.data['period']   = self.security.data['period']
+        self.data['quantity'] = quant
         self._set_value() # compute value of asset
 
 
     def describe(self):
-        '''class descriptor'''
-        print(f'{self.name} ({self.symbol}) {self.type}')
-        print(f'Quantity held: {self.quantity}')
-        print(f'Price: {self.price:.2f} {self.currency}')
-        print(f'Asset value: {self.value:.2f} {self.currency}')
+        ''' class descriptor '''
+        print(f'{self.data["name"]} '
+              f'({self.data["symbol"]}) '
+              f'{self.data["type"]}')
+        print(f'Quantity held: {self.data["quantity"]}')
+        print(f'Price: {self.data["price"]:.2f} {self.data["currency"]}')
+        print(f'Asset value: {self.data["value"]:.2f} {self.data["currency"]}')
 
 
     def _set_value(self):
-        '''set the value of the asset held'''
-        self.price = self.security.close.iloc[-1,1]
-        self.value = self.quantity * self.price
+        ''' set the value of the asset held'''
+        self.data['price'] = self.security.close.iloc[-1,1]
+        self.data['value'] = self.data['quantity'] * self.data['price']
 
 
     def get_value(self):
-        '''return asset value = price * quantity'''
-        return self.value
+        ''' return asset value = price * quantity'''
+        return self.data['value']
