@@ -27,7 +27,7 @@ def sample_space(ptf):
     ''' Explore NUM_PORTS portfolio combinations returns_df is log(returns) '''
     returns   = ptf.log_ret
     ncolumns  = len(returns.columns)
-    ndays     = ptf.ndays
+    ndays     = ptf.data['ndays']
     p_weights = np.zeros((NUM_PORTS, ncolumns))
     p_returns = np.zeros(NUM_PORTS)
     p_volat   = np.zeros(NUM_PORTS)
@@ -57,6 +57,7 @@ def sample_space(ptf):
 
 
 def sample_space_to_df(p_weights, p_returns, p_volat, p_sharpe):
+    ''' Stores results from sample_space as pandas dataframe '''
     # build combined array
     temp = np.vstack((p_returns, p_volat, p_sharpe, p_weights.transpose())).transpose()
     weights_col = ['w_'+ str(i) for i in range(0, p_weights.shape[1])]
@@ -70,12 +71,12 @@ def sample_space_to_df(p_weights, p_returns, p_volat, p_sharpe):
 def get_portfolio_stats(ptf):
     ''' Compute existing portfolio weights, return, volatility & Sharpe
         ratio from Q_S '''
-    ndays      = ptf.ndays
-    weights    = np.zeros(ptf.nassets)
+    ndays      = ptf.data['ndays']
+    weights    = np.zeros(ptf.data['nassets'])
     returns_df = ptf.log_ret
-    for i in range(ptf.nassets):
-        weights[i]  = ptf.assets[i].price * ptf.assets[i].quantity
-        weights[i] /= ptf.value
+    for i in range(ptf.data['nassets']):
+        weights[i]  = ptf.assets[i].data['price'] * ptf.assets[i].data['quantity']
+        weights[i] /= ptf.data['value']
 
     p_returns = np.sum( (returns_df.mean() * weights * ndays))
     p_volat   = np.sqrt(np.dot(weights.T, np.dot(returns_df.cov() * ndays, weights)))
@@ -99,14 +100,14 @@ def display_result(description, p_returns, p_volat, wts, idx):
 
 def display_allocation(description, ptf, wts, idx):
     ''' Displays allocation results '''
-    print(f"{description} asset allocation ({ptf.value:.2f} {ptf.currency}):")
+    print(f'{description} asset allocation ({ptf.data["value"]:.2f} {ptf.data["currency"]}):')
     for i, weight in enumerate(wts[idx,:]):
-        name = ptf.assets[i].symbol
-        allocation = ptf.value * weight
-        price = ptf.assets[i].price
+        name = ptf.assets[i].data['symbol']
+        allocation = ptf.data['value'] * weight
+        price = ptf.assets[i].data['price']
         opt_q = int(round(allocation/price))
-        print(f'{name}: {allocation:.2f} {ptf.currency} = '
-              f'{opt_q} * {price:.2f} {ptf.currency}')
+        print(f'{name}: {allocation:.2f} {ptf.data["currency"]} = '
+              f'{opt_q} * {price:.2f} {ptf.data["currency"]}')
     print()
 
 
@@ -115,8 +116,7 @@ def plot_rvs(ptf, title, descr, sharpe, volat, ret, indices):
         indices[0]=Max Sharpe
         indices[1]=Min Volat
         indices[2]=Max Return
-        indices[3]=Present portfolio
-    '''
+        indices[3]=Present portfolio '''
     marker_sz  = 100
     title_sz   = 18
     label_sz   = 12
@@ -124,7 +124,7 @@ def plot_rvs(ptf, title, descr, sharpe, volat, ret, indices):
     color     = 'red'
     # markers for max Sharpe, min volatility, max return, portfoio
     markers  = ('o', 's', 'd', '*')
-    per      = ptf.period
+    per      = ptf.data['period']
     end_date = ptf.end_date.date()
 
     #plt.figure(figsize=(12,8))
@@ -141,11 +141,6 @@ def plot_rvs(ptf, title, descr, sharpe, volat, ret, indices):
         axis.annotate(descr[i], xy =(volat[index], ret[index]),
                 xytext =(volat[index] + x_offset, ret[index]))
 
-    # for i in range(len(indices)):
-    #     axis.scatter(volat[indices[i]], ret[indices[i]], c=color, s=marker_sz, marker=markers[i])
-    #     axis.annotate(descr[i], xy =(volat[indices[i]], ret[indices[i]]),
-    #             xytext =(volat[indices[i]] + x_offset, ret[indices[i]]))
-
     fig.colorbar(scat, label='Sharpe Ratio')
     axis.set_xlabel('Volatility', size=label_sz)
     axis.set_ylabel('Return (log)', size=label_sz)
@@ -159,14 +154,14 @@ def plot_rvs(ptf, title, descr, sharpe, volat, ret, indices):
 
 
 class Portfolio():
-    '''Portfolio of Assets for a given currency'''
+    ''' Portfolio of Assets in a given currency '''
 
     def __init__(self, asset_list):
-        self.value    = 0.0
-        self.currency = ''
-        self.assets   = asset_list
-        self.nassets  = len(asset_list)
-        self.period   = self.assets[0].period
+        self.data     = {}
+        self.data['value']    = 0.0
+        self.assets           = asset_list
+        self.data['nassets']  = len(asset_list)
+        self.data['period']   = self.assets[0].data['period']
         self._set_value()
         self._build_return_matrix()
 
@@ -179,22 +174,22 @@ class Portfolio():
                 stocks = asset.close
             else:
                 stocks = pd.merge(stocks, asset.close, on='Date', how='inner')
-            stocks = stocks.rename(columns = {'Close_' + asset.symbol : asset.symbol})
+            stocks = stocks.rename(columns = {'Close_' + asset.data['symbol'] : asset.data['symbol']})
         self.end_date = stocks.Date.iloc[-1]
 
-        stocks       = stocks.set_index('Date')
-        self.log_ret = np.log(stocks/stocks.shift(1))
-        self.ndays   = stocks.shape[0]
-        print(f"Number of days in portfolio: {self.period}/{self.ndays} days")
+        stocks             = stocks.set_index('Date')
+        self.log_ret       = np.log(stocks/stocks.shift(1))
+        self.data['ndays'] = stocks.shape[0]
+        print(f"Number of days in portfolio: {self.data['period']}/{self.data['ndays']} days")
 
 
     def _set_value(self):
         ''' Compute the value of the portfolio as the sum of the asset values '''
         for i, asset in enumerate(self.assets):
             if i == 0:
-                self.currency = asset.currency
-            if self.currency == asset.currency: # check currencies are consistent
-                self.value += asset.value
+                self.data['currency'] = asset.data['currency']
+            if self.data['currency'] == asset.data['currency']: # check currencies are consistent
+                self.data['value'] += asset.data['value']
             else:
                 raise Exception(f'Inconsistent currency for {asset.name}: {asset.currency} ')
 
@@ -203,26 +198,26 @@ class Portfolio():
         ''' return list of all asset names'''
         names = list()
         for asset in self.assets:
-            names.append(asset.name)
+            names.append(asset.data['name'])
         return names
 
 
     def describe(self):
         ''' Portfolio descriptor '''
         print("\n*** Portfolio ***")
-        print(f'{self.nassets} assets in portfolio:')
+        print(f'{self.data["nassets"]} assets in portfolio:')
         for i, asset in enumerate(self.assets):
             print(f'Asset {i}:')
             asset.describe()
 
-        print(f'Total portfolio value: {self.value:.2f} {self.currency}')
+        print(f'Total portfolio value: {self.data["value"]:.2f} {self.data["currency"]}')
 
 
     def get_rvs(self, weights):
         ''' returns return, volatility & sharpe ratio for a given weight distribution '''
         weights = np.array(weights)
-        ret     = np.sum(self.log_ret.mean() * weights) * self.ndays
-        vol     = np.sqrt(np.dot(weights.T, np.dot(self.log_ret.cov() * self.ndays, weights)))
+        ret     = np.sum(self.log_ret.mean() * weights) * self.data['ndays']
+        vol     = np.sqrt(np.dot(weights.T, np.dot(self.log_ret.cov() * self.data['ndays'], weights)))
         sharpe  = ret/vol
         return np.array([ret, vol, sharpe])
 
@@ -235,7 +230,7 @@ class Portfolio():
 
     # def check_sum(self, weights):
     #     ''' Checks that weights sum up to 1 '''
-        return np.sum(weights) - 1
+    # return np.sum(weights) - 1
 
 
     def minimize_volatility(self, weights):
@@ -317,9 +312,9 @@ class Portfolio():
 #### Driver ####
 if __name__ == '__main__':
     SEED      = 42
-    PREFIX    = 'Jacqueline_ptf' #csv file prefix
+    PREFIX    = 'JP_ptf' #csv file prefix
     SKIP      = ('ELIS.PA')
-    NUM_PORTS = int( 1.e6 ) # number of portfolios
+    NUM_PORTS = int( 1.e3 ) # number of portfolios
 
     start_time = time.time()
     np.random.seed(SEED)
