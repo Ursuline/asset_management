@@ -5,7 +5,7 @@ Created on Mon Feb  8 11:11:23 2021
 
 Plotting functions
 
-@author: charly
+@author: charles mégnin
 """
 import numpy as np
 import matplotlib.pyplot as plt
@@ -69,9 +69,8 @@ def plot_rvs(ptf, rvs, indices, num_ports, log_plot=False):
     parameters = build_parameters(ptf)
     data       = build_data(ptf, num_ports)
 
-    if not log_plot: # linearize returns
-        rvs[:, 0] = np.exp(rvs[:, 0])
-        #ret = np.exp(ret)
+    if not log_plot: # linearize returns & convert to relative change
+        rvs[:, 0] = np.exp(rvs[:, 0]) - 1.0
 
     fig, axis = plt.subplots(figsize=(12,8), tight_layout=True)
     axis.set_title('Asset allocation ' + ptf.data['title'],
@@ -86,6 +85,8 @@ def plot_rvs(ptf, rvs, indices, num_ports, log_plot=False):
         axis.set_ylabel('Return (log)',
                         size=parameters['label_sz'])
     else:
+        #vals = axis.get_yticks()
+        axis.set_yticklabels([f'{x:.0%}' for x in axis.get_yticks()])
         axis.set_ylabel('Return',
                         size=parameters['label_sz'])
 
@@ -102,5 +103,4 @@ def plot_rvs(ptf, rvs, indices, num_ports, log_plot=False):
                       xytext = (rvs[index, 1] + x_offset, rvs[index, 0]))
 
     plot_caption(ptf, parameters, data, fig)
-
     save_plot(ptf.data["title"], data['period'])
