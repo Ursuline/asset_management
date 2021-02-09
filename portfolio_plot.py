@@ -17,7 +17,7 @@ def build_parameters(portfolio):
     ''' constructs dictionary of plot parameters '''
     params = {}
     # markers for max Sharpe, min volatility, max return, portfolio
-    params['markers']      = ('o', 's', 'd', '*')
+    params['markers']      = ('o', 's', 'd', '*', 'X')
     params['marker_descr'] = portfolio.descriptions
     params['marker_color'] = 'red'
     params['marker_sz']    = 100
@@ -59,13 +59,14 @@ def save_plot(title, period):
     plt.show()
 
 
-def plot_rvs(ptf, rvs, indices, num_ports, log_plot=False):
+def plot_rvs(ptf, rvs, e_front, indices, num_ports, log_plot=False):
     ''' Plot distribution
         rvs = return, volatility, Sharpe ratio array
-        indices[0]=Max Sharpe ratio
+        indices[0]=Max Sharpe ratio (from grid search)
         indices[1]=Min Volat
         indices[2]=Max Return
-        indices[3]=Present portfolio '''
+        indices[3]=Present portfolio
+        indices[4]=Optimal Sharpe ratio (from optimization algo)'''
     parameters = build_parameters(ptf)
     data       = build_data(ptf, num_ports)
 
@@ -101,6 +102,8 @@ def plot_rvs(ptf, rvs, indices, num_ports, log_plot=False):
         axis.annotate(parameters['marker_descr'][i],
                       xy = (rvs[index, 1], rvs[index, 0]),
                       xytext = (rvs[index, 1] + x_offset, rvs[index, 0]))
+
+    axis.plot(e_front[:,0], e_front[:,1], 'r--', linewidth=3)
 
     plot_caption(ptf, parameters, data, fig)
     save_plot(ptf.data["title"], data['period'])
