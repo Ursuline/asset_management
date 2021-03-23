@@ -39,23 +39,6 @@ PREFIX   = f'secu_{TICKERS[0]}_{TICKERS[1]}'
 PERIOD   = '5y'
 HEADER   = f'{SECUS[0]}-{SECUS[1]}: '
 
-def load_security(dirname, ticker, period, refresh=False):
-    '''
-    Load data from file else upload from Yahoo finance
-    '''
-    filename = ticker + '_' + period
-    pathname = os.path.join(dirname, filename+'.pkl')
-    if os.path.exists(pathname) and refresh == False:
-        print(f'Loading data from {pathname}')
-        data = pd.read_pickle(pathname)
-    else:
-        print('Downloading data from Yahoo Finance')
-        data = sec.Security(ticker, period).get_market_data()
-        data.set_index('Date', inplace=True)
-        data.to_pickle(pathname) #store locally
-    return data
-
-
 def load_data(dirname=DIRNAME, prefix=PREFIX, period=PERIOD):
     '''
     Load data from file else upload from Yahoo finance
