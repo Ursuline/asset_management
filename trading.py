@@ -3,6 +3,8 @@
 """
 Created on Tue Mar 23 14:48:44 2021
 
+trading.py
+
 Routines for trading
 
 @author: charly
@@ -11,42 +13,90 @@ import os
 from datetime import datetime
 import pandas as pd
 import numpy as np
+from tqdm import tqdm
 import security as sec
 
+import trading_defaults as dft
+
 ### TRADING ###
+
+def build_ema_map(ticker, security, start, end):
+    '''
+    Builds a 2D numpy array of EMAs as a function of span and buffer
+    '''
+    init_wealth = dft.get_init_wealth()
+
+    # define rolling window span range
+    span_par = dft.get_spans()
+    spans = np.arange(span_par[0],
+                      span_par[1] + 1,
+                      step = 1
+                     )
+
+    # define buffer range
+    buff_par = dft.get_buffers()
+    buffers = np.linspace(buff_par[0],
+                          buff_par[1],
+                          buff_par[2],
+                         )
+
+    # Initialize EMA returns
+    emas = np.zeros((spans.shape[0], buffers.shape[0]), dtype=np.float64)
+
+    # Fill EMAS for all span/buffer combinations
+    tqdm_desc = f'Outer Level / {span_par[1] - span_par[0] + 1}'
+    for i, span in tqdm(enumerate(spans), desc=tqdm_desc):
+        for j, buffer in enumerate(buffers):
+            data  = build_strategy(ticker,
+                                   security.loc[start:end, :].copy(),
+                                   span,
+                                   buffer,
+                                   init_wealth,
+                                  )
+            emas[i][j] = get_cumret(data,
+                                    'ema',
+                                    init_wealth,
+                                    get_fee(data,
+                                            dft.get_fee_pct(),
+                                            dft.get_actions()))
+            if i == 0 and j == 0:
+                hold = get_cumret(data, 'hold', init_wealth)
+
+    return spans, buffers, emas, hold
+
 
 def build_positions(d_frame):
     '''
     Builds desired positions for the EMA strategy
     *** Long strategy only ***
     POSITION -> cash, long (short pending)
-    SWITCH -> buy, sell, n/c (no change)
+    ACTION -> buy, sell, n/c (no change)
     '''
     n_time_steps = d_frame.shape[0]
-    positions, switches = ([] for i in range(2))
+    positions, actions = ([] for i in range(2))
 
     positions.append('cash')
-    switches.append('n/c')
+    actions.append('n/c')
 
     for step in range(1, n_time_steps):  # Long strategy only
         if positions[step - 1] == 'cash':  # if previous position was cash
             # if in or below buffer
             if d_frame.loc[d_frame.index[step], 'SIGN'] in [0, -1]:
                 positions.append('cash')
-                switches.append('n/c')
+                actions.append('n/c')
             elif d_frame.loc[d_frame.index[step], 'SIGN'] == 1:
                 positions.append('long')
-                switches.append('buy')
+                actions.append('buy')
             else:
                 msg = f'Inconsistent sign {d_frame.loc[d_frame.index[step], "SIGN"]}'
                 raise ValueError(msg)
         elif positions[step - 1] == 'long':  # previous position: long
             if d_frame.loc[d_frame.index[step], 'SIGN'] in [0, 1]:
                 positions.append('long')
-                switches.append('n/c')
+                actions.append('n/c')
             elif d_frame.loc[d_frame.index[step], 'SIGN'] == -1:
                 positions.append('cash')
-                switches.append('sell')
+                actions.append('sell')
             else:
                 msg = f'Inconsistent sign {d_frame.loc[d_frame.index[step], "SIGN"]}'
                 raise ValueError(msg)
@@ -55,7 +105,7 @@ def build_positions(d_frame):
             msg += "sign:{d_frame.loc[d_frame.index[step], 'SIGN']}"
             raise ValueError(msg)
     d_frame.insert(loc=len(d_frame.columns), column='POSITION', value=positions)
-    d_frame.insert(loc=len(d_frame.columns), column='SWITCH', value=switches)
+    d_frame.insert(loc=len(d_frame.columns), column='ACTION', value=actions)
     return d_frame
 
 
@@ -134,7 +184,7 @@ def build_strategy(ticker, d_frame, span, buffer, init_wealth, debug=False, reac
     Returns the 'strategy' consisting of a dataframe with original data + following columns:
     EMA -> exponential moving average
     SIGN -> 1 : above buffer 0: in buffer -1: below buffer
-    SWITCH -> buy / sell / n/c (no change)
+    ACTION -> buy / sell / n/c (no change)
     RET -> 1 + % daily return
     CUMRET_HOLD -> cumulative returns for a hold strategy
     RET2 -> 1 + % daily return when Close > EMA
@@ -151,7 +201,7 @@ def build_strategy(ticker, d_frame, span, buffer, init_wealth, debug=False, reac
     # build the SIGN column (above/in/below buffer)
     d_frame = build_sign(d_frame, buffer, reactivity)
 
-    # build the POSITION (long/cash) & SWITCH (buy/sell) columns
+    # build the POSITION (long/cash) & ACTION (buy/sell) columns
     d_frame = build_positions(d_frame)
 
     # compute returns from a hold strategy
@@ -169,16 +219,17 @@ def build_strategy(ticker, d_frame, span, buffer, init_wealth, debug=False, reac
     return d_frame
 
 
-def get_fee(data, fee_pct, switches):
+def get_fee(data, fee_pct, actions):
     '''
     Return fees associated to buys / sells
     fee_pct -> brokers fee
-    switches = ['buy', 'sell', 'n/c']
+    actions = ['buy', 'sell', 'n/c']
     fee -> $ fee corresponding to fee_pct
     '''
-    # Add a fee for each movement
-    fee  = (fee_pct * data[data.SWITCH == switches[0]].CUMRET_EMA.sum())
-    fee += (fee_pct * data[data.SWITCH == switches[1]].CUMRET_EMA.sum())
+    # Add a fee for each movement: mask buys
+    fee  = (fee_pct * data[data.ACTION == actions[0]].CUMRET_EMA.sum())
+    # Mask sells
+    fee += (fee_pct * data[data.ACTION == actions[1]].CUMRET_EMA.sum())
     return fee
 
 
@@ -191,11 +242,9 @@ def get_cumret(data, strategy, init_wealth, fee=0):
     '''
     if strategy.lower() == 'hold':
         return data.CUMRET_HOLD[-1]/init_wealth - 1
-    elif strategy.lower() == 'ema':
+    if strategy.lower() == 'ema':
         return (data.CUMRET_EMA[-1]-fee)/init_wealth - 1
-    else:
-        raise ValueError(
-            f"strategy {strategy} should be either of ema or hold")
+    raise ValueError(f'strategy {strategy} should be either ema or hold')
 
 
 ### I/O ###

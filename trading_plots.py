@@ -10,75 +10,96 @@ import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 
-HUGE = 1000000
+import trading_defaults as dft
 
-
-def plot_setup(df, target, xlabel, width, height):
-    fig, ax = plt.subplots(figsize=(width, height))
-    ax.plot(df[target],
-            df.ema,
-            linewidth=1,
-            label='EMA return',
-           )
-    ax.legend(loc='best')
-    ax.set_xlabel(xlabel)
-    ax.set_ylabel('return (x)')
+def plot_setup(data, target, xlabel):
+    '''
+    Build line plot structure: dimensions, axes, label & grid
+    '''
+    fig, axis = plt.subplots(figsize=(dft.fig_width, dft.fig_height))
+    axis.plot(data[target],
+              data.ema,
+              linewidth = 1,
+              label='EMA return',
+              )
+    axis.legend(loc='best')
+    axis.set_xlabel(xlabel)
+    axis.set_ylabel('return (x)')
     plt.grid(b=None, which='major', axis='both', color='#f1f1f1')
-    return fig, ax
+    return fig, axis
 
 
-def plot_maxima(emas, spans, buffers, hold, ax, n_maxima):
-        '''
-        Plot points corresponding to n_maxima largest EMA
-        '''
-        _emas = emas.copy() # algorithm destroys top n_maxima EMA values
-        for i in range(n_maxima):
-            # Get coordinates of maximum emas value
-            max_idx = np.unravel_index(np.argmax(_emas, axis=None),
-                                       _emas.shape)
-            if i == 0: # Save best EMA
-                max_ema  = np.max(_emas)
-                max_span = spans[max_idx[0]]
-                max_buff = buffers[max_idx[1]]
+def build_title(axis, ticker, start_date, end_date, ema, hold, span, buffer):
+    '''
+    Build plot title (common to plot_buffer_range() & plot_span_range())
+    '''
+    title  = f'{ticker} | {start_date} - {end_date}\n'
+    title += f'EMA max payoff={ema:.2%} (hold={hold:.2%}) | '
+    title += f'{span}-day mean | '
+    title += f'opt buffer={buffer:.2%}'
+    axis.set_title(title,
+                   fontsize = dft.title_size,
+                   color    = dft.title_color,
+                  )
+    return axis
 
-            ax.plot(buffers[max_idx[1]], spans[max_idx[0]], marker = 'x')
-            ax.annotate(i, xy=(buffers[max_idx[1]],
-                               spans[max_idx[0]]),
-                           textcoords='data',
-                           fontsize=8,
-                        )
-            print(f'Max EMA {i}={np.max(_emas):.2%}: {spans[max_idx[0]]:.0f}-days buffer={buffers[max_idx[1]]:.2%} (hold={hold:.2%})')
 
-            # set max emas value to arbitrily small number and re-iterate
-            _emas[max_idx[0]][max_idx[1]] = - HUGE
-        return max_ema, max_span, max_buff
+def plot_maxima(emas, spans, buffers, hold, axis, n_maxima):
+    '''
+    Plot points corresponding to n_maxima largest EMA
+    '''
+    _emas = emas.copy() # b/c algorithm destroys top n_maxima EMA values
+    for i in range(n_maxima):
+        # Get coordinates of maximum emas value
+        max_idx = np.unravel_index(np.argmax(_emas, axis=None),
+                                   _emas.shape)
+        if i == 0: # Save best EMA
+            max_ema  = np.max(_emas)
+            max_span = spans[max_idx[0]]
+            max_buff = buffers[max_idx[1]]
 
-def plot_max_values(df, ax, n_values, max_val, min_val, fmt, line_color):
+        axis.plot(buffers[max_idx[1]], spans[max_idx[0]], marker = 'x')
+        axis.annotate(i,
+                      xy  = (buffers[max_idx[1]],
+                             spans[max_idx[0]]
+                            ),
+                      textcoords='data',
+                      fontsize = dft.max_label_size,
+                    )
+        print(f'Max EMA {i}={np.max(_emas):.2%}: {spans[max_idx[0]]:.0f}-days buffer={buffers[max_idx[1]]:.2%} (hold={hold:.2%})')
+
+        # set max emas value to arbitrily small number and re-iterate
+        _emas[max_idx[0]][max_idx[1]] = - dft.HUGE
+    return max_ema, max_span, max_buff
+
+
+def plot_max_values(data, axis, n_values, max_val, min_val, fmt):
     '''
     Plots maximum values in dataframe as vertical lines
     '''
-    largest_idx = pd.Series(df['ema'].nlargest(n_values)).index
+    largest_idx = pd.Series(data['ema'].nlargest(n_values)).index
     for large in largest_idx:
-        ax.axvline(df.iloc[large][0],
-                   color=line_color,
-                   linestyle=':',
-                   linewidth=1)
+        axis.axvline(data.iloc[large][0],
+                     color     = dft.vline_color,
+                     linestyle = ':',
+                     linewidth = 1,
+                    )
         if fmt.lower() == 'integer':
-            text = f'{df.iloc[large][0]:.0f}'
+            text = f'{data.iloc[large][0]:.0f}'
         elif fmt.lower() == 'percent':
-            text = f'{df.iloc[large][0]:.2%}'
+            text = f'{data.iloc[large][0]:.2%}'
         else:
             raise ValueError(f'{fmt} not implemented / should be integer or percent')
 
-        ax.annotate(text=text,
-                    xy=(df.iloc[large][0],
+        axis.annotate(text=text,
+                    xy=(data.iloc[large][0],
                         min_val + np.random.uniform(0, 1)*(max_val-min_val)),
-                    color=line_color,
+                    color=dft.vline_color,
                     )
     return largest_idx
 
 
-def plot_arrows(axis, data, switches, colors):
+def plot_arrows(axis, data, actions, colors):
     '''
     Draws position-switching arrows on axis
     '''
@@ -90,20 +111,20 @@ def plot_arrows(axis, data, switches, colors):
     space          = vertical_range/100  # space bw arrow tip and curve
 
     for row in range(data.shape[0]):
-        if data.SWITCH[row] == switches[0]:  # buy
+        if data.ACTION[row] == actions[0]:  # buy
             y_start = data.loc[data.index[row], 'Close'] + arrow_length
             color = colors[2]
-            dy = -arrow_length+space
-        elif data.SWITCH[row] == switches[1]:  # sell
+            delta_y = -arrow_length+space
+        elif data.ACTION[row] == actions[1]:  # sell
             y_start = data.loc[data.index[row], 'Close'] - arrow_length
             color = colors[3]
-            dy = arrow_length-space
+            delta_y = arrow_length-space
         else:  # don't draw the arrow
             continue
         #arrow_start = data.loc[data.index[row], 'Close']
         axis.arrow(x=data.index[row],
                    y=y_start,
-                   dx=0, dy=dy,
+                   dx=0, dy=delta_y,
                    head_width=head_width,
                    head_length=head_length,
                    length_includes_head=True,
