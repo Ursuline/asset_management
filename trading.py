@@ -83,6 +83,7 @@ def build_hold(d_frame, init_wealth):
     '''
     Computes returns, cumulative returns and 'wealth' from initial_wealth
     for hold strategy
+    *** MUST INCORPORATE FEES ***
     '''
     d_frame['RET'] = 1.0 + d_frame.Close.pct_change()
     d_frame.loc[d_frame.index[0], 'RET'] = 1.0  # set first value to 1.0
@@ -90,7 +91,36 @@ def build_hold(d_frame, init_wealth):
     return d_frame
 
 
-def get_strategy(d_frame, span, buffer, init_wealth, debug=False, reactivity=1):
+def build_ema(d_frame, init_wealth):
+    '''
+    Computes returns, cumulative returns and 'wealth' from initial_wealth
+    for EMA strategy
+    *** MUST INCORPORATE FEES ***
+    '''
+    # If long, use the daily returns from hold, else set to 1.0 (ie: cash=no change)
+    d_frame['RET_EMA'] = np.where(d_frame.POSITION == 'long',
+                                  d_frame.RET,
+                                  1.0)
+    # Compute cumulative returns aka 'Wealth'
+    d_frame['CUMRET_EMA'] = d_frame.RET_EMA.cumprod(axis   = None,
+                                                    skipna = True) * init_wealth
+    # Set first value to init_wealth
+    d_frame.loc[d_frame.index[0], 'CUMRET_EMA'] = init_wealth
+
+    return d_frame
+
+
+def cleanup_strategy(dataframe):
+    '''
+    Remove unnecessary columns
+    '''
+    dataframe = dataframe.drop(['SIGN'], axis=1)
+    dataframe = dataframe.drop(['RET_EMA'], axis=1)
+
+    return dataframe
+
+
+def build_strategy(ticker, d_frame, span, buffer, init_wealth, debug=False, reactivity=1):
     '''
     *** At this point, only a long strategy is considered ***
     Implements running-mean (ewm) strategy
@@ -101,8 +131,7 @@ def get_strategy(d_frame, span, buffer, init_wealth, debug=False, reactivity=1):
     reactivity -> reactivity to market change in days (should be set to 1)
     buffer     -> % above & below ema to trigger buy/sell
 
-    Returns the 'strategy' consissting of:
-    A dataframe with original data + following columns
+    Returns the 'strategy' consisting of a dataframe with original data + following columns:
     EMA -> exponential moving average
     SIGN -> 1 : above buffer 0: in buffer -1: below buffer
     SWITCH -> buy / sell / n/c (no change)
@@ -111,53 +140,38 @@ def get_strategy(d_frame, span, buffer, init_wealth, debug=False, reactivity=1):
     RET2 -> 1 + % daily return when Close > EMA
     CUMRET_EMA -> cumulative returns for the EMA strategy
     '''
-    # Compute exponential weighted mean
+    # Compute exponential weighted mean 'EMA'
     d_frame['EMA'] = d_frame.Close.ewm(span=span, adjust=False).mean()
 
-    # include buffer limits in dataframe for printing
-    if debug:
+    if debug: # include buffer limits in dataframe (for printing)
         d_frame.insert(loc=1, column='EMA-', value=d_frame['EMA']*(1-buffer))
         d_frame.insert(loc=len(d_frame.columns), column='EMA+',
                   value=d_frame['EMA']*(1+buffer))
 
+    # build the SIGN column (above/in/below buffer)
     d_frame = build_sign(d_frame, buffer, reactivity)
 
-    # Assign a value SIGN =  1 if close > EMA + buffer
-    #                SIGN = -1 if close < EMA - buffer
-    #                SIGN = 0 otherwise
-    # d_frame['SIGN'] = np.where(d_frame.Close - d_frame.EMA*(1 + buffer) > 0,
-    #                            1,
-    #                            np.where(d_frame.Close - d_frame.EMA*(1 - buffer) < 0,
-    #                                     -1,
-    #                                     0)
-    #                       )
-    # # shift by reactivity days (should be 1) -> buy/sell action follows close date
-    # d_frame['SIGN'] = d_frame['SIGN'].shift(reactivity)
-    # d_frame.loc[d_frame.index[0], 'SIGN'] = 0.0  # set first value to 0
+    # build the POSITION (long/cash) & SWITCH (buy/sell) columns
+    d_frame = build_positions(d_frame)
 
-    d_frame = build_positions(d_frame)  # compute position and switch columns
-
+    # compute returns from a hold strategy
     d_frame = build_hold(d_frame, init_wealth)
 
-    # Compute returns, cumulative returns and 'wealth' for hold strategy
-    # d_frame['RET'] = 1.0 + d_frame.Close.pct_change()
-    # d_frame.loc[d_frame.index[0], 'RET'] = 1.0  # set first value to 1.0
-    # d_frame['CUMRET_HOLD'] = init_wealth * d_frame.RET.cumprod(axis=None, skipna=True)
+    # compute returns from the EMA strategy
+    d_frame = build_ema(d_frame, init_wealth)
 
-    # Cumulative wealth for ema strategy
-    d_frame['RET_EMA'] = np.where(d_frame.POSITION == 'long', d_frame.RET, 1.0)
-    d_frame['CUMRET_EMA'] = d_frame.RET_EMA.cumprod(
-        axis=None, skipna=True) * init_wealth
-    d_frame.loc[d_frame.index[0], 'CUMRET_EMA'] = init_wealth
-    d_frame = d_frame.drop(['RET_EMA'], axis=1)
-    d_frame = d_frame.drop(['SIGN'], axis=1)
-    d_frame.to_csv('check.csv', sep=',')
+    # remove junk
+    d_frame = cleanup_strategy(d_frame)
+
+    # Save strategy to file (either csv or pkl)
+    save_strategy(ticker, d_frame, 'csv')
+
     return d_frame
 
 
 def get_fee(data, fee_pct, switches):
     '''
-    Return fees associated to position switches
+    Return fees associated to buys / sells
     fee_pct -> brokers fee
     switches = ['buy', 'sell', 'n/c']
     fee -> $ fee corresponding to fee_pct
@@ -217,6 +231,26 @@ def display_full_dataframe(data):
                            'display.colheader_justify',
                            'left'):
         print(data)
+
+
+def save_strategy(ticker, dataframe, extension):
+    '''
+    Save strategy to either csv or pkl file
+    '''
+    data_dir = 'data'
+
+    start = dataframe.index[0].strftime('%y-%m-%d')
+    end   = dataframe.index[-1].strftime('%y-%m-%d')
+    prefix = f'{ticker}_{start}_{end}'
+
+    if extension == 'pkl':
+        pathname = os.path.join(data_dir, prefix+'.pkl')
+        dataframe.to_pickle(pathname)
+    elif extension == 'csv':
+        pathname = os.path.join(data_dir, prefix+'.csv')
+        dataframe.to_csv(pathname, sep=';')
+    else:
+        raise ValueError(f'{extension} not supported should be pkl or csv')
 
 
 ### DATETIME ###
