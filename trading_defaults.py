@@ -11,12 +11,14 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import matplotlib.dates as mdates
 
-pd.options.display.float_format = '{:,.2f}'.format
+#pd.options.display.float_format = '{:,.2f}'.format
+pd.set_option("precision", 7)
 
 DATA_DIR  = 'data'
 PLOT_DIR  = 'plots'
 
-HUGE     = 1000000
+HUGE       = 1000000
+REACTIVITY = 1
 
 POSITIONS = ['long', 'short', 'n/c']
 ACTIONS   = ['buy', 'sell', 'n/c']
@@ -38,15 +40,15 @@ FEE_PCT        = .004  # broker's fee
 
 
 #### PLOT DEFAULTS ####
-color_scheme   = plt.rcParams['axes.prop_cycle'].by_key()['color']
-year_month_fmt = mdates.DateFormatter('%b-%y')
-title_size     = 14
-max_label_size = 8
-vline_color    = 'tomato'
-gridcolor      = '#ededed'
-title_color    = 'dimgrey'
-fig_width      = 14
-fig_height     = 8
+COLOR_SCHEME   = plt.rcParams['axes.prop_cycle'].by_key()['color']
+YEAR_MONTH_FMT = mdates.DateFormatter('%b-%y')
+TITLE_SIZE     = 14
+MAX_LABEL_SIZE = 8
+VLINE_COLOR    = 'tomato'
+GRID_COLOR     = '#ededed'
+TITLE_COLOR    = 'dimgrey'
+FIG_WIDTH      = 14
+FIG_HEIGHT     = 8
 
 def get_spans():
     '''returns max & min rolling window spans '''
@@ -56,14 +58,6 @@ def get_buffers():
     '''returns max, min buffers and increment '''
     return [MIN_BUFF, MAX_BUFF, N_BUFFERS]
 
-def get_init_wealth():
-    '''returns initial_wealth value (typically 100)'''
-    return INIT_WEALTH
-
-def get_fee_pct():
-    """returns broker's fee"""
-    return FEE_PCT
-
 def get_actions():
     '''returns actions '''
     return ACTIONS
@@ -71,3 +65,11 @@ def get_actions():
 def get_positions():
     '''return positions'''
     return POSITIONS
+
+def get_color_scheme():
+    '''Returrns default color scheme'''
+    return COLOR_SCHEME
+
+def get_year_month_format():
+    '''Return date format for axis'''
+    return YEAR_MONTH_FMT

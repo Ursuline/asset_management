@@ -24,8 +24,6 @@ def build_ema_map(ticker, security, start, end):
     '''
     Builds a 2D numpy array of EMAs as a function of span and buffer
     '''
-    init_wealth = dft.get_init_wealth()
-
     # define rolling window span range
     span_par = dft.get_spans()
     spans = np.arange(span_par[0],
@@ -44,23 +42,23 @@ def build_ema_map(ticker, security, start, end):
     emas = np.zeros((spans.shape[0], buffers.shape[0]), dtype=np.float64)
 
     # Fill EMAS for all span/buffer combinations
-    tqdm_desc = f'Outer Level / {span_par[1] - span_par[0] + 1}'
-    for i, span in tqdm(enumerate(spans), desc=tqdm_desc):
+    for i, span in tqdm(enumerate(spans),
+                        desc = f'Outer Level / {span_par[1] - span_par[0] + 1}'
+                        ):
         for j, buffer in enumerate(buffers):
             data  = build_strategy(ticker,
                                    security.loc[start:end, :].copy(),
                                    span,
                                    buffer,
-                                   init_wealth,
+                                   dft.INIT_WEALTH,
                                   )
             emas[i][j] = get_cumret(data,
                                     'ema',
-                                    init_wealth,
                                     get_fee(data,
-                                            dft.get_fee_pct(),
+                                            dft.FEE_PCT,
                                             dft.get_actions()))
             if i == 0 and j == 0:
-                hold = get_cumret(data, 'hold', init_wealth)
+                hold = get_cumret(data, 'hold')
 
     return spans, buffers, emas, hold
 
@@ -133,7 +131,7 @@ def build_hold(d_frame, init_wealth):
     '''
     Computes returns, cumulative returns and 'wealth' from initial_wealth
     for hold strategy
-    *** MUST INCORPORATE FEES ***
+    *** MUST INCORPORATE FEES at start/end ***
     '''
     d_frame['RET'] = 1.0 + d_frame.Close.pct_change()
     d_frame.loc[d_frame.index[0], 'RET'] = 1.0  # set first value to 1.0
@@ -144,7 +142,7 @@ def build_hold(d_frame, init_wealth):
 def build_ema(d_frame, init_wealth):
     '''
     Computes returns, cumulative returns and 'wealth' from initial_wealth
-    for EMA strategy
+    from EMA strategy
     *** MUST INCORPORATE FEES ***
     '''
     # If long, use the daily returns from hold, else set to 1.0 (ie: cash=no change)
@@ -160,6 +158,7 @@ def build_ema(d_frame, init_wealth):
     return d_frame
 
 
+
 def cleanup_strategy(dataframe):
     '''
     Remove unnecessary columns
@@ -170,7 +169,7 @@ def cleanup_strategy(dataframe):
     return dataframe
 
 
-def build_strategy(ticker, d_frame, span, buffer, init_wealth, debug=False, reactivity=1):
+def build_strategy(ticker, d_frame, span, buffer, debug=False):
     '''
     *** At this point, only a long strategy is considered ***
     Implements running-mean (ewm) strategy
@@ -190,6 +189,9 @@ def build_strategy(ticker, d_frame, span, buffer, init_wealth, debug=False, reac
     RET2 -> 1 + % daily return when Close > EMA
     CUMRET_EMA -> cumulative returns for the EMA strategy
     '''
+    init_wealth = dft.INIT_WEALTH
+    reactivity  = dft.REACTIVITY
+
     # Compute exponential weighted mean 'EMA'
     d_frame['EMA'] = d_frame.Close.ewm(span=span, adjust=False).mean()
 
@@ -213,8 +215,10 @@ def build_strategy(ticker, d_frame, span, buffer, init_wealth, debug=False, reac
     # remove junk
     d_frame = cleanup_strategy(d_frame)
 
-    # Save strategy to file (either csv or pkl)
-    save_strategy(ticker, d_frame, 'csv')
+    # Save strategy to file (either csv or pkl
+    suffix  = f'{d_frame.index[0].strftime("%y-%m-%d")}_'
+    suffix += f'{d_frame.index[-1].strftime("%y-%m-%d")}'
+    save_dataframe(ticker, suffix, d_frame, 'csv')
 
     return d_frame
 
@@ -222,7 +226,7 @@ def build_strategy(ticker, d_frame, span, buffer, init_wealth, debug=False, reac
 def get_fee(data, fee_pct, actions):
     '''
     Return fees associated to buys / sells
-    fee_pct -> brokers fee
+    FEE_PCT -> brokers fee
     actions = ['buy', 'sell', 'n/c']
     fee -> $ fee corresponding to fee_pct
     '''
@@ -233,7 +237,7 @@ def get_fee(data, fee_pct, actions):
     return fee
 
 
-def get_cumret(data, strategy, init_wealth, fee=0):
+def get_cumret(data, strategy, fee=0):
     '''
     Returns cumulative return for the given strategy
     Value returned is relative difference between final and initial wealth
@@ -241,13 +245,43 @@ def get_cumret(data, strategy, init_wealth, fee=0):
     *** FIX FEES ***
     '''
     if strategy.lower() == 'hold':
-        return data.CUMRET_HOLD[-1]/init_wealth - 1
+        return data.CUMRET_HOLD[-1]/dft.INIT_WEALTH - 1
     if strategy.lower() == 'ema':
-        return (data.CUMRET_EMA[-1]-fee)/init_wealth - 1
+        return (data.CUMRET_EMA[-1]-fee)/dft.INIT_WEALTH - 1
     raise ValueError(f'strategy {strategy} should be either ema or hold')
 
 
 ### I/O ###
+def results_to_file(ticker, spans, buffers, emas, hold, n_best):
+    '''
+    Outputs n_best results to file
+    The output data is n_best rows of:
+    | span | buffer | ema | hold |
+    '''
+    results = np.zeros(shape=(n_best, 4))
+    # Build a n_best x 4 dataframe
+    _emas = emas.copy() # b/c algorithm destroys top n_maxima EMA values
+    for i in range(n_best):
+        # Get coordinates of maximum emas value
+        max_idx = np.unravel_index(np.argmax(_emas, axis=None),
+                                   _emas.shape)
+        results[i][0] = spans[max_idx[0]]
+        results[i][1] = buffers[max_idx[1]]
+        results[i][2] = np.max(_emas)
+        results[i][3] = hold
+
+        # set max emas value to arbitrily small number and re-iterate
+        _emas[max_idx[0]][max_idx[1]] = - dft.HUGE
+
+    # Convert numpy array to dataframe
+    results = pd.DataFrame(results,
+                           columns=['span', 'buffer', 'ema', 'hold']
+                          )
+    #print(results)
+
+    save_dataframe(ticker, 'results', results, 'csv')
+
+
 def load_security(dirname, ticker, period, refresh=False):
     '''
     Load data from file else upload from Yahoo finance
@@ -282,21 +316,18 @@ def display_full_dataframe(data):
         print(data)
 
 
-def save_strategy(ticker, dataframe, extension):
+def save_dataframe(ticker, suffix, dataframe, extension):
     '''
     Save strategy to either csv or pkl file
     '''
     data_dir = 'data'
-
-    start = dataframe.index[0].strftime('%y-%m-%d')
-    end   = dataframe.index[-1].strftime('%y-%m-%d')
-    prefix = f'{ticker}_{start}_{end}'
+    filename = f'{ticker}_{suffix}'
 
     if extension == 'pkl':
-        pathname = os.path.join(data_dir, prefix+'.pkl')
+        pathname = os.path.join(data_dir, filename + '.pkl')
         dataframe.to_pickle(pathname)
     elif extension == 'csv':
-        pathname = os.path.join(data_dir, prefix+'.csv')
+        pathname = os.path.join(data_dir, filename + '.csv')
         dataframe.to_csv(pathname, sep=';')
     else:
         raise ValueError(f'{extension} not supported should be pkl or csv')
@@ -344,3 +375,11 @@ def get_filename_dates(security, start_date, end_date):
     '''
     dates = init_dates(security, start_date, end_date)
     return dates[0].strftime('%Y-%m-%d'), dates[1].strftime('%Y-%m-%d')
+
+
+def dates_to_strings(date_range):
+    start = date_range[0]
+    end   = date_range[1]
+    start_string = start.strftime('%d-%b-%Y')
+    end_string   = end.strftime('%d-%b-%Y')
+    return start_string, end_string
