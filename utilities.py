@@ -3,19 +3,57 @@
 """
 Created on Sun Feb  7 19:42:16 2021
 
-General use utilities
+All-purpose use utilities
 
 @author: charles mégnin
 """
+import datetime
+import pprint
 import math
-import datetime as dt
+import pandas as pd
 import scipy.stats
 from dateutil.relativedelta import relativedelta
+import moments
 
 MAX_YEARS = 20 # number of years corresponding to 'max'
 
+def display_stats(data, feature):
+    '''
+    Display statistics about data and engineered features
+    '''
+    stat = moments.moments(feature, data[feature])
+    pprint.pprint(stat)
+
+
+def drawdown(return_series: pd.Series):
+    ''' Takes a time series of asset returns
+        Computes & returns a dataframe that contains:
+        - the wealth index
+        - the previous peaks
+        - percent drawdown
+    '''
+    wealth_index   = 1000 * (1 + return_series).cumprod()
+    previous_peaks = wealth_index.cummax()
+    drawdowns      = (wealth_index - previous_peaks) / previous_peaks
+    return pd.DataFrame({
+        'Wealth': wealth_index,
+        'Peaks' : previous_peaks,
+        'Drawdown' : drawdowns
+    })
+
+
+def semideviation(arr):
+    '''
+    Returns the semi-deviation (aka negative semi-deviation)
+    '''
+    is_negative = arr<0
+    return arr[is_negative].std(ddof=0)
+
+
 def skewness(data):
-    ''' Alternative to scipy.stats.skew()'''
+    '''
+    Alternative to scipy.stats.skew()
+    '''
     demeaned_d = data - data.mean()
     #use population sdev: dof=0
     sigma_d = data.std(ddof=0)
@@ -24,7 +62,9 @@ def skewness(data):
 
 
 def kurtosis(data):
-    ''' Alternative to scipy.stats.kurtosis()'''
+    '''
+    Alternative to scipy.stats.kurtosis()
+    '''
     demeaned_d = data - data.mean()
     #use population sdev: dof=0
     sigma_d = data.std(ddof=0)
@@ -41,7 +81,7 @@ def is_normal(data, level=.01):
     True if r is normally distributed at the level level, False o/w
     '''
     statistic, p_value = scipy.stats.jarque_bera(data)
-    return statistic, p_value, p_value > level
+    return dict(zip(['statistic', 'p-value', 'normal'], [statistic, p_value, p_value > level]))
 
 
 def get_start(period: str):
@@ -55,12 +95,12 @@ def get_start(period: str):
     elif period[-1] == 'y':
         t_diff = relativedelta(years=int(period[:-1]))
     elif period[-1] == 'd':
-        t_diff = dt.timedelta(days=int(period[:-1]))
+        t_diff = datetime.timedelta(days=int(period[:-1]))
     elif period[-1] == 'o' and period[-2] == 'm':
         t_diff = relativedelta(months=int(period[:-2]))
     else:
         raise ValueError(f'invalid period {period}')
-    return dt.datetime.now() - t_diff
+    return datetime.datetime.now() - t_diff
 
 
 def round_up(number, decimals = 0):
@@ -89,3 +129,86 @@ def absolute_change(df_column):
     ''' computes difference bw one column value & the next.
         First value is NaN'''
     return df_column - df_column.shift(1)
+
+
+def get_start_date(start_str, window: int):
+    '''
+    Returns start date before rolling window
+    '''
+    start  = datetime.datetime.strptime(start_str, '%Y-%m-%d')
+    return (start - datetime.timedelta(window)).date()
+
+
+def get_return(data, ticker, purchase_date, sale_date):
+    '''
+    Given purchase and sale date, return absolute & relative profit/loss
+    '''
+    if ticker not in data.columns:
+        raise ValueError(f'{ticker} inconsistent with data')
+    if purchase_date not in data.index:
+        raise ValueError(f'purchase date {purchase_date} not in data')
+    if sale_date not in data.index:
+        raise ValueError(f'sale date {sale_date} not in data')
+    purchase_price = data.loc[purchase_date, ticker]
+    sale_price     = data.loc[sale_date, ticker]
+    print(f'{ticker}: '
+          f'{purchase_date} purchase ${purchase_price:.2f} / '
+          f'{sale_date} sale ${sale_price:.2f}')
+
+    d_price = sale_price-purchase_price
+    if datetime.datetime.strptime(sale_date, '%Y-%m-%d') > \
+        datetime.datetime.strptime(purchase_date, '%Y-%m-%d'):
+        rel_price = d_price/purchase_price
+    else:
+        rel_price = d_price/sale_price
+
+    return d_price, rel_price
+
+### DATE & TIME ###
+
+def convert_seconds(time_s):
+    '''
+    Given a time duration in seconds, convert to DHMS & return as a string
+    '''
+    MIN = 60
+    HR  = 60 * MIN
+    DAY = 24 * HR
+    def sec_to_min(sec):
+        time_m = sec // MIN
+        time_s = sec % MIN
+        return time_m, time_s
+
+    def sec_to_hour(sec):
+        time_h = sec // HR
+        time_s = sec % HR
+        time_m, time_s = sec_to_min(time_s)
+        return time_h, time_m, time_s
+
+    def sec_to_day(sec):
+        time_d = sec // DAY
+        time_s = sec % DAY
+        time_h, time_m, time_s = sec_to_hour(time_s)
+        return time_d, time_h, time_m, time_s
+
+    if time_s >= DAY:
+        time_d, time_h, time_m, time_s = sec_to_day(time_s)
+        suffix = 'day'
+        if time_d > 1: suffix += 's'
+        return f'{time_d} {suffix} {time_h}hr:{time_m}mn:{time_s}s'
+    elif time_s >= HR:
+        time_h, time_m, time_s = sec_to_hour(time_s)
+        return f'{time_h}hr:{time_m}mn:{time_s}s'
+    elif time_s >= MIN:
+        time_m, time_s = sec_to_min(time_s)
+        return f'{time_m}mn:{time_s}s'
+    else:
+        return f'{time_s}s'
+
+
+if __name__ == '__main__':
+    seconds = 3865
+    seconds = 188345
+    seconds = 3600
+    #seconds = 72
+    msg = convert_seconds(seconds)
+    print(msg)
