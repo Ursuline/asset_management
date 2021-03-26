@@ -10,6 +10,8 @@ trading_driver.py
 @author: charles mégnin
 """
 import time
+from datetime import datetime
+from datetime import timedelta
 import pandas as pd
 import trading as tra
 import trading_plots as trp
@@ -30,7 +32,10 @@ CRYPTO     = ['BTC-USD', 'ETH-USD']
 TICKERS = CRYPTO
 REFRESH = True # Download fresh Yahoo data
 
-DATE_RANGE = ['2017-07-15', '2021-03-25']
+TODAY     = datetime.strftime(datetime.now(), '%Y-%m-%d')
+YESTERDAY = datetime.strftime(datetime.now() - timedelta(days = 1), '%Y-%m-%d')
+
+DATE_RANGE = ['2017-07-15', YESTERDAY]
 
 if __name__ == '__main__':
     start_tm = time.time() # total_time
@@ -52,32 +57,32 @@ if __name__ == '__main__':
                                                      DATE_RANGE[0],
                                                      DATE_RANGE[1])
 
-            # Compute EMA map
+            # Compute EMA map values
             spans, buffers, emas, hold = tra.build_ema_map(ticker,
                                                            security,
-                                                           date_range)
+                                                           date_range,)
 
-            # save EMA map to file
+            # save EMA map values to file
             tra.save_ema_map(ticker, date_range,
-                             spans, buffers, emas)
+                             spans, buffers,
+                             emas,)
 
-            # Save best results to file
-            tra.save_best_ema(ticker, date_range,
-                                spans, buffers, emas, hold,
-                                N_MAXIMA_SAVE)
+            # Save best EMA results to file
+            tra.save_best_emas(ticker, date_range,
+                               spans, buffers,
+                               emas, hold,
+                               N_MAXIMA_SAVE,)
 
             # Plot EMA map
-            trp.plot_buffer_span_contours(ticker,
-                                          spans,
-                                          buffers,
-                                          emas,
-                                          hold,
-                                          date_range)
+            trp.plot_buffer_span_contours(ticker, date_range,
+                                          spans, buffers,
+                                          emas, hold,
+                                          )
 
             msg  = f'{ticker} elapsed time: '
             msg += f'{util.convert_seconds(time.time()-save_tm)} '
             msg += 'total time: '
-            msg += f'{util.convert_seconds(time.time()-start_tm)})\n'
+            msg += f'{util.convert_seconds(time.time()-start_tm)}\n'
             print(msg)
             save_tm = time.time() # save intermediate time
         except Exception as ex:

@@ -20,11 +20,13 @@ import trading_defaults as dft
 
 ### TRADING ###
 
-def build_ema_map(ticker, security, start, end):
+def build_ema_map(ticker, security, dates):
     '''
     Builds a 2D numpy array of EMAs as a function of span and buffer
     '''
     # define rolling window span range
+    start = dates[0]
+    end   = dates[1]
     span_par = dft.get_spans()
     spans = np.arange(span_par[0],
                       span_par[1] + 1,
@@ -46,8 +48,7 @@ def build_ema_map(ticker, security, start, end):
                         desc = f'Outer Level / {span_par[1] - span_par[0] + 1}'
                         ):
         for j, buffer in enumerate(buffers):
-            data  = build_strategy(ticker,
-                                   security.loc[start:end, :].copy(),
+            data  = build_strategy(security.loc[start:end, :].copy(),
                                    span,
                                    buffer,
                                    dft.INIT_WEALTH,
@@ -107,7 +108,7 @@ def build_positions(d_frame):
     return d_frame
 
 
-def build_sign(d_frame, buffer, reactivity):
+def build_sign(d_frame, buffer, reactivity=dft.REACTIVITY):
     '''
     The SIGN column corresponds to the position wrt ema +/- buffer:
     -1 below buffer / 0 within buffer / 1 above buffer
@@ -158,7 +159,6 @@ def build_ema(d_frame, init_wealth):
     return d_frame
 
 
-
 def cleanup_strategy(dataframe):
     '''
     Remove unnecessary columns
@@ -169,7 +169,7 @@ def cleanup_strategy(dataframe):
     return dataframe
 
 
-def build_strategy(ticker, d_frame, span, buffer, debug=False):
+def build_strategy(d_frame, span, buffer, debug=False):
     '''
     *** At this point, only a long strategy is considered ***
     Implements running-mean (ewm) strategy
@@ -215,11 +215,6 @@ def build_strategy(ticker, d_frame, span, buffer, debug=False):
     # remove junk
     d_frame = cleanup_strategy(d_frame)
 
-    # Save strategy to file (either csv or pkl
-    suffix  = f'{d_frame.index[0].strftime("%y-%m-%d")}_'
-    suffix += f'{d_frame.index[-1].strftime("%y-%m-%d")}'
-    save_dataframe(ticker, suffix, d_frame, 'csv')
-
     return d_frame
 
 
@@ -252,7 +247,7 @@ def get_cumret(data, strategy, fee=0):
 
 
 ### I/O ###
-def results_to_file(ticker, spans, buffers, emas, hold, n_best):
+def save_best_emas(ticker, date_range, spans, buffers, emas, hold, n_best):
     '''
     Outputs n_best results to file
     The output data is n_best rows of:
@@ -274,12 +269,13 @@ def results_to_file(ticker, spans, buffers, emas, hold, n_best):
         _emas[max_idx[0]][max_idx[1]] = - dft.HUGE
 
     # Convert numpy array to dataframe
-    results = pd.DataFrame(results,
-                           columns=['span', 'buffer', 'ema', 'hold']
-                          )
-    #print(results)
+    best_emas = pd.DataFrame(results,
+                             columns=['span', 'buffer', 'ema', 'hold']
+                             )
 
-    save_dataframe(ticker, 'results', results, 'csv')
+    start, end = dates_to_strings(date_range, '%Y-%m-%d')
+    suffix = f'{start}_{end}_results'
+    save_dataframe(ticker, suffix, best_emas, 'csv')
 
 
 def load_security(dirname, ticker, period, refresh=False):
@@ -316,11 +312,28 @@ def display_full_dataframe(data):
         print(data)
 
 
+def save_ema_map(ticker, date_range, spans, buffers, emas):
+    '''
+    Save ema map to pkl
+    '''
+    temp = []
+    for i, span in enumerate(spans):
+        for j, buffer in enumerate(buffers):
+            temp.append([span, buffer, emas[i,j]])
+
+    temp = pd.DataFrame(temp, columns=['span', 'buffer', 'ema'])
+
+    dates = dates_to_strings(date_range, '%Y-%m-%d')
+    suffix = f'{dates[0]}_{dates[1]}_ema_map'
+    save_dataframe(ticker, suffix, temp, 'csv')
+
+
+
 def save_dataframe(ticker, suffix, dataframe, extension):
     '''
     Save strategy to either csv or pkl file
     '''
-    data_dir = 'data'
+    data_dir = dft.DATA_DIR
     filename = f'{ticker}_{suffix}'
 
     if extension == 'pkl':
@@ -348,19 +361,10 @@ def init_dates(security, start_date_string, end_date_string):
     if secu_start > start_dt:
         start_dt = secu_start
         print(f'start date reset to {start_dt}')
-    return start_dt, end_dt
+    return [start_dt, end_dt]
 
 
-def get_title_dates(security, start_date, end_date):
-    '''
-    Return start and end dates for title format:
-    %d-%b-%Y: 03-Jul-2021
-    '''
-    dates = init_dates(security, start_date, end_date)
-    return dates[0].strftime('%d-%b-%Y'), dates[1].strftime('%d-%b-%Y')
-
-
-def get_datetime_dates(security, start_date, end_date):
+def get_datetime_date_range(security, start_date, end_date):
     '''
     Return start and end dates in datetime format
     (this is just a wrapper around init_dates)
@@ -368,18 +372,13 @@ def get_datetime_dates(security, start_date, end_date):
     return init_dates(security, start_date, end_date)
 
 
-def get_filename_dates(security, start_date, end_date):
+def dates_to_strings(date_range, fmt):
     '''
-    Return start and end dates for file name format:
-    %Y-%m-%d: 2021-03-07
+    takes a range of datetime dates and returns the string equivalent
+    in the required format (default='%d-%b-%Y')
     '''
-    dates = init_dates(security, start_date, end_date)
-    return dates[0].strftime('%Y-%m-%d'), dates[1].strftime('%Y-%m-%d')
-
-
-def dates_to_strings(date_range):
     start = date_range[0]
     end   = date_range[1]
-    start_string = start.strftime('%d-%b-%Y')
-    end_string   = end.strftime('%d-%b-%Y')
-    return start_string, end_string
+    start_string = start.strftime(fmt)
+    end_string   = end.strftime(fmt)
+    return [start_string, end_string]

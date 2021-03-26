@@ -36,6 +36,8 @@ N_BUFFERS = 101
 
 INIT_WEALTH    = 100.0
 
+N_MAXIMA_DISPLAY = 10 # number of maxima to display on contour plot
+
 FEE_PCT        = .004  # broker's fee
 
 
@@ -49,6 +51,13 @@ GRID_COLOR     = '#ededed'
 TITLE_COLOR    = 'dimgrey'
 FIG_WIDTH      = 14
 FIG_HEIGHT     = 8
+
+# Contour plots
+N_CONTOURS     = 10
+# markers & their legends
+ANNOTATE_COLOR = 'black'
+MARKER_COLOR   = 'black'
+
 
 def get_spans():
     '''returns max & min rolling window spans '''
