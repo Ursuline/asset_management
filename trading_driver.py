@@ -18,18 +18,11 @@ import trading_plots as trp
 import trading_defaults as dft
 import utilities as util
 
+import trading_portfolio as ptf
+
 N_MAXIMA_SAVE = 20 # number of maxima to save to file
 
-INDICES    = ['^GSPC', '^DJI', '^IXIC', '^FCHI', '^N225', '^HSI', '^DJSH']
-DEFENSE    = ['HO.PA']
-HEALTHCARE = ['TDOC', 'BLC.PA', 'PHA.PA', 'KORI.PA', 'ORP.PA']
-FRENCH     = ['SU.PA', 'MC.PA', 'RMS.PA', 'FP.PA', 'STLA.PA']
-K_WOOD     = ['ARKF', 'ARKG', 'ARKK', 'ARKQ', 'ARKW']
-TECH       = ['AAPL', 'TSLA', 'AMZN', 'MSFT', 'SPOT', 'SQ', 'SHOP']
-COMM       = ['ROKU', 'ZM', 'BIDU']
-CRYPTO     = ['BTC-USD', 'ETH-USD']
-
-TICKERS = CRYPTO
+TICKERS = ptf.ADRIEN
 REFRESH = True # Download fresh Yahoo data
 
 TODAY     = datetime.strftime(datetime.now(), '%Y-%m-%d')
