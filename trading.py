@@ -44,8 +44,9 @@ def build_ema_map(ticker, security, dates):
     emas = np.zeros((spans.shape[0], buffers.shape[0]), dtype=np.float64)
 
     # Fill EMAS for all span/buffer combinations
+    desc = f'Outer Level (spans) / {span_par[1] - span_par[0] + 1}'
     for i, span in tqdm(enumerate(spans),
-                        desc = f'Outer Level / {span_par[1] - span_par[0] + 1}'
+                        desc = desc
                         ):
         for j, buffer in enumerate(buffers):
             data  = build_strategy(security.loc[start:end, :].copy(),
@@ -246,13 +247,7 @@ def get_cumret(data, strategy, fee=0):
     raise ValueError(f'strategy {strategy} should be either ema or hold')
 
 
-### I/O ###
-def save_best_emas(ticker, date_range, spans, buffers, emas, hold, n_best):
-    '''
-    Outputs n_best results to file
-    The output data is n_best rows of:
-    | span | buffer | ema | hold |
-    '''
+def get_best_emas(spans, buffers, emas, hold, n_best):
     results = np.zeros(shape=(n_best, 4))
     # Build a n_best x 4 dataframe
     _emas = emas.copy() # b/c algorithm destroys top n_maxima EMA values
@@ -270,9 +265,40 @@ def save_best_emas(ticker, date_range, spans, buffers, emas, hold, n_best):
         _emas[max_idx[0]][max_idx[1]] = - dft.HUGE
 
     # Convert numpy array to dataframe
-    best_emas = pd.DataFrame(results,
+    return pd.DataFrame(results,
                              columns=['span', 'buffer', 'ema', 'hold']
                              )
+
+
+### I/O ###
+def save_best_emas(ticker, date_range, spans, buffers, emas, hold, n_best):
+    '''
+    Outputs n_best results to file
+    The output data is n_best rows of:
+    | span | buffer | ema | hold |
+    '''
+    # results = np.zeros(shape=(n_best, 4))
+    # # Build a n_best x 4 dataframe
+    # _emas = emas.copy() # b/c algorithm destroys top n_maxima EMA values
+
+    # for i in range(n_best):
+    #     # Get coordinates of maximum emas value
+    #     max_idx = np.unravel_index(np.argmax(_emas, axis=None),
+    #                                _emas.shape)
+    #     results[i][0] = spans[max_idx[0]]
+    #     results[i][1] = buffers[max_idx[1]]
+    #     results[i][2] = np.max(_emas)
+    #     results[i][3] = hold
+
+    #     # set max emas value to arbitrily small number and re-iterate
+    #     _emas[max_idx[0]][max_idx[1]] = - dft.HUGE
+
+    # # Convert numpy array to dataframe
+    # best_emas = pd.DataFrame(results,
+    #                          columns=['span', 'buffer', 'ema', 'hold']
+    #                          )
+
+    best_emas = get_best_emas(spans, buffers, emas, hold, n_best)
 
     start, end = dates_to_strings(date_range, '%Y-%m-%d')
     suffix = f'{start}_{end}_results'
@@ -408,3 +434,5 @@ def dates_to_strings(date_range, fmt):
     start_string = start.strftime(fmt)
     end_string   = end.strftime(fmt)
     return [start_string, end_string]
+
+

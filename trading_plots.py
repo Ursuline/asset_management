@@ -12,6 +12,7 @@ import sys
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
+import matplotlib.ticker as mtick
 
 import trading as tra
 import trading_defaults as dft
@@ -189,6 +190,7 @@ def build_1d_emas(secu, date_range, var_name, variables, fixed, fpct):
 
     return emas, hold
 
+
 ### MAIN PLOT FUNCTIONS
 def plot_moving(ticker, date_range, security, span, fee_pct, buffer):
     '''
@@ -331,6 +333,62 @@ def plot_buffer_range(ticker, security, span, n_values, fee_pct, date_range, ext
     else:
         pass
 
+def plot_buffer_span_3D(ticker, date_range, spans, buffers, emas, hold):
+    '''
+    Surface plot of EMA as a function of rolling-window span & buffer
+    '''
+    def extract_best_ema(spans, buffers, emas, hold, n_best=1):
+        best_emas = tra.get_best_emas(spans, buffers, emas, hold, n_best)
+        idx_max  = best_emas['ema'].idxmax()
+        max_ema  = best_emas['ema'].max()
+        hold     = best_emas['hold'].max()
+        max_span = best_emas.span.iloc[idx_max]
+        max_buff = best_emas.buffer.iloc[idx_max]
+        return max_span, max_buff, max_ema, hold
+
+    def format_data(spans, buffers, emas):
+        temp = []
+        for i, span in enumerate(spans):
+            for j, buffer in enumerate(buffers):
+                temp.append([span, buffer, emas[i,j]])
+        return pd.DataFrame(temp, columns=['span', 'buffer', 'ema'])
+
+    # Get start & end dates in title (%d-%b-%Y) and output file (%Y-%m-%d) formats
+    title_range = tra.dates_to_strings([date_range[0],
+                                        date_range[1]],
+                                       '%d-%b-%Y')
+    name_range   = tra.dates_to_strings([date_range[0],
+                                         date_range[1]],
+                                        '%Y-%m-%d')
+
+    max_span, max_buff, max_ema, hold = extract_best_ema(spans,
+                                                         buffers,
+                                                         emas,
+                                                         hold,
+                                                         )
+
+    temp = format_data(spans, buffers, emas)
+
+    # Plot
+    fig = plt.figure(figsize=(dft.FIG_WIDTH, dft.FIG_WIDTH))
+    axis = fig.gca(projection='3d')
+    surf = axis.plot_trisurf(temp['buffer'], temp['span'], temp['ema'],
+                             cmap=dft.SURFACE_COLOR_SCHEME,
+                             linewidth=0.2)
+    fig.colorbar(surf, shrink=.5, aspect=25, label = 'EMA return')
+    axis.set_xlabel('buffer')
+    axis.set_ylabel('span')
+    axis.xaxis.set_major_formatter(mtick.PercentFormatter(xmax=1, decimals=None, symbol='%', is_latex=False))
+
+    title  = f'{ticker} | {title_range[0]} - {title_range[1]}\n'
+    title += f'EMA max payoff={max_ema:.2%} (hold={hold:.2%}) | '
+    title += f'{max_span:.0f}-day mean | '
+    title += f'opt buffer={max_buff:.2%}'
+    axis.set_title(title, fontsize=dft.TITLE_SIZE, color=dft.TITLE_COLOR)
+
+    save_figure(dft.PLOT_DIR, f'{ticker}_{name_range[0]}_{name_range[1]}_3D', extension='png')
+    plt.show()
+
 
 def plot_buffer_span_contours(ticker, date_range, spans, buffers, emas, hold):
     '''
@@ -351,7 +409,7 @@ def plot_buffer_span_contours(ticker, date_range, spans, buffers, emas, hold):
     _, axis = plt.subplots(figsize=(dft.FIG_WIDTH, dft.FIG_WIDTH))
     plt.contourf(buffers, spans, emas,
                  levels=n_contours,
-                 cmap='viridis',
+                 cmap=dft.CONTOUR_COLOR_SCHEME,
                  )
     plt.colorbar(label='EMA return')
 
