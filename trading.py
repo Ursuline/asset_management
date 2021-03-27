@@ -253,25 +253,18 @@ def save_best_emas(ticker, date_range, spans, buffers, emas, hold, n_best):
     The output data is n_best rows of:
     | span | buffer | ema | hold |
     '''
-    print('shapes=',spans.shape, buffers.shape, emas.shape)
     results = np.zeros(shape=(n_best, 4))
     # Build a n_best x 4 dataframe
     _emas = emas.copy() # b/c algorithm destroys top n_maxima EMA values
-    print(f'emas={_emas} shape={_emas.shape}')
+
     for i in range(n_best):
-        print(f'in loop {i}')
         # Get coordinates of maximum emas value
         max_idx = np.unravel_index(np.argmax(_emas, axis=None),
                                    _emas.shape)
-        print(f'max_idx = {max_idx}')
         results[i][0] = spans[max_idx[0]]
-        print(f'span = {results[i][0]}')
         results[i][1] = buffers[max_idx[1]]
-        print(f'buffer = {results[i][1]}')
         results[i][2] = np.max(_emas)
-        print(f'buffer = {results[i][2]}')
         results[i][3] = hold
-        print(f'hold = {results[i][3]}')
 
         # set max emas value to arbitrily small number and re-iterate
         _emas[max_idx[0]][max_idx[1]] = - dft.HUGE
