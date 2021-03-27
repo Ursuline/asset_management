@@ -194,15 +194,15 @@ def convert_seconds(time_s):
         time_d, time_h, time_m, time_s = sec_to_day(time_s)
         suffix = 'day'
         if time_d > 1: suffix += 's'
-        return f'{time_d} {suffix} {time_h}hr:{time_m}mn:{time_s}s'
+        return f'{time_d:.0f} {suffix} {time_h:.0f}hr:{time_m:.0f}mn:{time_s:.1f}s'
     elif time_s >= HR:
         time_h, time_m, time_s = sec_to_hour(time_s)
-        return f'{time_h}hr:{time_m}mn:{time_s}s'
+        return f'{time_h:.0f}hr:{time_m:.0f}mn:{time_s:.1f}s'
     elif time_s >= MIN:
         time_m, time_s = sec_to_min(time_s)
-        return f'{time_m}mn:{time_s}s'
+        return f'{time_m:.0f}mn:{time_s:.1f}s'
     else:
-        return f'{time_s}s'
+        return f'{time_s:.1f}s'
 
 
 if __name__ == '__main__':
