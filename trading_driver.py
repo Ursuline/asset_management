@@ -9,6 +9,7 @@ trading_driver.py
 
 @author: charles mégnin
 """
+import os
 import time
 from datetime import datetime
 from datetime import timedelta
@@ -22,7 +23,7 @@ import trading_portfolio as ptf
 
 N_MAXIMA_SAVE = 20 # number of maxima to save to file
 
-TICKERS = ptf.ADRIEN
+TICKERS = ptf.JACQUELINE
 REFRESH = True # Download fresh Yahoo data
 
 TODAY     = datetime.strftime(datetime.now(), '%Y-%m-%d')
@@ -50,15 +51,18 @@ if __name__ == '__main__':
                                                      DATE_RANGE[0],
                                                      DATE_RANGE[1])
 
-            # Compute EMA map values
-            spans, buffers, emas, hold = tra.build_ema_map(ticker,
-                                                           security,
-                                                           date_range,)
-
-            # save EMA map values to file
-            tra.save_ema_map(ticker, date_range,
-                             spans, buffers,
-                             emas,)
+            # Read EMA map values from file or compute if not saved
+            if os.path.exists(tra.get_ema_map_filename(ticker, date_range)):
+                spans, buffers, emas, hold  = tra.read_ema_map(ticker,
+                                                               date_range,)
+            else: # If not saved, compute it
+                spans, buffers, emas, hold = tra.build_ema_map(ticker,
+                                                               security,
+                                                               date_range,)
+                # save EMA map values to file
+                tra.save_ema_map(ticker, date_range,
+                                 spans, buffers,
+                                 emas, hold)
 
             # Save best EMA results to file
             tra.save_best_emas(ticker, date_range,
@@ -79,5 +83,5 @@ if __name__ == '__main__':
             print(msg)
             save_tm = time.time() # save intermediate time
         except Exception as ex:
-            print(f'Could not process {ticker}: {ex}')
+            print(f'Could not process {ticker}: Exception={ex}')
     print(f"Total elapsed time: {util.convert_seconds(time.time()-start_tm)}")

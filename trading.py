@@ -7,7 +7,7 @@ trading.py
 
 Routines for trading
 
-@author: charly
+@author: charles mégnin
 """
 import os
 from datetime import datetime
@@ -253,17 +253,25 @@ def save_best_emas(ticker, date_range, spans, buffers, emas, hold, n_best):
     The output data is n_best rows of:
     | span | buffer | ema | hold |
     '''
+    print('shapes=',spans.shape, buffers.shape, emas.shape)
     results = np.zeros(shape=(n_best, 4))
     # Build a n_best x 4 dataframe
     _emas = emas.copy() # b/c algorithm destroys top n_maxima EMA values
+    print(f'emas={_emas} shape={_emas.shape}')
     for i in range(n_best):
+        print(f'in loop {i}')
         # Get coordinates of maximum emas value
         max_idx = np.unravel_index(np.argmax(_emas, axis=None),
                                    _emas.shape)
+        print(f'max_idx = {max_idx}')
         results[i][0] = spans[max_idx[0]]
+        print(f'span = {results[i][0]}')
         results[i][1] = buffers[max_idx[1]]
+        print(f'buffer = {results[i][1]}')
         results[i][2] = np.max(_emas)
+        print(f'buffer = {results[i][2]}')
         results[i][3] = hold
+        print(f'hold = {results[i][3]}')
 
         # set max emas value to arbitrily small number and re-iterate
         _emas[max_idx[0]][max_idx[1]] = - dft.HUGE
@@ -312,21 +320,46 @@ def display_full_dataframe(data):
         print(data)
 
 
-def save_ema_map(ticker, date_range, spans, buffers, emas):
+def get_ema_map_filename(ticker, date_range):
+    data_dir = dft.DATA_DIR
+    dates    = dates_to_strings(date_range, '%Y-%m-%d')
+    suffix   = f'{dates[0]}_{dates[1]}_ema_map'
+    filename = f'{ticker}_{suffix}'
+    return os.path.join(data_dir, filename + '.csv')
+
+
+def read_ema_map(ticker, date_range):
+    '''Reads raw EMA data from csv file and returns as a dataframe'''
+    pathname = get_ema_map_filename(ticker, date_range)
+
+    ema_map = pd.read_csv(pathname, sep=';', index_col=0)
+
+    spans   = ema_map['span'].to_numpy()
+    buffers = ema_map['buffer'].to_numpy()
+    emas    = ema_map['ema'].to_numpy()
+    hold    = ema_map['hold'].to_numpy()
+
+    # reshape the arrays
+    spans   = np.unique(spans)
+    buffers = np.unique(buffers)
+    emas    = np.reshape(emas, (spans.shape[0], buffers.shape[0]))
+    return spans, buffers, emas, hold[0]
+
+
+def save_ema_map(ticker, date_range, spans, buffers, emas, hold):
     '''
     Save ema map to pkl
     '''
     temp = []
     for i, span in enumerate(spans):
         for j, buffer in enumerate(buffers):
-            temp.append([span, buffer, emas[i,j]])
+            temp.append([span, buffer, emas[i,j], hold])
 
-    temp = pd.DataFrame(temp, columns=['span', 'buffer', 'ema'])
+    temp = pd.DataFrame(temp, columns=['span', 'buffer', 'ema', 'hold'])
 
     dates = dates_to_strings(date_range, '%Y-%m-%d')
     suffix = f'{dates[0]}_{dates[1]}_ema_map'
     save_dataframe(ticker, suffix, temp, 'csv')
-
 
 
 def save_dataframe(ticker, suffix, dataframe, extension):
