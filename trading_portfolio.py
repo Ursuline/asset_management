@@ -11,7 +11,7 @@ Lists of securities to be used by trading_driver.py
 """
 
 INDICES    = ['^GSPC', '^DJI', '^IXIC', '^FCHI', '^N225', '^HSI', '^DJSH']
-DEFENSE    = ['HO.PA']
+DEFENSE    = ['HO.PA', 'BA']
 HEALTHCARE = ['TDOC', 'BLC.PA', 'PHA.PA', 'KORI.PA', 'ORP.PA']
 FRENCH     = ['SU.PA', 'MC.PA', 'RMS.PA', 'FP.PA', 'STLA.PA']
 K_WOOD     = ['ARKF', 'ARKG', 'ARKK', 'ARKQ', 'ARKW']
@@ -30,3 +30,5 @@ PEA         = ['UL', 'FP.PA', 'SW.PA', 'GLE.PA', 'SAN.PA', 'SGO.PA', 'RI.PA']
 PEA        += ['ORA.PA' ,'MKGAF', 'MMT.SG', 'MC.PA', 'LR.PA', 'KC4.F']
 PEA        += ['HEIA.AS', 'G1A.DE', 'EL.PA', 'CA.PA', 'BVI.PA', 'BNP.PA']
 PEA        += ['CS.PA', 'AI.PA']
+SAXO_CY     = ['ABI.BR', 'AI.PA', 'ALLDL.PA', 'BLC.PA', 'EDPR.LS', 'KORI.PA']
+SAXO_CY    += ['ORP.PA', 'PHA.PA', 'SOP.PA', 'STLA.PA', 'WLN.PA']
