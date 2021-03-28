@@ -351,7 +351,7 @@ def plot_buffer_range(ticker, ticker_name, security, span, n_best, fee_pct, date
     build_range_plot(ticker, ticker_name, date_range, dfr, fixed, hold, min_max, n_best, target, xlabel, max_fmt)
 
 
-def plot_buffer_span_3D(ticker, ticker_name, date_range, spans, buffers, emas, hold):
+def plot_buffer_span_3D(ticker, ticker_name, date_range, spans, buffers, emas, hold, elev=None, azim=None, rdist=1):
     '''
     Surface plot of EMA as a function of rolling-window span & buffer
     '''
@@ -389,6 +389,10 @@ def plot_buffer_span_3D(ticker, ticker_name, date_range, spans, buffers, emas, h
     # Plot
     fig = plt.figure(figsize=(dft.FIG_WIDTH, dft.FIG_WIDTH))
     axis = fig.gca(projection='3d')
+    # Set perspective
+    axis.view_init(elev=elev, azim=azim)
+    axis.dist=rdist
+
     surf = axis.plot_trisurf(temp['buffer'],
                              temp['span'],
                              temp['ema'],
