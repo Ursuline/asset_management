@@ -10,6 +10,7 @@ Routines for trading
 @author: charles mégnin
 """
 import os
+import pickle
 from datetime import datetime
 import pandas as pd
 import numpy as np
@@ -19,6 +20,18 @@ import security as sec
 import trading_defaults as dft
 
 ### TRADING ###
+
+def get_default_parameters(ticker, date_range):
+    try: # ema file exists
+        spans, buffers, emas, hold = read_ema_map(ticker, date_range)
+        df = get_best_emas(spans, buffers, emas, hold, 1)
+        opt_span, opt_buff , opt_ema, opt_hold = df.span[0], df.buffer[0], df.ema[0], df.hold[0]
+    except Exception as ex:
+        print(f'Could not process {ticker}: Exception={ex}')
+        raise ValueError('aborting')
+        opt_span, opt_buff , opt_ema, opt_hold = dft.DEFAULT_SPAN, dft.DEFAULT_BUFFER, 0, 0
+    return opt_span, opt_buff , opt_ema, opt_hold
+
 
 def build_ema_map(ticker, security, dates):
     '''
@@ -271,32 +284,13 @@ def get_best_emas(spans, buffers, emas, hold, n_best):
 
 
 ### I/O ###
+
 def save_best_emas(ticker, date_range, spans, buffers, emas, hold, n_best):
     '''
     Outputs n_best results to file
     The output data is n_best rows of:
     | span | buffer | ema | hold |
     '''
-    # results = np.zeros(shape=(n_best, 4))
-    # # Build a n_best x 4 dataframe
-    # _emas = emas.copy() # b/c algorithm destroys top n_maxima EMA values
-
-    # for i in range(n_best):
-    #     # Get coordinates of maximum emas value
-    #     max_idx = np.unravel_index(np.argmax(_emas, axis=None),
-    #                                _emas.shape)
-    #     results[i][0] = spans[max_idx[0]]
-    #     results[i][1] = buffers[max_idx[1]]
-    #     results[i][2] = np.max(_emas)
-    #     results[i][3] = hold
-
-    #     # set max emas value to arbitrily small number and re-iterate
-    #     _emas[max_idx[0]][max_idx[1]] = - dft.HUGE
-
-    # # Convert numpy array to dataframe
-    # best_emas = pd.DataFrame(results,
-    #                          columns=['span', 'buffer', 'ema', 'hold']
-    #                          )
 
     best_emas = get_best_emas(spans, buffers, emas, hold, n_best)
 
@@ -313,17 +307,27 @@ def load_security(dirname, ticker, period, refresh=False):
     period -> download period
     refresh -> True : download data from Yahoo / False use pickle data if it exists
     '''
-    filename = ticker + '_' + period
-    pathname = os.path.join(dirname, filename+'.pkl')
-    if os.path.exists(pathname) and (not refresh):
-        print(f'Loading data from {pathname}')
-        data = pd.read_pickle(pathname)
+    data_filename = ticker + '_' + period
+    data_pathname = os.path.join(dirname, data_filename + '.pkl')
+    ticker_filename = ticker + '_name'
+    ticker_pathname = os.path.join(dirname, ticker_filename + '.pkl')
+    if os.path.exists(data_pathname) and (not refresh):
+        print(f'Loading data from {data_pathname}')
+        data = pd.read_pickle(data_pathname)
+        pickle_file = open(ticker_pathname,'rb')
+        ticker_name = pickle.load(pickle_file)
+        pickle_file.close()
     else:
         print('Downloading data from Yahoo Finance')
-        data = sec.Security(ticker, period).get_market_data()
+        security = sec.Security(ticker, period)
+        data = security.get_market_data()
         data.set_index('Date', inplace=True)
-        data.to_pickle(pathname) #store locally
-    return data
+        data.to_pickle(data_pathname) #store locally
+        ticker_name = security.get_name()
+        pickle_file = open(ticker_pathname,'wb')
+        pickle.dump(ticker_name, pickle_file)
+        pickle_file.close()
+    return data, ticker_name
 
 
 def display_full_dataframe(data):
@@ -406,9 +410,9 @@ def init_dates(security, start_date_string, end_date_string):
     Handles gracefully start date smaller than the one in the dataset
     data returned in datetime format
     '''
-    start_dt    = datetime.strptime(start_date_string, '%Y-%m-%d')
-    end_dt      = datetime.strptime(end_date_string, '%Y-%m-%d')
-    secu_start  = security.index[0]
+    start_dt   = datetime.strptime(start_date_string, '%Y-%m-%d')
+    end_dt     = datetime.strptime(end_date_string,   '%Y-%m-%d')
+    secu_start = security.index[0]
     # Check if data downloaded otherwise start with earliest date
     if secu_start > start_dt:
         start_dt = secu_start

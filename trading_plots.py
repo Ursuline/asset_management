@@ -19,9 +19,10 @@ import trading_defaults as dft
 
 
 ### PLOT SUPPORT FUNCTIONS
-def plot_setup(data, target, xlabel):
+def plot_setup(data, target):
     '''
     Build line plot structure: dimensions, axes, label & grid
+    called by plot_span_range() and plot_buffer_range()
     '''
     fig, axis = plt.subplots(figsize=(dft.FIG_WIDTH, dft.FIG_HEIGHT))
     axis.plot(data[target],
@@ -29,26 +30,68 @@ def plot_setup(data, target, xlabel):
               linewidth = 1,
               label='EMA return',
               )
-    axis.legend(loc='best')
-    axis.set_xlabel(xlabel)
-    axis.set_ylabel('return (x)')
-    plt.grid(b=None, which='major', axis='both', color='#f1f1f1')
+    # axis.legend(loc='best')
+    # axis.set_xlabel(xlabel)
+    # if target == 'buffer':
+    #     axis.xaxis.set_major_formatter(mtick.PercentFormatter(xmax=1,
+    #                                                       decimals=None,
+    #                                                       symbol='%',
+    #                                                       is_latex=False,
+    #                                                       )
+    #                                )
+    # axis.set_ylabel('return (x)')
+    # plt.grid(b=None, which='major', axis='both', color=dft.GRID_COLOR)
     return fig, axis
 
 
-def build_title(axis, ticker, dates, ema, hold, span, buffer):
+def build_range_plot_axes(axis, target, xlabel):
+    axis.legend(loc='best')
+    axis.set_xlabel(xlabel)
+    if target == 'buffer':
+        axis.xaxis.set_major_formatter(mtick.PercentFormatter(xmax=1,
+                                                          decimals=None,
+                                                          symbol='%',
+                                                          is_latex=False,
+                                                          )
+                                   )
+    axis.set_ylabel('return (x)')
+    plt.grid(b=None, which='major', axis='both', color=dft.GRID_COLOR)
+    return axis
+
+
+
+def build_title(axis, ticker, ticker_name, dates, ema, hold, span, buffer, buy_sell=None):
     '''
-    Build plot title (common to plot_buffer_range() & plot_span_range())
+    Build plot title-  common to all plots
     '''
     # build the title
-    title  = f'{ticker} | {dates[0]} - {dates[1]}\n'
+    title  = f'{ticker_name} ({ticker}) | {dates[0]} - {dates[1]}'
+    if buy_sell == None:
+        title += '\n'
+    else: # add number of buys/sells to time series plot
+        title += f' | {buy_sell[0]} buys {buy_sell[1]} sells\n'
     title += f'EMA max payoff={ema:.2%} (hold={hold:.2%}) | '
-    title += f'{span}-day mean | '
+    title += f'{span:.0f}-day mean | '
     title += f'opt buffer={buffer:.2%}'
     axis.set_title(title,
                    fontsize = dft.TITLE_SIZE,
                    color    = dft.TITLE_COLOR,
                   )
+    return axis
+
+
+def build_3D_axes_labels(axis):
+    '''
+    Axes and labels for contour & 3D plots
+    '''
+    axis.set_xlabel('buffer')
+    axis.set_ylabel('span (days)')
+    axis.xaxis.set_major_formatter(mtick.PercentFormatter(xmax=1,
+                                                          decimals=None,
+                                                          symbol='%',
+                                                          is_latex=False,
+                                                          )
+                                   )
     return axis
 
 
@@ -96,6 +139,7 @@ def plot_maxima(emas, spans, buffers, hold, axis, n_maxima):
 def plot_max_values(data, axis, n_values, max_val, min_val, fmt):
     '''
     Plots maximum values in dataframe as vertical lines
+    called by plot_span_range() and plot_buffer_range()
     '''
     largest_idx = pd.Series(data['ema'].nlargest(n_values)).index
     for large in largest_idx:
@@ -109,7 +153,7 @@ def plot_max_values(data, axis, n_values, max_val, min_val, fmt):
         elif fmt.lower() == 'percent':
             text = f'{data.iloc[large][0]:.2%}'
         else:
-            raise ValueError(f'{fmt} not implemented / should be integer or percent')
+            raise ValueError(f'{fmt} should be integer or percent')
 
         axis.annotate(text=text,
                     xy=(data.iloc[large][0],
@@ -122,6 +166,7 @@ def plot_max_values(data, axis, n_values, max_val, min_val, fmt):
 def plot_arrows(axis, data, actions, colors):
     '''
     Draws position-switching arrows on axis
+    Called by plot_time_series()
     '''
     vertical_range = data['Close'].max() - data['Close'].min()
     horizont_range = (data.index[-1] - data.index[0]).days
@@ -153,7 +198,7 @@ def plot_arrows(axis, data, actions, colors):
                    linestyle='-',
                    color=color,
                   )
-    return n_buys, n_sells
+    return [n_buys, n_sells]
 
 
 def build_1d_emas(secu, date_range, var_name, variables, fixed, fpct):
@@ -192,7 +237,7 @@ def build_1d_emas(secu, date_range, var_name, variables, fixed, fpct):
 
 
 ### MAIN PLOT FUNCTIONS
-def plot_moving(ticker, date_range, security, span, fee_pct, buffer):
+def plot_time_series(ticker, ticker_name, date_range, security, span, fee_pct, buffer):
     '''
     Plots security prices with moving average
     span -> rolling window span
@@ -213,127 +258,100 @@ def plot_moving(ticker, date_range, security, span, fee_pct, buffer):
     hold = tra.get_cumret(dfr, 'hold')  # cumulative returns for hold strategy
     ema  = tra.get_cumret(dfr, 'ema', fee)  # cumulative returns for EMA strategy
 
-    _, axis = plt.subplots(figsize=(14, 8))
+    _, axis = plt.subplots(figsize=(dft.FIG_WIDTH, dft.FIG_HEIGHT))
     axis.plot(dfr.index, dfr.Close, linewidth=1, label='Price')
-    axis.plot(dfr.index, dfr.EMA, linewidth=1, label=f'{span}-days EMA')
+    axis.plot(dfr.index, dfr.EMA, linewidth=1, label=f'{span:.0f}-day avg')
 
     axis.legend(loc='best')
     axis.set_ylabel('Price ($)')
     axis.xaxis.set_major_formatter(dft.get_year_month_format())
     axis.grid(b=None, which='both', axis='both',
-             color=dft.GRID_COLOR, linestyle='-', linewidth=1)
+              color=dft.GRID_COLOR, linestyle='-', linewidth=1)
 
-    n_buys, n_sells= plot_arrows(axis, dfr, dft.get_actions(), dft.get_color_scheme())
+    # plot buy/sell arrows
+    buy_sell = plot_arrows(axis, dfr, dft.get_actions(), dft.get_color_scheme())
 
-    title  = f'{ticker} | '
-    title += f'{title_dates[0]} - {title_dates[1]} | '
-    title += f'{n_buys} buys {n_sells} sells\n'
-    title += f'EMA payoff={ema:.2%} (Hold={hold:.1%}) | '
-    title += f'{span}-day rolling mean | {buffer:.2%} buffer'
-    axis.set_title(title, fontsize=dft.TITLE_SIZE, color=dft.TITLE_COLOR)
-
+    build_title(axis, ticker, ticker_name, title_dates, ema, hold, span, buffer, buy_sell)
     save_figure(dft.PLOT_DIR, f'{ticker}_{file_dates[0]}_{file_dates[1]}')
     return dfr
 
 
-def plot_span_range(ticker, date_range, security, buffer, n_values, fee_pct, extension='png'):
+def build_range_plot(ticker, ticker_name, date_range, dfr, fixed, hold, min_max, n_best, target, xlabel, max_fmt):
+    '''
+    plotting function common to plot_span_range() & plot_buffer_range()
+    '''
+    _, axis   = plot_setup(dfr, target=target)
+    axis = build_range_plot_axes(axis, target=target, xlabel=xlabel)
+
+    largest_idx = plot_max_values(dfr, axis, n_best, min_max[1], min_max[0], max_fmt)
+
+    axis = build_title(axis,
+                       ticker,
+                       ticker_name,
+                       tra.dates_to_strings(date_range, fmt = '%d-%b-%Y'),
+                       min_max[1], hold,
+                       fixed, dfr.iloc[largest_idx[0]][0],
+                       )
+
+    dates    = tra.dates_to_strings(date_range, fmt = '%Y-%m-%d')
+    filename = f'{ticker}_{dates[0]}_{dates[1]}_{target}s'
+    save_figure(dft.PLOT_DIR, filename)
+
+
+def plot_span_range(ticker, ticker_name, date_range, security, buffer, n_best, fee_pct, extension='png'):
     '''
     Plots all possible spans for a given buffer size
-    the range of span values is determined in defaults file
+    the range of span values is defined in defaults file
     '''
-    #emas = []
+    target  = 'span'
+    xlabel  = 'rolling mean span (days)'
+    max_fmt = 'integer'
+    fixed = buffer
     span_range = dft.get_spans()
     spans = np.arange(span_range[0],
                       span_range[1] + 1)
 
     emas, hold = build_1d_emas(security, date_range,
-                               var_name='span', variables=spans, fixed=buffer,
+                               var_name=target, variables=spans, fixed=fixed,
                                fpct=fee_pct)
 
     dfr = pd.DataFrame(data=[spans, emas]).T
-    dfr.columns = ['span', 'ema']
-
-    max_val = dfr['ema'].max()
-    min_val = dfr['ema'].min()
+    dfr.columns = [target, 'ema']
+    min_max = [dfr['ema'].min(), dfr['ema'].max()]
 
     # Plot
-    _, axis   = plot_setup(dfr, target='span', xlabel='rolling mean span (days)')
-    largest_idx = plot_max_values(dfr, axis, n_values, max_val, min_val, 'integer')
-
-    axis = build_title(axis,
-                       ticker,
-                       tra.dates_to_strings(date_range, fmt = '%d-%b-%Y'),
-                       max_val, hold,
-                       dfr.iloc[largest_idx[0]][0], buffer,
-                       )
-
-    dates    = tra.dates_to_strings(date_range, fmt = '%Y-%m-%d')
-    filename = f'{ticker}_{dates[0]}_{dates[1]}_spans.{extension}'
-    pathname = os.path.join(dft.PLOT_DIR, filename)
-    try:
-        plt.savefig(pathname,
-                    dpi=360,
-                    transparent=False,
-                    orientation='landscape',
-                    bbox_inches='tight'
-                    )
-    except TypeError as ex:
-        print(f'Could not save to {pathname}: {ex}')
-    except:
-        print(f'Error type {sys.exc_info()[0]}')
-    else:
-        pass
+    build_range_plot(ticker, ticker_name, date_range, dfr, fixed, hold, min_max, n_best, target, xlabel, max_fmt)
 
 
-def plot_buffer_range(ticker, security, span, n_values, fee_pct, date_range, extension='png'):
+def plot_buffer_range(ticker, ticker_name, security, span, n_best, fee_pct, date_range, extension='png'):
     '''
     Plots all possible buffers for a given rolling window span
-    the range of buffer values is determined in defaults file
+    the range of buffer values is defined in defaults file
     '''
+    target  = 'buffer'
+    xlabel  = 'buffer size (% around EMA)'
+    max_fmt = 'percent'
+    fixed = span
     buffer_range = dft.get_buffers()
     buffers = np.linspace(buffer_range[0],
                           buffer_range[1],
                           buffer_range[2])
 
     emas, hold = build_1d_emas(security, date_range,
-                               var_name='buffer', variables=buffers, fixed=span,
-                               fpct=fee_pct)
+                               var_name  = target,
+                               variables = buffers,
+                               fixed     = fixed,
+                               fpct      = fee_pct,)
 
     dfr = pd.DataFrame(data=[buffers, emas]).T
-    dfr.columns = ['buffer', 'ema']
-
-    max_val = dfr['ema'].max()
-    min_val = dfr['ema'].min()
+    dfr.columns = [target, 'ema']
+    min_max = [dfr['ema'].min(), dfr['ema'].max()]
 
     # Plot
-    _, axis   = plot_setup(dfr, target='buffer', xlabel='buffer size (% around EMA)')
-    largest_idx = plot_max_values(dfr, axis, n_values, max_val, min_val, 'percent')
+    build_range_plot(ticker, ticker_name, date_range, dfr, fixed, hold, min_max, n_best, target, xlabel, max_fmt)
 
-    axis = build_title(axis,
-                       ticker,
-                       tra.dates_to_strings(date_range, fmt = '%d-%b-%Y'),
-                       max_val, hold,
-                       span, dfr.iloc[largest_idx[0]][0],
-                       )
 
-    dates    = tra.dates_to_strings(date_range, fmt = '%Y-%m-%d')
-    filename = f'{ticker}_{dates[0]}_{dates[1]}_buffers.{extension}'
-    pathname = os.path.join(dft.PLOT_DIR, filename)
-    try:
-        plt.savefig(pathname,
-                    dpi=360,
-                    transparent=False,
-                    orientation='landscape',
-                    bbox_inches='tight'
-                    )
-    except TypeError as ex:
-        print(f'Could not save to {pathname}: {ex}')
-    except:
-        print(f'Error type {sys.exc_info()[0]}')
-    else:
-        pass
-
-def plot_buffer_span_3D(ticker, date_range, spans, buffers, emas, hold):
+def plot_buffer_span_3D(ticker, ticker_name, date_range, spans, buffers, emas, hold):
     '''
     Surface plot of EMA as a function of rolling-window span & buffer
     '''
@@ -346,7 +364,7 @@ def plot_buffer_span_3D(ticker, date_range, spans, buffers, emas, hold):
         max_buff = best_emas.buffer.iloc[idx_max]
         return max_span, max_buff, max_ema, hold
 
-    def format_data(spans, buffers, emas):
+    def re_format_data(spans, buffers, emas):
         temp = []
         for i, span in enumerate(spans):
             for j, buffer in enumerate(buffers):
@@ -366,31 +384,27 @@ def plot_buffer_span_3D(ticker, date_range, spans, buffers, emas, hold):
                                                          emas,
                                                          hold,
                                                          )
-
-    temp = format_data(spans, buffers, emas)
+    temp = re_format_data(spans, buffers, emas)
 
     # Plot
     fig = plt.figure(figsize=(dft.FIG_WIDTH, dft.FIG_WIDTH))
     axis = fig.gca(projection='3d')
-    surf = axis.plot_trisurf(temp['buffer'], temp['span'], temp['ema'],
-                             cmap=dft.SURFACE_COLOR_SCHEME,
-                             linewidth=0.2)
+    surf = axis.plot_trisurf(temp['buffer'],
+                             temp['span'],
+                             temp['ema'],
+                             cmap      = dft.SURFACE_COLOR_SCHEME,
+                             linewidth = 1)
     fig.colorbar(surf, shrink=.5, aspect=25, label = 'EMA return')
-    axis.set_xlabel('buffer')
-    axis.set_ylabel('span')
-    axis.xaxis.set_major_formatter(mtick.PercentFormatter(xmax=1, decimals=None, symbol='%', is_latex=False))
 
-    title  = f'{ticker} | {title_range[0]} - {title_range[1]}\n'
-    title += f'EMA max payoff={max_ema:.2%} (hold={hold:.2%}) | '
-    title += f'{max_span:.0f}-day mean | '
-    title += f'opt buffer={max_buff:.2%}'
-    axis.set_title(title, fontsize=dft.TITLE_SIZE, color=dft.TITLE_COLOR)
+    axis = build_3D_axes_labels(axis)
+    axis.set_zlabel(r'Return', rotation=60)
+    axis = build_title(axis, ticker, ticker_name, title_range, max_ema, hold, max_span, max_buff)
 
     save_figure(dft.PLOT_DIR, f'{ticker}_{name_range[0]}_{name_range[1]}_3D', extension='png')
     plt.show()
 
 
-def plot_buffer_span_contours(ticker, date_range, spans, buffers, emas, hold):
+def plot_buffer_span_contours(ticker, ticker_name, date_range, spans, buffers, emas, hold):
     '''
     Contour plot of EMA as a function of rolling-window span & buffer
     '''
@@ -413,35 +427,29 @@ def plot_buffer_span_contours(ticker, date_range, spans, buffers, emas, hold):
                  )
     plt.colorbar(label='EMA return')
 
-    # Axis labels
-    axis.set_xlabel('buffer')
-    axis.set_ylabel('span')
+    axis = build_3D_axes_labels(axis)
 
     # Plot maxima points
-    max_ema, max_span, max_buff = plot_maxima(emas,
-                                              spans,
-                                              buffers,
-                                              hold,
-                                              axis,
-                                              n_maxima)
+    max_ema, max_span, max_buff = plot_maxima(emas, spans, buffers, hold,
+                                              axis, n_maxima,)
 
     # Build title
-    title  = f'{ticker} | {title_range[0]} - {title_range[1]}\n'
-    title += f'EMA max payoff={max_ema:.2%} (hold={hold:.2%}) | '
-    title += f'{max_span:.0f}-day mean | '
-    title += f'opt buffer={max_buff:.2%}'
-    axis.set_title(title, fontsize=dft.TITLE_SIZE, color=dft.TITLE_COLOR)
+    axis = build_title(axis, ticker, ticker_name, title_range, max_ema, hold, max_span, max_buff)
 
     plt.grid(b=None, which='major', axis='both', color=dft.GRID_COLOR)
     save_figure(dft.PLOT_DIR, f'{ticker}_{name_range[0]}_{name_range[1]}_contours', extension='png')
     plt.show()
 
+
 ### I/O
-def save_figure(plot_dir, p_file, dpi=360, extension='png'):
+def save_figure(plot_dir, prefix, dpi=360, extension='png'):
     '''
-    Save figure to file
+    Saves figure to file
+    variables:
+        plot_dir - directory to plot to
+        prefix - filename without its extension
     '''
-    filename = f'{p_file}.{extension}'
+    filename = f'{prefix}.{extension}'
     pathname = os.path.join(plot_dir, filename)
     try:
         plt.savefig(pathname,
