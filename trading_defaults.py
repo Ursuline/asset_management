@@ -16,6 +16,7 @@ pd.set_option("precision", 7)
 
 DATA_DIR  = 'data'
 PLOT_DIR  = 'plots'
+META_DIR  = 'meta'
 
 HUGE       = 1000000
 REACTIVITY = 1
@@ -28,10 +29,12 @@ DEFAULT_PERIOD = '5y'  # data download period
 #Min & max rolling window spans
 MIN_SPAN = 5
 MAX_SPAN = 60
+DEFAULT_SPAN = 20
 
 # Min & max buffer around mean
 MIN_BUFF  = 0.0
 MAX_BUFF  = 0.03
+DEFAULT_BUFFER = .01
 N_BUFFERS = 101
 
 INIT_WEALTH    = 100.0
@@ -39,7 +42,6 @@ INIT_WEALTH    = 100.0
 N_MAXIMA_DISPLAY = 10 # number of maxima to display on contour plot
 
 FEE_PCT        = .004  # broker's fee
-
 
 #### PLOT DEFAULTS ####
 COLOR_SCHEME   = plt.rcParams['axes.prop_cycle'].by_key()['color']
@@ -54,10 +56,30 @@ FIG_HEIGHT     = 8
 
 # Contour plots
 N_CONTOURS     = 10
+
 # markers & their legends
 ANNOTATE_COLOR = 'black'
 MARKER_COLOR   = 'black'
+CONTOUR_COLOR_SCHEME = plt.cm.viridis
 
+# 3-D plots
+SURFACE_COLOR_SCHEMES =  ['viridis', 'jet', 'hsv', 'gist_rainbow', 'seismic']
+SURFACE_COLOR_SCHEMES += ['bwr', 'PiYG']
+SURFACE_COLOR_SCHEME  = SURFACE_COLOR_SCHEMES[1]
+MIN_AZIMUTH   = 0
+MAX_AZIMUTH   = 360
+DELTA_AZIMUTH = 1
+
+MIN_ELEVATION   = 10
+MAX_ELEVATION   = 85
+DELTA_ELEVATION = 1
+
+MIN_DISTANCE   = 10
+MAX_DISTANCE   = 30
+DELTA_DISTANCE = 1
+
+# default azimuth, elevation, distance
+PERSPECTIVE = [315, 35, 10]
 
 def get_spans():
     '''returns max & min rolling window spans '''

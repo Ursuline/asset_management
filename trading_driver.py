@@ -17,19 +17,24 @@ import pandas as pd
 import trading as tra
 import trading_plots as trp
 import trading_defaults as dft
-import utilities as util
-
 import trading_portfolio as ptf
+import utilities as util
 
 N_MAXIMA_SAVE = 20 # number of maxima to save to file
 
-TICKERS = ptf.JACQUELINE
+TICKERS  = ptf.PEA + ptf.ADRIEN + ptf.JP + ptf.FRENCH + ptf.HEALTHCARE + ptf.K_WOOD
+TICKERS += ptf.INDICES + ptf.TECH + ptf.COMM + ptf.DEFENSE + ptf.SAXO_CY
+TICKERS += ptf.CSR + ptf.LUXURY
+TICKERS += ptf.CRYPTO
+#TICKERS = ptf.NEW
+TICKERS = ptf.FUTURES
 REFRESH = True # Download fresh Yahoo data
 
 TODAY     = datetime.strftime(datetime.now(), '%Y-%m-%d')
+END_DATE  = '2021-03-26'
 YESTERDAY = datetime.strftime(datetime.now() - timedelta(days = 1), '%Y-%m-%d')
 
-DATE_RANGE = ['2017-07-15', YESTERDAY]
+DATE_RANGE = ['2017-07-15', END_DATE]
 
 if __name__ == '__main__':
     start_tm = time.time() # total_time
@@ -38,11 +43,11 @@ if __name__ == '__main__':
         print(f'{i+1}/{len(TICKERS)}: {ticker}')
         try:
             # Get data and reformat
-            raw = tra.load_security(dirname = dft.DATA_DIR,
-                                    ticker  = ticker,
-                                    refresh = REFRESH,
-                                    period  = dft.DEFAULT_PERIOD,
-                                    )
+            raw, ticker_name = tra.load_security(dirname = dft.DATA_DIR,
+                                                 ticker  = ticker,
+                                                 refresh = REFRESH,
+                                                 period  = dft.DEFAULT_PERIOD,
+                                                 )
             security = pd.DataFrame(raw[f'Close_{ticker}'])
             security.rename(columns={f'Close_{ticker}': "Close"}, inplace=True)
 
@@ -70,15 +75,37 @@ if __name__ == '__main__':
                                emas, hold,
                                N_MAXIMA_SAVE,)
 
-            # Plot EMA map
-            trp.plot_buffer_span_contours(ticker, date_range,
+            # Plot EMA contour map
+            trp.plot_buffer_span_contours(ticker, ticker_name, date_range,
                                           spans, buffers,
                                           emas, hold,
                                           )
 
-            msg  = f'{ticker} elapsed time: '
-            msg += f'{util.convert_seconds(time.time()-save_tm)} '
-            msg += 'total time: '
+            # Plot EMA 3D map
+            trp.plot_buffer_span_3D(ticker, ticker_name, date_range,
+                                    spans, buffers,
+                                    emas, hold,
+                                    dft.SURFACE_COLOR_SCHEME,
+                                    azim=dft.PERSPECTIVE[0],
+                                    elev=dft.PERSPECTIVE[1],
+                                    rdist=dft.PERSPECTIVE[2],
+                                    )
+
+            # Plot timeline with default parameters from best EMA
+            # Get default paramters
+            best_span, best_buffer, best_ema, hold = tra.get_default_parameters(ticker,
+                                                                                date_range)
+            trp.plot_time_series(ticker, ticker_name,
+                                 date_range,
+                                 security,
+                                 best_span,
+                                 dft.FEE_PCT,
+                                 best_buffer,
+                                 )
+
+            msg  = f'{ticker} running time: '
+            msg += f'{util.convert_seconds(time.time()-save_tm)} | '
+            msg += 'elapsed time: '
             msg += f'{util.convert_seconds(time.time()-start_tm)}\n'
             print(msg)
             save_tm = time.time() # save intermediate time

@@ -351,7 +351,7 @@ def plot_buffer_range(ticker, ticker_name, security, span, n_best, fee_pct, date
     build_range_plot(ticker, ticker_name, date_range, dfr, fixed, hold, min_max, n_best, target, xlabel, max_fmt)
 
 
-def plot_buffer_span_3D(ticker, ticker_name, date_range, spans, buffers, emas, hold, elev=None, azim=None, rdist=1):
+def plot_buffer_span_3D(ticker, ticker_name, date_range, spans, buffers, emas, hold, colors, elev=None, azim=None, rdist=10):
     '''
     Surface plot of EMA as a function of rolling-window span & buffer
     '''
@@ -371,6 +371,20 @@ def plot_buffer_span_3D(ticker, ticker_name, date_range, spans, buffers, emas, h
                 temp.append([span, buffer, emas[i,j]])
         return pd.DataFrame(temp, columns=['span', 'buffer', 'ema'])
 
+    def remove_axes_grids(axis):
+        # Remove gray panes and axis grid
+        axis.xaxis.pane.fill = False
+        axis.xaxis.pane.set_edgecolor('white')
+        axis.yaxis.pane.fill = False
+        axis.yaxis.pane.set_edgecolor('white')
+        axis.zaxis.pane.fill = False
+        axis.zaxis.pane.set_edgecolor('white')
+        axis.grid(False)
+        # Remove z-axis
+        #axis.w_zaxis.line.set_lw(0.)
+        #axis.set_zticks([])
+        return axis
+
     # Get start & end dates in title (%d-%b-%Y) and output file (%Y-%m-%d) formats
     title_range = tra.dates_to_strings([date_range[0],
                                         date_range[1]],
@@ -387,7 +401,7 @@ def plot_buffer_span_3D(ticker, ticker_name, date_range, spans, buffers, emas, h
     temp = re_format_data(spans, buffers, emas)
 
     # Plot
-    fig = plt.figure(figsize=(dft.FIG_WIDTH, dft.FIG_WIDTH))
+    fig = plt.figure(figsize=(10, 10))
     axis = fig.gca(projection='3d')
     # Set perspective
     axis.view_init(elev=elev, azim=azim)
@@ -396,12 +410,13 @@ def plot_buffer_span_3D(ticker, ticker_name, date_range, spans, buffers, emas, h
     surf = axis.plot_trisurf(temp['buffer'],
                              temp['span'],
                              temp['ema'],
-                             cmap      = dft.SURFACE_COLOR_SCHEME,
+                             cmap      = colors,
                              linewidth = 1)
     fig.colorbar(surf, shrink=.5, aspect=25, label = 'EMA return')
 
     axis = build_3D_axes_labels(axis)
-    axis.set_zlabel(r'Return', rotation=60)
+    #axis.set_zlabel(r'Return', rotation=60)
+    axis = remove_axes_grids(axis)
     axis = build_title(axis, ticker, ticker_name, title_range, max_ema, hold, max_span, max_buff)
 
     save_figure(dft.PLOT_DIR, f'{ticker}_{name_range[0]}_{name_range[1]}_3D', extension='png')
