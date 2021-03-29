@@ -245,15 +245,16 @@ def plot_time_series(ticker, ticker_name, date_range, security, span, fee_pct, b
     '''
     start = date_range[0]
     end   = date_range[1]
+    timespan = (end - start).days
     title_dates = tra.dates_to_strings([start, end], '%d-%b-%Y')
     file_dates  = tra.dates_to_strings([start, end], '%Y-%m-%d')
 
     # Extract time window
     dfr = tra.build_strategy(security.loc[start:end, :].copy(),
-                            span,
-                            buffer,
-                            dft.INIT_WEALTH,
-                           )
+                             span,
+                             buffer,
+                             dft.INIT_WEALTH,
+                             )
     fee  = tra.get_fee(dfr, fee_pct, dft.get_actions())
     hold = tra.get_cumret(dfr, 'hold')  # cumulative returns for hold strategy
     ema  = tra.get_cumret(dfr, 'ema', fee)  # cumulative returns for EMA strategy
@@ -264,7 +265,10 @@ def plot_time_series(ticker, ticker_name, date_range, security, span, fee_pct, b
 
     axis.legend(loc='best')
     axis.set_ylabel('Price ($)')
-    axis.xaxis.set_major_formatter(dft.get_year_month_format())
+    if timespan > 180:
+        axis.xaxis.set_major_formatter(dft.get_month_year_format())
+    else:
+        axis.xaxis.set_major_formatter(dft.get_day_month_year_format())
     axis.grid(b=None, which='both', axis='both',
               color=dft.GRID_COLOR, linestyle='-', linewidth=1)
 
