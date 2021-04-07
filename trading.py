@@ -36,6 +36,7 @@ def get_default_parameters(ticker, date_range):
 def build_ema_map(ticker, security, dates):
     '''
     Builds a 2D numpy array of EMAs as a function of span and buffer
+    This function ieratively calls build_strategy()
     '''
     # define rolling window span range
     start = dates[0]
@@ -183,7 +184,7 @@ def cleanup_strategy(dataframe):
     return dataframe
 
 
-def build_strategy(d_frame, span, buffer, debug=False):
+def build_strategy(d_frame, span, buffer, init_wealth):
     '''
     *** At this point, only a long strategy is considered ***
     Implements running-mean (ewm) strategy
@@ -194,7 +195,8 @@ def build_strategy(d_frame, span, buffer, debug=False):
     reactivity -> reactivity to market change in days (should be set to 1)
     buffer     -> % above & below ema to trigger buy/sell
 
-    Returns the 'strategy' consisting of a dataframe with original data + following columns:
+    Returns the 'strategy' consisting of a dataframe with original data +
+    following columns:
     EMA -> exponential moving average
     SIGN -> 1 : above buffer 0: in buffer -1: below buffer
     ACTION -> buy / sell / n/c (no change)
@@ -203,16 +205,20 @@ def build_strategy(d_frame, span, buffer, debug=False):
     RET2 -> 1 + % daily return when Close > EMA
     CUMRET_EMA -> cumulative returns for the EMA strategy
     '''
-    init_wealth = dft.INIT_WEALTH
+    #init_wealth = dft.INIT_WEALTH
     reactivity  = dft.REACTIVITY
 
     # Compute exponential weighted mean 'EMA'
     d_frame['EMA'] = d_frame.Close.ewm(span=span, adjust=False).mean()
 
-    if debug: # include buffer limits in dataframe (for printing)
-        d_frame.insert(loc=1, column='EMA-', value=d_frame['EMA']*(1-buffer))
-        d_frame.insert(loc=len(d_frame.columns), column='EMA+',
-                  value=d_frame['EMA']*(1+buffer))
+    d_frame.insert(loc = 1,
+                   column = 'EMA_MINUS',
+                   value  = d_frame['EMA']*(1-buffer)
+                   )
+    d_frame.insert(loc = len(d_frame.columns),
+                   column = 'EMA_PLUS',
+                   value  = d_frame['EMA']*(1+buffer)
+                   )
 
     # build the SIGN column (above/in/below buffer)
     d_frame = build_sign(d_frame, buffer, reactivity)
@@ -307,11 +313,12 @@ def load_security(dirname, ticker, period, refresh=False):
     period -> download period
     refresh -> True : download data from Yahoo / False use pickle data if it exists
     '''
+    dirname = os.path.join(dirname, ticker)
     data_filename = ticker + '_' + period
     data_pathname = os.path.join(dirname, data_filename + '.pkl')
     ticker_filename = ticker + '_name'
     ticker_pathname = os.path.join(dirname, ticker_filename + '.pkl')
-    if os.path.exists(data_pathname) and (not refresh):
+    if os.path.exists(ticker_pathname) and (not refresh):
         print(f'Loading data from {data_pathname}')
         data = pd.read_pickle(data_pathname)
         pickle_file = open(ticker_pathname,'rb')
@@ -322,7 +329,10 @@ def load_security(dirname, ticker, period, refresh=False):
         security = sec.Security(ticker, period)
         data = security.get_market_data()
         data.set_index('Date', inplace=True)
+
+        os.makedirs(dirname, exist_ok = True)
         data.to_pickle(data_pathname) #store locally
+
         ticker_name = security.get_name()
         pickle_file = open(ticker_pathname,'wb')
         pickle.dump(ticker_name, pickle_file)
@@ -345,6 +355,8 @@ def display_full_dataframe(data):
 
 def get_ema_map_filename(ticker, date_range):
     data_dir = dft.DATA_DIR
+    data_dir = os.path.join(data_dir, ticker)
+
     dates    = dates_to_strings(date_range, '%Y-%m-%d')
     suffix   = f'{dates[0]}_{dates[1]}_ema_map'
     filename = f'{ticker}_{suffix}'
@@ -390,6 +402,9 @@ def save_dataframe(ticker, suffix, dataframe, extension):
     Save strategy to either csv or pkl file
     '''
     data_dir = dft.DATA_DIR
+    data_dir = os.path.join(data_dir, ticker)
+    os.makedirs(data_dir, exist_ok = True)
+
     filename = f'{ticker}_{suffix}'
 
     if extension == 'pkl':
@@ -438,5 +453,3 @@ def dates_to_strings(date_range, fmt):
     start_string = start.strftime(fmt)
     end_string   = end.strftime(fmt)
     return [start_string, end_string]
-
-

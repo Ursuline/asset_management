@@ -1,6 +1,17 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
+Created on Thu Apr  1 09:57:39 2021
+
+trading_daily.py
+
+Runs trough a list of tickers and flags buys/sells at a given date
+
+@author: charly
+"""
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+"""
 Created on Fri Mar 26 14:58:19 2021
 
 trading_driver.py
@@ -13,7 +24,7 @@ import os
 import time
 import pandas as pd
 import trading as tra
-import trading_plots as trp
+#import trading_plots as trp
 import trading_defaults as dft
 import trading_portfolio as ptf
 import utilities as util
@@ -32,15 +43,18 @@ TICKERS += ptf.INDICES + ptf.DEFENSE + ptf.OBSERVE
 TICKERS += ptf.CSR + ptf.LUXURY + ptf.GAFAM + ptf.CRYPTO + ptf.FINANCIAL
 
 TICKERS = ['SU.PA']
-TICKERS = ptf.OBSERVE
+#TICKERS = ptf.PORTFOLIOS
 
-REFRESH = False # Download fresh Yahoo data
+REFRESH = True # Download fresh Yahoo data
 FILTER  = True # Remove securities from REMOVE
 
-END_DATE   = '2021-04-02'
+END_DATE   = '2021-03-29'
 
 DATE_RANGE = ['2017-07-15', dft.YESTERDAY]
-ZOOM_RANGE = ['2019-04-01', dft.YESTERDAY]
+ZOOM_RANGE = ['2020-01-01', dft.YESTERDAY]
+
+# LMT 19 mars
+TARGET_DATE = '2021-03-19'
 
 def describe_run(tickers):
     span_range   = dft.MAX_SPAN - dft.MIN_SPAN + 1
@@ -86,54 +100,13 @@ if __name__ == '__main__':
                                                                security,
                                                                date_range,)
                 # save EMA map values to file
-                tra.save_ema_map(ticker, date_range,
-                                 spans, buffers,
-                                 emas, hold)
+                tra.save_ema_map(ticker,
+                                 date_range,
+                                 spans,
+                                 buffers,
+                                 emas,
+                                 hold)
 
-            # Save best EMA results to file
-            tra.save_best_emas(ticker, date_range,
-                               spans, buffers,
-                               emas, hold,
-                               N_MAXIMA_SAVE,)
-
-            # Plot EMA contour map
-            trp.plot_buffer_span_contours(ticker, ticker_name, date_range,
-                                          spans, buffers,
-                                          emas, hold,
-                                          )
-
-            # Plot EMA 3D map
-            trp.plot_buffer_span_3D(ticker, ticker_name, date_range,
-                                    spans, buffers,
-                                    emas, hold,
-                                    dft.SURFACE_COLOR_SCHEME,
-                                    azim  = dft.PERSPECTIVE[0],
-                                    elev  = dft.PERSPECTIVE[1],
-                                    rdist = dft.PERSPECTIVE[2],
-                                    )
-
-            # Plot timeline with default parameters from best EMA
-            # Get default paramters
-            best_span, best_buffer, best_ema, hold = tra.get_default_parameters(ticker,
-                                                                                date_range)
-            # Convert dates to datetime
-            date_zoom = tra.get_datetime_date_range(security,
-                                                    ZOOM_RANGE[0],
-                                                    ZOOM_RANGE[1])
-            #display flags --
-            #0: Price  | 1: EMA  | 2: buffer | 3: arrows |
-            #4: statistics | 5: save
-            display_flags = [True, True, False, True, True, True]
-            trp.plot_time_series(ticker        = ticker,
-                                 ticker_name   = ticker_name,
-                                 date_range    = date_range,
-                                 display_dates = date_zoom,
-                                 security      = security,
-                                 span          = best_span,
-                                 buffer        = best_buffer,
-                                 fee_pct       = dft.FEE_PCT,
-                                 flags         = display_flags,
-                                 )
 
             msg  = f'{ticker} running time: '
             msg += f'{util.convert_seconds(time.time()-save_tm)} | '

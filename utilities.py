@@ -205,6 +205,19 @@ def convert_seconds(time_s):
         return f'{time_s:.1f}s'
 
 
+def get_summary_stats(data, level, target):
+    '''
+    Return a dictionary of summary statistics and test for normality
+    '''
+    summary_stats = dict()
+    summary_stats['mean'] = data[target].mean()
+    summary_stats['std']  = math.sqrt(data[target].var())
+    summary_stats['skewness']  = scipy.stats.skew(data[target], nan_policy='omit')
+    summary_stats['kurtosis']  = scipy.stats.kurtosis(data[target], nan_policy='omit')
+    statistic, p_value = scipy.stats.jarque_bera(data[target])
+    summary_stats['jb']  = dict(zip(['statistic', 'p-value', 'gaussian', 'level'], [statistic, p_value, p_value > level, level]))
+    return summary_stats
+
 if __name__ == '__main__':
     seconds = 3865
     seconds = 188345
