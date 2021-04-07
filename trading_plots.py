@@ -9,14 +9,16 @@ trading_plots.py
 """
 import os
 import sys
+from datetime import timedelta
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.ticker as mtick
+from matplotlib.offsetbox import (TextArea, AnnotationBbox)
 
 import trading as tra
 import trading_defaults as dft
-
+import utilities as util
 
 ### PLOT SUPPORT FUNCTIONS
 def plot_setup(data, target):
@@ -30,21 +32,13 @@ def plot_setup(data, target):
               linewidth = 1,
               label='EMA return',
               )
-    # axis.legend(loc='best')
-    # axis.set_xlabel(xlabel)
-    # if target == 'buffer':
-    #     axis.xaxis.set_major_formatter(mtick.PercentFormatter(xmax=1,
-    #                                                       decimals=None,
-    #                                                       symbol='%',
-    #                                                       is_latex=False,
-    #                                                       )
-    #                                )
-    # axis.set_ylabel('return (x)')
-    # plt.grid(b=None, which='major', axis='both', color=dft.GRID_COLOR)
     return fig, axis
 
 
 def build_range_plot_axes(axis, target, xlabel):
+    '''
+    Builds axes for plot_span_range() and plot_buffer_range()
+    '''
     axis.legend(loc='best')
     axis.set_xlabel(xlabel)
     if target == 'buffer':
@@ -59,14 +53,13 @@ def build_range_plot_axes(axis, target, xlabel):
     return axis
 
 
-
-def build_title(axis, ticker, ticker_name, dates, ema, hold, span, buffer, buy_sell=None):
+def build_title(axis, ticker, ticker_name, dates, span, buffer, ema, hold, buy_sell=None):
     '''
     Build plot title-  common to all plots
     '''
     # build the title
     title  = f'{ticker_name} ({ticker}) | {dates[0]} - {dates[1]}'
-    if buy_sell == None:
+    if buy_sell is None:
         title += '\n'
     else: # add number of buys/sells to time series plot
         title += f' | {buy_sell[0]} buys {buy_sell[1]} sells\n'
@@ -201,6 +194,34 @@ def plot_arrows(axis, data, actions, colors):
     return [n_buys, n_sells]
 
 
+def plot_stats(summary_stats, axis, data, colors):
+    '''
+    Place a text box with signal statistics
+    '''
+    xy = (.95, .0075)
+
+    text  = 'Daily returns:\n'
+    text += f'$\mu$={summary_stats["mean"]-1:.2%}\n'
+    text += f'$\sigma$={summary_stats["std"]:.3g}\n'
+    text += f'Skewness={summary_stats["skewness"]:.2g}\n'
+    text += f'Kurtosis={summary_stats["kurtosis"]:.2g}\n'
+    text += f'Gaussian: {summary_stats["jb"]["gaussian"]}\n'
+    text += f'({1-summary_stats["jb"]["level"]:.0%} '
+    text += f'p-value={summary_stats["jb"]["gaussian"]:.3g})\n'
+    offsetbox = TextArea(text)
+
+    ab = AnnotationBbox(offsetbox,
+                        xy,
+                        xybox=(-20, 40),
+                        xycoords='axes fraction',
+                        boxcoords="offset points",
+                        frameon = False,
+                        #arrowprops=dict(arrowstyle="->")
+                        )
+    axis.add_artist(ab)
+    return axis
+
+
 def build_1d_emas(secu, date_range, var_name, variables, fixed, fpct):
     ''' Aggregates a 1D numpy array of EMAs as a function of
         the variable (span or buffer)
@@ -232,25 +253,27 @@ def build_1d_emas(secu, date_range, var_name, variables, fixed, fpct):
         emas[i] = ema
         if i == 0:
             hold = tra.get_cumret(dfr, 'hold', dft.INIT_WEALTH)
-
     return emas, hold
 
 
 ### MAIN PLOT FUNCTIONS
-def plot_time_series(ticker, ticker_name, date_range, security, span, fee_pct, buffer):
+def plot_time_series(ticker, ticker_name, date_range, display_dates, security, span, fee_pct, buffer, flags):
     '''
     Plots security prices with moving average
     span -> rolling window span
     fee_pct -> fee associated with a buy/sell action
+    date_range is entire time series
+    display_dates are zoom dates
+    flags display -> 0: Price  | 1: EMA  | 2: buffer |
+                     3: arrows | 4 : statistics | 5: save
     '''
-    start = date_range[0]
-    end   = date_range[1]
-    timespan = (end - start).days
-    title_dates = tra.dates_to_strings([start, end], '%d-%b-%Y')
-    file_dates  = tra.dates_to_strings([start, end], '%Y-%m-%d')
+    timespan = (display_dates[1] - display_dates[0]).days
+    title_dates = tra.dates_to_strings([display_dates[0], display_dates[1]], '%d-%b-%Y')
+    file_dates  = tra.dates_to_strings([display_dates[0], display_dates[1]], '%Y-%m-%d')
 
     # Extract time window
-    dfr = tra.build_strategy(security.loc[start:end, :].copy(),
+    window_start = display_dates[0] - timedelta(days = span + 1)
+    dfr = tra.build_strategy(security.loc[window_start:display_dates[1], :].copy(),
                              span,
                              buffer,
                              dft.INIT_WEALTH,
@@ -260,11 +283,38 @@ def plot_time_series(ticker, ticker_name, date_range, security, span, fee_pct, b
     ema  = tra.get_cumret(dfr, 'ema', fee)  # cumulative returns for EMA strategy
 
     _, axis = plt.subplots(figsize=(dft.FIG_WIDTH, dft.FIG_HEIGHT))
-    axis.plot(dfr.index, dfr.Close, linewidth=1, label='Price')
-    axis.plot(dfr.index, dfr.EMA, linewidth=1, label=f'{span:.0f}-day avg')
+    # Plot Close
+    if flags[0]:
+        axis.plot(dfr.loc[display_dates[0]:display_dates[1], :].index,
+                  dfr.loc[display_dates[0]:display_dates[1], :].Close,
+                  linewidth=1,
+                  color = dft.COLOR_SCHEME[0],
+                  label='Price')
+    # Plot EMA
+    if flags[1]:
+        axis.plot(dfr.loc[display_dates[0]:display_dates[1], :].index,
+                  dfr.loc[display_dates[0]:display_dates[1], :].EMA,
+                  linewidth=1,
+                  color = dft.COLOR_SCHEME[1],
+                  label=f'{span:.0f}-day EMA')
+    # Plot EMA +/- buffer
+    if flags[2]:
+        axis.plot(dfr.loc[display_dates[0]:display_dates[1], :].index,
+                  dfr.loc[display_dates[0]:display_dates[1], :].EMA_MINUS,
+                  linewidth = 1,
+                  linestyle = '--',
+                  color = dft.COLOR_SCHEME[2],
+                  label=f'EMA - {buffer:.2%}')
+        axis.plot(dfr.loc[display_dates[0]:display_dates[1], :].index,
+                  dfr.loc[display_dates[0]:display_dates[1], :].EMA_PLUS,
+                  linewidth = 1,
+                  linestyle = '--',
+                  color = dft.COLOR_SCHEME[2],
+                  label=f'EMA + {buffer:.2%}')
 
     axis.legend(loc='best')
     axis.set_ylabel('Price ($)')
+    # Display MY for > 180 days and DMY otherwise
     if timespan > 180:
         axis.xaxis.set_major_formatter(dft.get_month_year_format())
     else:
@@ -273,10 +323,31 @@ def plot_time_series(ticker, ticker_name, date_range, security, span, fee_pct, b
               color=dft.GRID_COLOR, linestyle='-', linewidth=1)
 
     # plot buy/sell arrows
-    buy_sell = plot_arrows(axis, dfr, dft.get_actions(), dft.get_color_scheme())
+    if flags[3]:
+        # move computation outside of plot_arrows
+        buy_sell = plot_arrows(axis,
+                               dfr.loc[display_dates[0]:display_dates[1], :],
+                               dft.get_actions(),
+                               dft.get_color_scheme(),
+                               )
+    else:
+        buy_sell = None
 
-    build_title(axis, ticker, ticker_name, title_dates, ema, hold, span, buffer, buy_sell)
-    save_figure(dft.PLOT_DIR, f'{ticker}_{file_dates[0]}_{file_dates[1]}')
+    if flags[4]:
+        summary_stats = util.get_summary_stats(dfr.loc[display_dates[0]:display_dates[1], :],
+                                               dft.STATS_LEVEL,
+                                               'RET')
+        axis = plot_stats(summary_stats,
+                          axis,
+                          dfr.loc[display_dates[0]:display_dates[1], :],
+                          dft.get_color_scheme(),
+                          )
+
+    build_title(axis, ticker, ticker_name, title_dates, span, buffer, ema, hold, buy_sell)
+    if flags[5]:
+        data_dir = os.path.join(dft.PLOT_DIR, ticker)
+        save_figure(data_dir, f'{ticker}_{file_dates[0]}_{file_dates[1]}_tmseries')
+        plt.show()
     return dfr
 
 
@@ -289,17 +360,27 @@ def build_range_plot(ticker, ticker_name, date_range, dfr, fixed, hold, min_max,
 
     largest_idx = plot_max_values(dfr, axis, n_best, min_max[1], min_max[0], max_fmt)
 
-    axis = build_title(axis,
-                       ticker,
-                       ticker_name,
-                       tra.dates_to_strings(date_range, fmt = '%d-%b-%Y'),
-                       min_max[1], hold,
-                       fixed, dfr.iloc[largest_idx[0]][0],
+    if target == 'span':
+        buffer=fixed
+        span = dfr.iloc[largest_idx[0]][0]
+    else:
+        buffer=dfr.iloc[largest_idx[0]][0]
+        span=fixed
+    axis = build_title(axis = axis,
+                       ticker = ticker,
+                       ticker_name = ticker_name,
+                       dates = tra.dates_to_strings(date_range,
+                                                    fmt = '%d-%b-%Y'),
+                       ema = min_max[1],
+                       hold = hold,
+                       span = span,
+                       buffer = buffer,
                        )
 
     dates    = tra.dates_to_strings(date_range, fmt = '%Y-%m-%d')
     filename = f'{ticker}_{dates[0]}_{dates[1]}_{target}s'
-    save_figure(dft.PLOT_DIR, filename)
+    data_dir = os.path.join(dft.PLOT_DIR, ticker)
+    save_figure(data_dir, filename)
 
 
 def plot_span_range(ticker, ticker_name, date_range, security, buffer, n_best, fee_pct, extension='png'):
@@ -315,16 +396,31 @@ def plot_span_range(ticker, ticker_name, date_range, security, buffer, n_best, f
     spans = np.arange(span_range[0],
                       span_range[1] + 1)
 
-    emas, hold = build_1d_emas(security, date_range,
-                               var_name=target, variables=spans, fixed=fixed,
-                               fpct=fee_pct)
+    emas, hold = build_1d_emas(security,
+                               date_range,
+                               var_name  = target,
+                               variables = spans,
+                               fixed     = fixed,
+                               fpct      = fee_pct,
+                               )
 
     dfr = pd.DataFrame(data=[spans, emas]).T
     dfr.columns = [target, 'ema']
     min_max = [dfr['ema'].min(), dfr['ema'].max()]
 
     # Plot
-    build_range_plot(ticker, ticker_name, date_range, dfr, fixed, hold, min_max, n_best, target, xlabel, max_fmt)
+    build_range_plot(ticker      = ticker,
+                     ticker_name = ticker_name,
+                     date_range  = date_range,
+                     dfr         = dfr,
+                     fixed       = fixed,
+                     hold        = hold,
+                     min_max     = min_max,
+                     n_best      = n_best,
+                     target      = target,
+                     xlabel      = xlabel,
+                     max_fmt     = max_fmt,
+                     )
 
 
 def plot_buffer_range(ticker, ticker_name, security, span, n_best, fee_pct, date_range, extension='png'):
@@ -352,7 +448,18 @@ def plot_buffer_range(ticker, ticker_name, security, span, n_best, fee_pct, date
     min_max = [dfr['ema'].min(), dfr['ema'].max()]
 
     # Plot
-    build_range_plot(ticker, ticker_name, date_range, dfr, fixed, hold, min_max, n_best, target, xlabel, max_fmt)
+    build_range_plot(ticker      = ticker,
+                     ticker_name = ticker_name,
+                     date_range  = date_range,
+                     dfr         = dfr,
+                     fixed       = fixed,
+                     hold        = hold,
+                     min_max     = min_max,
+                     n_best      = n_best,
+                     target      = target,
+                     xlabel      = xlabel,
+                     max_fmt     = max_fmt,
+                     )
 
 
 def plot_buffer_span_3D(ticker, ticker_name, date_range, spans, buffers, emas, hold, colors, elev=None, azim=None, rdist=10):
@@ -405,7 +512,7 @@ def plot_buffer_span_3D(ticker, ticker_name, date_range, spans, buffers, emas, h
     temp = re_format_data(spans, buffers, emas)
 
     # Plot
-    fig = plt.figure(figsize=(10, 10))
+    fig = plt.figure(figsize=(dft.SURFACE_WIDTH, dft.SURFACE_WIDTH))
     axis = fig.gca(projection='3d')
     # Set perspective
     axis.view_init(elev=elev, azim=azim)
@@ -421,9 +528,10 @@ def plot_buffer_span_3D(ticker, ticker_name, date_range, spans, buffers, emas, h
     axis = build_3D_axes_labels(axis)
     #axis.set_zlabel(r'Return', rotation=60)
     axis = remove_axes_grids(axis)
-    axis = build_title(axis, ticker, ticker_name, title_range, max_ema, hold, max_span, max_buff)
+    axis = build_title(axis, ticker, ticker_name, title_range, max_span, max_buff, max_ema, hold)
 
-    save_figure(dft.PLOT_DIR, f'{ticker}_{name_range[0]}_{name_range[1]}_3D', extension='png')
+    data_dir = os.path.join(dft.PLOT_DIR, ticker)
+    save_figure(data_dir, f'{ticker}_{name_range[0]}_{name_range[1]}_3D', extension='png')
     plt.show()
 
 
@@ -443,7 +551,7 @@ def plot_buffer_span_contours(ticker, ticker_name, date_range, spans, buffers, e
                                         '%Y-%m-%d')
 
     # Plot
-    _, axis = plt.subplots(figsize=(dft.FIG_WIDTH, dft.FIG_WIDTH))
+    _, axis = plt.subplots(figsize=(dft.CONTOUR_WIDTH, dft.CONTOUR_WIDTH))
     plt.contourf(buffers, spans, emas,
                  levels=n_contours,
                  cmap=dft.CONTOUR_COLOR_SCHEME,
@@ -457,10 +565,12 @@ def plot_buffer_span_contours(ticker, ticker_name, date_range, spans, buffers, e
                                               axis, n_maxima,)
 
     # Build title
-    axis = build_title(axis, ticker, ticker_name, title_range, max_ema, hold, max_span, max_buff)
+    axis = build_title(axis, ticker, ticker_name, title_range, max_span, max_buff, max_ema, hold)
 
     plt.grid(b=None, which='major', axis='both', color=dft.GRID_COLOR)
-    save_figure(dft.PLOT_DIR, f'{ticker}_{name_range[0]}_{name_range[1]}_contours', extension='png')
+
+    data_dir = os.path.join(dft.PLOT_DIR, ticker)
+    save_figure(data_dir, f'{ticker}_{name_range[0]}_{name_range[1]}_contours', extension='png')
     plt.show()
 
 
@@ -473,6 +583,7 @@ def save_figure(plot_dir, prefix, dpi=360, extension='png'):
         prefix - filename without its extension
     '''
     filename = f'{prefix}.{extension}'
+    os.makedirs(plot_dir, exist_ok = True)
     pathname = os.path.join(plot_dir, filename)
     try:
         plt.savefig(pathname,
