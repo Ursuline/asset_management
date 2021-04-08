@@ -18,9 +18,9 @@ from tqdm import tqdm
 import security as sec
 
 import trading_defaults as dft
+import ticker as tkr
 
 ### TRADING ###
-
 def get_default_parameters(ticker, date_range):
     try: # ema file exists
         spans, buffers, emas, hold = read_ema_map(ticker, date_range)
@@ -321,6 +321,7 @@ def load_security(dirname, ticker, period, refresh=False):
     if os.path.exists(ticker_pathname) and (not refresh):
         print(f'Loading data from {data_pathname}')
         data = pd.read_pickle(data_pathname)
+
         pickle_file = open(ticker_pathname,'rb')
         ticker_name = pickle.load(pickle_file)
         pickle_file.close()
@@ -333,11 +334,51 @@ def load_security(dirname, ticker, period, refresh=False):
         os.makedirs(dirname, exist_ok = True)
         data.to_pickle(data_pathname) #store locally
 
+        # write ticker name to file ** CLUMSY - change
         ticker_name = security.get_name()
         pickle_file = open(ticker_pathname,'wb')
         pickle.dump(ticker_name, pickle_file)
         pickle_file.close()
     return data, ticker_name
+
+
+def load_security_new(dirname, ticker, period, refresh=False):
+    '''
+    Load data from file else upload from Yahoo finance
+    dirname -> directory where pkl data is saved
+    ticker -> Yahoo Finance ticker symbol
+    period -> download period
+    refresh -> True : download data from Yahoo / False use pickle data if it exists
+    '''
+    dirname = os.path.join(dirname, ticker)
+    data_filename = ticker + '_' + period
+    data_pathname = os.path.join(dirname, data_filename + '.pkl')
+    ticker_filename = ticker + '_name'
+    ticker_pathname = os.path.join(dirname, ticker_filename + '.pkl')
+    if os.path.exists(ticker_pathname) and (not refresh):
+        print(f'Loading data from {data_pathname}')
+        data = pd.read_pickle(data_pathname)
+
+        pickle_file = open(ticker_pathname,'rb')
+        ticker_obj = pickle.load(pickle_file)
+        pickle_file.close()
+    else:
+        print('Downloading data from Yahoo Finance')
+        security        = sec.Security(ticker, period)
+        ticker_name     = security.get_name()
+        ticker_currency = security.get_currency()
+        data = security.get_market_data()
+        data.set_index('Date', inplace=True)
+        ticker_obj = tkr.Ticker(ticker, security)
+
+        os.makedirs(dirname, exist_ok = True)
+        data.to_pickle(data_pathname) #store locally
+
+        # write ticker object to file ** MERGE WITH DATA
+        pickle_file = open(ticker_pathname,'wb')
+        pickle.dump(ticker_obj, pickle_file)
+        pickle_file.close()
+    return ticker_obj
 
 
 def display_full_dataframe(data):

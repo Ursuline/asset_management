@@ -32,15 +32,16 @@ TICKERS += ptf.INDICES + ptf.DEFENSE + ptf.OBSERVE
 TICKERS += ptf.CSR + ptf.LUXURY + ptf.GAFAM + ptf.CRYPTO + ptf.FINANCIAL
 
 TICKERS = ['SU.PA']
-TICKERS = ptf.OBSERVE
+TICKERS = ptf.CRYPTO
 
 REFRESH = False # Download fresh Yahoo data
 FILTER  = True # Remove securities from REMOVE
 
-END_DATE   = '2021-04-02'
+END_DATE   = dft.TODAY
+#END_DATE   = '2021-04-06'
 
-DATE_RANGE = ['2017-07-15', dft.YESTERDAY]
-ZOOM_RANGE = ['2019-04-01', dft.YESTERDAY]
+DATE_RANGE = ['2017-07-15', END_DATE]
+ZOOM_RANGE = ['2019-04-01', END_DATE]
 
 def describe_run(tickers):
     span_range   = dft.MAX_SPAN - dft.MIN_SPAN + 1
@@ -64,11 +65,20 @@ if __name__ == '__main__':
         print(f'{i+1}/{len(TICKERS)}: {ticker}')
         try:
             # Get data and reformat
-            raw, ticker_name = tra.load_security(dirname = dft.DATA_DIR,
-                                                 ticker  = ticker,
-                                                 refresh = REFRESH,
-                                                 period  = dft.DEFAULT_PERIOD,
-                                                 )
+            # raw, ticker_name = tra.load_security(dirname = dft.DATA_DIR,
+            #                                      ticker  = ticker,
+            #                                      refresh = REFRESH,
+            #                                      period  = dft.DEFAULT_PERIOD,
+            #                                      )
+
+            ticker_obj = tra.load_security_new(dirname = dft.DATA_DIR,
+                                               ticker  = ticker,
+                                               refresh = REFRESH,
+                                               period  = dft.DEFAULT_PERIOD,
+                                               )
+            raw = ticker_obj.get_market_data()
+            ticker_name = ticker_obj.get_ticker_name()
+
             security = pd.DataFrame(raw[f'Close_{ticker}'])
             security.rename(columns={f'Close_{ticker}': "Close"}, inplace=True)
 
@@ -103,13 +113,17 @@ if __name__ == '__main__':
                                           )
 
             # Plot EMA 3D map
-            trp.plot_buffer_span_3D(ticker, ticker_name, date_range,
-                                    spans, buffers,
-                                    emas, hold,
-                                    dft.SURFACE_COLOR_SCHEME,
+            trp.plot_buffer_span_3D(ticker=ticker,
+                                    ticker_name=ticker_name,
+                                    date_range=date_range,
+                                    spans=spans,
+                                    buffers=buffers,
+                                    emas=emas,
+                                    hold=hold,
                                     azim  = dft.PERSPECTIVE[0],
                                     elev  = dft.PERSPECTIVE[1],
                                     rdist = dft.PERSPECTIVE[2],
+                                    colors = dft.SURFACE_COLOR_SCHEME
                                     )
 
             # Plot timeline with default parameters from best EMA
