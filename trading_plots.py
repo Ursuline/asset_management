@@ -9,13 +9,17 @@ trading_plots.py
 """
 import os
 import sys
+from datetime import timedelta
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.ticker as mtick
+from matplotlib.offsetbox import (TextArea, AnnotationBbox)
+
 
 import trading as tra
 import trading_defaults as dft
+import utilities as util
 
 
 ### PLOT SUPPORT FUNCTIONS
@@ -30,17 +34,6 @@ def plot_setup(data, target):
               linewidth = 1,
               label='EMA return',
               )
-    # axis.legend(loc='best')
-    # axis.set_xlabel(xlabel)
-    # if target == 'buffer':
-    #     axis.xaxis.set_major_formatter(mtick.PercentFormatter(xmax=1,
-    #                                                       decimals=None,
-    #                                                       symbol='%',
-    #                                                       is_latex=False,
-    #                                                       )
-    #                                )
-    # axis.set_ylabel('return (x)')
-    # plt.grid(b=None, which='major', axis='both', color=dft.GRID_COLOR)
     return fig, axis
 
 
@@ -59,7 +52,6 @@ def build_range_plot_axes(axis, target, xlabel):
     return axis
 
 
-
 def build_title(axis, ticker, ticker_name, dates, ema, hold, span, buffer, buy_sell=None):
     '''
     Build plot title-  common to all plots
@@ -73,6 +65,7 @@ def build_title(axis, ticker, ticker_name, dates, ema, hold, span, buffer, buy_s
     title += f'EMA max payoff={ema:.2%} (hold={hold:.2%}) | '
     title += f'{span:.0f}-day mean | '
     title += f'opt buffer={buffer:.2%}'
+    #print(f'title step 3={title}\n')
     axis.set_title(title,
                    fontsize = dft.TITLE_SIZE,
                    color    = dft.TITLE_COLOR,
@@ -164,42 +157,110 @@ def plot_max_values(data, axis, n_values, max_val, min_val, fmt):
 
 
 def plot_arrows(axis, data, actions, colors):
-    '''
-    Draws position-switching arrows on axis
-    Called by plot_time_series()
-    '''
     vertical_range = data['Close'].max() - data['Close'].min()
     horizont_range = (data.index[-1] - data.index[0]).days
     arrow_length   = vertical_range/10
     head_width     = horizont_range/100
     head_length    = vertical_range/50
     space          = vertical_range/100  # space bw arrow tip and curve
-    n_buys, n_sells  = 0, 0
 
-    for row in range(data.shape[0]):
-        if data.ACTION[row] == actions[0]:  # buy
-            y_start = data.loc[data.index[row], 'Close'] + arrow_length
-            color = colors[2]
-            delta_y = -arrow_length+space
-            n_buys += 1
-        elif data.ACTION[row] == actions[1]:  # sell
-            y_start = data.loc[data.index[row], 'Close'] - arrow_length
-            color = colors[3]
-            delta_y = arrow_length-space
-            n_sells += 1
-        else:  # don't draw an arrow
-            continue
-        axis.arrow(x=data.index[row],
-                   y=y_start,
-                   dx=0, dy=delta_y,
-                   head_width=head_width,
-                   head_length=head_length,
-                   length_includes_head=True,
-                   linestyle='-',
-                   color=color,
+    # filter actions rows
+    # buys
+    filtered = data[data.ACTION == actions[0]].copy()
+    for row in range(filtered.shape[0]):
+        y_start = filtered.loc[filtered.index[row], 'Close']
+        color   = colors[2]
+        axis.arrow(x  = filtered.index[row],
+                   y  = y_start + arrow_length,
+                   dx = 0,
+                   dy = -arrow_length + space,
+                   head_width  = head_width,
+                   head_length = head_length,
+                   length_includes_head = True,
+                   linestyle = '-',
+                   color = color,
                   )
-    return [n_buys, n_sells]
 
+    # sells
+    filtered = data[data.ACTION == actions[1]].copy()
+    for row in range(filtered.shape[0]):
+        y_start = filtered.loc[filtered.index[row], 'Close']
+        color   = colors[3]
+        axis.arrow(x  = filtered.index[row],
+                   y  = y_start - arrow_length,
+                   dx = 0,
+                   dy = arrow_length - space,
+                   head_width  = head_width,
+                   head_length = head_length,
+                   length_includes_head = True,
+                   linestyle = '-',
+                   color = color,
+                  )
+
+
+# def plot_arrows_old(axis, data, actions, colors):
+#     '''
+#     Draws position-switching arrows on axis
+#     Called by plot_time_series()
+#     '''
+#     vertical_range = data['Close'].max() - data['Close'].min()
+#     horizont_range = (data.index[-1] - data.index[0]).days
+#     arrow_length   = vertical_range/10
+#     head_width     = horizont_range/100
+#     head_length    = vertical_range/50
+#     space          = vertical_range/100  # space bw arrow tip and curve
+#     n_buys, n_sells  = 0, 0
+
+#     for row in range(data.shape[0]):
+#         if data.ACTION[row] == actions[0]:  # buy
+#             y_start = data.loc[data.index[row], 'Close'] + arrow_length
+#             color = colors[2]
+#             delta_y = -arrow_length+space
+#             n_buys += 1
+#         elif data.ACTION[row] == actions[1]:  # sell
+#             y_start = data.loc[data.index[row], 'Close'] - arrow_length
+#             color = colors[3]
+#             delta_y = arrow_length-space
+#             n_sells += 1
+#         else:  # don't draw an arrow
+#             continue
+#         axis.arrow(x=data.index[row],
+#                    y=y_start,
+#                    dx=0, dy=delta_y,
+#                    head_width=head_width,
+#                    head_length=head_length,
+#                    length_includes_head=True,
+#                    linestyle='-',
+#                    color=color,
+#                   )
+#     return [n_buys, n_sells]
+
+def plot_stats(summary_stats, axis, data, colors):
+    '''
+    Place a text box with signal statistics
+    '''
+    xy = (.95, .0075)
+
+    text  = 'Daily returns:\n'
+    text += f'$\mu$={summary_stats["mean"]-1:.2%}\n'
+    text += f'$\sigma$={summary_stats["std"]:.3g}\n'
+    text += f'Skewness={summary_stats["skewness"]:.2g}\n'
+    text += f'Kurtosis={summary_stats["kurtosis"]:.2g}\n'
+    text += f'Gaussian: {summary_stats["jb"]["gaussian"]}\n'
+    text += f'({1-summary_stats["jb"]["level"]:.0%} '
+    text += f'p-value={summary_stats["jb"]["gaussian"]:.3g})\n'
+    offsetbox = TextArea(text)
+
+    ab = AnnotationBbox(offsetbox,
+                        xy,
+                        xybox=(-20, 40),
+                        xycoords='axes fraction',
+                        boxcoords="offset points",
+                        frameon = False,
+                        #arrowprops=dict(arrowstyle="->")
+                        )
+    axis.add_artist(ab)
+    return axis
 
 def build_1d_emas(secu, date_range, var_name, variables, fixed, fpct):
     ''' Aggregates a 1D numpy array of EMAs as a function of
@@ -237,42 +298,157 @@ def build_1d_emas(secu, date_range, var_name, variables, fixed, fpct):
 
 
 ### MAIN PLOT FUNCTIONS
-def plot_time_series(ticker, ticker_name, date_range, security, span, fee_pct, buffer):
+# def plot_time_series_old(ticker, ticker_name, date_range, security, span, fee_pct, buffer, flags):
+#     '''
+#     Plots security prices with moving average
+#     span -> rolling window span
+#     fee_pct -> fee associated with a buy/sell action
+#     '''
+#     start = date_range[0]
+#     end   = date_range[1]
+#     title_dates = tra.dates_to_strings([start, end], '%d-%b-%Y')
+#     file_dates  = tra.dates_to_strings([start, end], '%Y-%m-%d')
+
+#     # Extract time window
+#     dfr = tra.build_strategy(security.loc[start:end, :].copy(),
+#                             span,
+#                             buffer,
+#                             dft.INIT_WEALTH,
+#                            )
+#     fee  = tra.get_fee(dfr, fee_pct, dft.get_actions())
+#     hold = tra.get_cumret(dfr, 'hold')  # cumulative returns for hold strategy
+#     ema  = tra.get_cumret(dfr, 'ema', fee)  # cumulative returns for EMA strategy
+
+#     _, axis = plt.subplots(figsize=(dft.FIG_WIDTH, dft.FIG_HEIGHT))
+#     axis.plot(dfr.index, dfr.Close, linewidth=1, label='Price')
+#     axis.plot(dfr.index, dfr.EMA, linewidth=1, label=f'{span:.0f}-day avg')
+
+#     axis.legend(loc='best')
+#     axis.set_ylabel('Price ($)')
+#     axis.xaxis.set_major_formatter(dft.get_year_month_format())
+#     axis.grid(b=None, which='both', axis='both',
+#               color=dft.GRID_COLOR, linestyle='-', linewidth=1)
+
+
+#     buy_sell = plot_arrows(axis, dfr, dft.get_actions(), dft.get_color_scheme())
+
+#     build_title(axis, ticker, ticker_name, title_dates, ema, hold, span, buffer, buy_sell)
+#     save_figure(dft.PLOT_DIR, f'{ticker}_{file_dates[0]}_{file_dates[1]}')
+#     return dfr
+
+
+def plot_time_series(ticker, ticker_name, date_range, display_dates, security, span, fee_pct, buffer, flags):
     '''
     Plots security prices with moving average
     span -> rolling window span
     fee_pct -> fee associated with a buy/sell action
+    date_range is entire time series
+    display_dates are zoom dates
+    flags display -> 0: Price  | 1: EMA  | 2: buffer |
+                     3: arrows | 4 : statistics | 5: save
     '''
-    start = date_range[0]
-    end   = date_range[1]
-    title_dates = tra.dates_to_strings([start, end], '%d-%b-%Y')
-    file_dates  = tra.dates_to_strings([start, end], '%Y-%m-%d')
+    timespan = (display_dates[1] - display_dates[0]).days
+
+    title_dates = tra.dates_to_strings([display_dates[0], display_dates[1]], '%d-%b-%Y')
+    file_dates  = tra.dates_to_strings([display_dates[0], display_dates[1]], '%Y-%m-%d')
 
     # Extract time window
-    dfr = tra.build_strategy(security.loc[start:end, :].copy(),
-                            span,
-                            buffer,
-                            dft.INIT_WEALTH,
-                           )
+    window_start = display_dates[0] - timedelta(days = span + 1)
+    dfr = tra.build_strategy(security.loc[window_start:display_dates[1], :].copy(),
+                             span,
+                             buffer,
+                             dft.INIT_WEALTH,
+                             )
+
     fee  = tra.get_fee(dfr, fee_pct, dft.get_actions())
     hold = tra.get_cumret(dfr, 'hold')  # cumulative returns for hold strategy
     ema  = tra.get_cumret(dfr, 'ema', fee)  # cumulative returns for EMA strategy
 
     _, axis = plt.subplots(figsize=(dft.FIG_WIDTH, dft.FIG_HEIGHT))
-    axis.plot(dfr.index, dfr.Close, linewidth=1, label='Price')
-    axis.plot(dfr.index, dfr.EMA, linewidth=1, label=f'{span:.0f}-day avg')
 
-    axis.legend(loc='best')
-    axis.set_ylabel('Price ($)')
-    axis.xaxis.set_major_formatter(dft.get_year_month_format())
+    # Display MY for > 180 days and DMY otherwise
+    if timespan > 180:
+        axis.xaxis.set_major_formatter(dft.get_month_year_format())
+    else:
+        axis.xaxis.set_major_formatter(dft.get_day_month_year_format())
+
     axis.grid(b=None, which='both', axis='both',
               color=dft.GRID_COLOR, linestyle='-', linewidth=1)
 
-    # plot buy/sell arrows
-    buy_sell = plot_arrows(axis, dfr, dft.get_actions(), dft.get_color_scheme())
+    # Plot Close
+    if flags[0]:
+        axis.plot(dfr.loc[display_dates[0]:display_dates[1], :].index,
+                  dfr.loc[display_dates[0]:display_dates[1], :].Close,
+                  linewidth=1,
+                  color = dft.COLOR_SCHEME[0],
+                  label='Price')
+    # Plot EMA
+    if flags[1]:
+        axis.plot(dfr.loc[display_dates[0]:display_dates[1], :].index,
+                  dfr.loc[display_dates[0]:display_dates[1], :].EMA,
+                  linewidth=1,
+                  color = dft.COLOR_SCHEME[1],
+                  label=f'{span:.0f}-day EMA')
+    # Plot EMA +/- buffer
+    if flags[2]:
+        axis.plot(dfr.loc[display_dates[0]:display_dates[1], :].index,
+                  dfr.loc[display_dates[0]:display_dates[1], :].EMA_MINUS,
+                  linewidth = 1,
+                  linestyle = '--',
+                  color = dft.COLOR_SCHEME[2],
+                  label=f'EMA - {buffer:.2%}')
+        axis.plot(dfr.loc[display_dates[0]:display_dates[1], :].index,
+                  dfr.loc[display_dates[0]:display_dates[1], :].EMA_PLUS,
+                  linewidth = 1,
+                  linestyle = '--',
+                  color = dft.COLOR_SCHEME[2],
+                  label=f'EMA + {buffer:.2%}')
+    axis.legend(loc='best')
+    axis.set_ylabel('Price ($)')
 
-    build_title(axis, ticker, ticker_name, title_dates, ema, hold, span, buffer, buy_sell)
-    save_figure(dft.PLOT_DIR, f'{ticker}_{file_dates[0]}_{file_dates[1]}')
+    buy_sell = None
+    if flags[3]: # plot buy/sell arrows
+        def extract_actions(data, actions):
+            '''Return a dataframe consisting only of action rows '''
+            filtered =  data[(data.ACTION == actions[0]) | (data.ACTION == actions[1])]
+            return filtered
+
+        filtered = extract_actions(dfr, dft.get_actions())
+        buys  = filtered.loc[display_dates[0]:display_dates[1], 'ACTION'].str.count('buy').sum()
+        sells = filtered.loc[display_dates[0]:display_dates[1], 'ACTION'].str.count('sell').sum()
+        buy_sell = [buys, sells]
+        #buy_sell = [filtered.ACTION.str.count('buy').sum(), filtered.ACTION.str.count('sell').sum()]
+
+        plot_arrows(axis,
+                    dfr.loc[display_dates[0]:display_dates[1], :],
+                    dft.get_actions(),
+                    dft.get_color_scheme(),
+                    )
+
+    if flags[4]:
+        summary_stats = util.get_summary_stats(dfr.loc[display_dates[0]:display_dates[1], :],
+                                               dft.STATS_LEVEL,
+                                               'RET')
+        axis = plot_stats(summary_stats,
+                          axis,
+                          dfr.loc[display_dates[0]:display_dates[1], :],
+                          dft.get_color_scheme(),
+                          )
+        #axis, ticker, ticker_name, dates, ema, hold, span, buffer, buy_sell=None
+    build_title(axis=axis,
+                ticker=ticker,
+                ticker_name=ticker_name,
+                dates=title_dates,
+                span=span,
+                buffer=buffer,
+                ema=ema,
+                hold=hold,
+                buy_sell=buy_sell,)
+    if flags[5]:
+        data_dir = os.path.join(dft.PLOT_DIR, ticker)
+        save_figure(data_dir, f'{ticker}_{file_dates[0]}_{file_dates[1]}_tmseries')
+        plt.show()
+
     return dfr
 
 
@@ -385,21 +561,22 @@ def plot_buffer_span_3D(ticker, ticker_name, date_range, spans, buffers, emas, h
         #axis.set_zticks([])
         return axis
 
+
     # Get start & end dates in title (%d-%b-%Y) and output file (%Y-%m-%d) formats
+
     title_range = tra.dates_to_strings([date_range[0],
                                         date_range[1]],
                                        '%d-%b-%Y')
+
     name_range   = tra.dates_to_strings([date_range[0],
                                          date_range[1]],
                                         '%Y-%m-%d')
-
     max_span, max_buff, max_ema, hold = extract_best_ema(spans,
                                                          buffers,
                                                          emas,
                                                          hold,
                                                          )
     temp = re_format_data(spans, buffers, emas)
-
     # Plot
     fig = plt.figure(figsize=(10, 10))
     axis = fig.gca(projection='3d')
