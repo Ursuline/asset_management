@@ -56,6 +56,10 @@ class Security(eq.Equity):
         return self.close
 
 
+    def get_currency(self):
+        return self.data['currency']
+
+
     def get_volume(self):
         return self.volume
 
