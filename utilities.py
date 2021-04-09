@@ -100,7 +100,7 @@ def get_start(period: str):
         t_diff = relativedelta(months=int(period[:-2]))
     else:
         raise ValueError(f'invalid period {period}')
-    return datetime.datetime.now() - t_diff
+    return datetime.now() - t_diff
 
 
 def round_up(number, decimals = 0):
@@ -135,7 +135,7 @@ def get_start_date(start_str, window: int):
     '''
     Returns start date before rolling window
     '''
-    start  = datetime.datetime.strptime(start_str, '%Y-%m-%d')
+    start  = datetime.strptime(start_str, '%Y-%m-%d')
     return (start - datetime.timedelta(window)).date()
 
 
@@ -156,8 +156,8 @@ def get_return(data, ticker, purchase_date, sale_date):
           f'{sale_date} sale ${sale_price:.2f}')
 
     d_price = sale_price-purchase_price
-    if datetime.datetime.strptime(sale_date, '%Y-%m-%d') > \
-        datetime.datetime.strptime(purchase_date, '%Y-%m-%d'):
+    if datetime.strptime(sale_date, '%Y-%m-%d') > \
+        datetime.strptime(purchase_date, '%Y-%m-%d'):
         rel_price = d_price/purchase_price
     else:
         rel_price = d_price/sale_price
@@ -170,39 +170,39 @@ def convert_seconds(time_s):
     '''
     Given a time duration in seconds, convert to DHMS & return as a string
     '''
-    MIN = 60
-    HR  = 60 * MIN
-    DAY = 24 * HR
+    minute = 60
+    hour   = 60 * minute
+    day    = 24 * hour
     def sec_to_min(sec):
-        time_m = sec // MIN
-        time_s = sec % MIN
+        time_m = sec // minute
+        time_s = sec % minute
         return time_m, time_s
 
     def sec_to_hour(sec):
-        time_h = sec // HR
-        time_s = sec % HR
+        time_h = sec // hour
+        time_s = sec % hour
         time_m, time_s = sec_to_min(time_s)
         return time_h, time_m, time_s
 
     def sec_to_day(sec):
-        time_d = sec // DAY
-        time_s = sec % DAY
+        time_d = sec // day
+        time_s = sec % day
         time_h, time_m, time_s = sec_to_hour(time_s)
         return time_d, time_h, time_m, time_s
 
-    if time_s >= DAY:
+    if time_s >= day:
         time_d, time_h, time_m, time_s = sec_to_day(time_s)
         suffix = 'day'
-        if time_d > 1: suffix += 's'
+        if time_d > 1:
+            suffix += 's'
         return f'{time_d:.0f} {suffix} {time_h:.0f}hr:{time_m:.0f}mn:{time_s:.1f}s'
-    elif time_s >= HR:
+    if time_s >= hour:
         time_h, time_m, time_s = sec_to_hour(time_s)
         return f'{time_h:.0f}hr:{time_m:.0f}mn:{time_s:.1f}s'
-    elif time_s >= MIN:
+    if time_s >= minute:
         time_m, time_s = sec_to_min(time_s)
         return f'{time_m:.0f}mn:{time_s:.1f}s'
-    else:
-        return f'{time_s:.1f}s'
+    return f'{time_s:.1f}s'
 
 
 def get_summary_stats(data, level, target):
@@ -215,7 +215,8 @@ def get_summary_stats(data, level, target):
     summary_stats['skewness']  = scipy.stats.skew(data[target], nan_policy='omit')
     summary_stats['kurtosis']  = scipy.stats.kurtosis(data[target], nan_policy='omit')
     statistic, p_value = scipy.stats.jarque_bera(data[target])
-    summary_stats['jb']  = dict(zip(['statistic', 'p-value', 'gaussian', 'level'], [statistic, p_value, p_value > level, level]))
+    summary_stats['jb']  = dict(zip(['statistic', 'p-value', 'gaussian', 'level'],
+                                    [statistic, p_value, p_value > level, level]))
     return summary_stats
 
 
@@ -227,8 +228,9 @@ def init_dates(security, start_date_string, end_date_string):
     Handles gracefully start date smaller than the one in the dataset
     data returned in datetime format
     '''
-    start_dt   = datetime.strptime(start_date_string, '%Y-%m-%d')
-    end_dt     = datetime.strptime(end_date_string,   '%Y-%m-%d')
+    fmt = '%Y-%m-%d'
+    start_dt   = datetime.strptime(start_date_string, fmt)
+    end_dt     = datetime.strptime(end_date_string,   fmt)
     secu_start = security.index[0]
     # Check if data downloaded otherwise start with earliest date
     if secu_start > start_dt:
@@ -255,12 +257,3 @@ def dates_to_strings(date_range, fmt):
     start_string = start.strftime(fmt)
     end_string   = end.strftime(fmt)
     return [start_string, end_string]
-
-
-if __name__ == '__main__':
-    seconds = 3865
-    seconds = 188345
-    seconds = 3600
-    #seconds = 72
-    msg = convert_seconds(seconds)
-    print(msg)

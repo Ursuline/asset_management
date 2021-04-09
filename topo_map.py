@@ -9,7 +9,9 @@ import os
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
+from tqdm import tqdm
 
+import trading as tra
 import trading_defaults as dft
 import trading_plots as trplt
 import utilities as util
@@ -18,37 +20,38 @@ class Topomap():
     ''' A Topomap encapsulates :
         span, buffer, EMA, hold
     '''
-    def __init__(self, ticker_name, spans, buffers, emas, hold):
+    def __init__(self, ticker_symbol, date_range):
         '''
         name -> identifier / ticker name that corresponds to EMA map
         date_range in datetime format
         spans, buffers, emas -> numpy arrays
         hold -> float
         '''
-        self._name       = ticker_name
-        self._date_range = None
-        self._spans      = spans
-        self._buffers    = buffers
-        self._emas       = emas
-        self._hold       = self._set_hold(hold)
+        self._name       = ticker_symbol
+        self._date_range = date_range
+        self._spans      = None
+        self._buffers    = None
+        self._emas       = None
+        self._hold       = None
         self._best_emas  = None
         self._n_best     = None # number of best_emas
 
+
     def set_date_range(self, date_range):
-        '''Set date range for object'''
+        '''Reset date range'''
         self._date_range = date_range
 
-    @staticmethod
-    def _set_hold(hold):
+
+    def set_hold(self, hold):
         '''
         If hold passed as a float keep it as is,
         if a list-like object, take first element only
         '''
-        if isinstance(hold, float):
-            return hold
         if isinstance(hold, (list, np.ndarray, pd.Series)):
-            return hold[0]
-        raise ValueError(f'{hold} not a float, mumpy array, pandas series or list')
+            self._hold = hold[0]
+        else:
+            self._hold = hold
+
 
     def get_name(self):
         '''Return ticker identifier '''
@@ -80,8 +83,88 @@ class Topomap():
 
     def get_global_max(self):
         '''Returns the top span, buffer, ema, hold combination'''
-        top = self._best_emas.iloc[0]
-        return(top)
+        return self._best_emas.iloc[0]
+
+    def get_ema_map_filename(self):
+        '''
+        Return the persist filename for the ema portion of the topomap
+        '''
+        data_dir = dft.DATA_DIR
+        data_dir = os.path.join(data_dir, self._name)
+
+        dates    = util.dates_to_strings(self._date_range, '%Y-%m-%d')
+        suffix   = f'{dates[0]}_{dates[1]}_ema_map'
+        filename = f'{self._name}_{suffix}'
+        return os.path.join(data_dir, filename + '.csv')
+
+
+    def build_ema_map(self, security, dates):
+        '''
+        Builds a 2D numpy array of EMAs as a function of span and buffer
+        This function iteratively calls build_strategy()
+        '''
+        # define rolling window span range
+
+        span_par = dft.get_spans()
+        spans = np.arange(span_par[0],
+                          span_par[1] + 1,
+                          step = 1
+                         )
+
+        # define buffer range
+        buff_par = dft.get_buffers()
+        buffers = np.linspace(buff_par[0],
+                              buff_par[1],
+                              buff_par[2],
+                             )
+
+        # Initialize EMA returns
+        emas = np.zeros((spans.shape[0], buffers.shape[0]), dtype=np.float64)
+
+        # Fill EMAS for all span/buffer combinations
+        desc = f'Outer Level (spans) / {span_par[1] - span_par[0] + 1}'
+        for i, span in tqdm(enumerate(spans), desc = desc):
+            for j, buffer in enumerate(buffers):
+                data  = tra.build_strategy(security.loc[dates[0]:dates[1], :].copy(),
+                                       span,
+                                       buffer,
+                                       dft.INIT_WEALTH,
+                                      )
+                emas[i][j] = tra.get_cumret(data,
+                                        'ema',
+                                        tra.get_fee(data,
+                                                dft.FEE_PCT,
+                                                dft.get_actions()))
+                if i == 0 and j == 0:
+                    hold = tra.get_cumret(data, 'hold')
+
+        self._spans   = spans
+        self._buffers = buffers
+        self._emas    = emas
+        self.set_hold(hold)
+
+
+    def read_ema_map(self): # Incorporate into topomap
+        '''Reads raw EMA data from csv file, reshape and  and returns as a dataframe'''
+        pathname = self.get_ema_map_filename()
+
+        ema_map = pd.read_csv(pathname, sep=';', index_col=0)
+
+        spans   = ema_map['span'].to_numpy()
+        buffers = ema_map['buffer'].to_numpy()
+        emas    = ema_map['ema'].to_numpy()
+        hold    = ema_map['hold'].to_numpy()
+
+        # reshape the arrays
+        spans   = np.unique(spans)
+        buffers = np.unique(buffers)
+        emas    = np.reshape(emas, (spans.shape[0], buffers.shape[0]))
+
+        self._spans   = spans
+        self._buffers = buffers
+        self._emas    = emas
+        self.set_hold(hold)
+
 
     def build_best_emas(self, n_best):
         '''computes best emas'''
@@ -92,16 +175,15 @@ class Topomap():
         # copy b/c algorithm destroys top n_maxima EMA values
         _emas = self.get_emas().copy()
 
-
         for i in range(n_best):
             # Get coordinates of maximum emas value
             max_idx = np.unravel_index(np.argmax(_emas, axis=None),
                                        _emas.shape)
 
-            results[i][0] = self.get_spans()[max_idx[0]]
-            results[i][1] = self.get_buffers()[max_idx[1]]
+            results[i][0] = self._spans[max_idx[0]]
+            results[i][1] = self._buffers[max_idx[1]]
             results[i][2] = np.max(_emas)
-            results[i][3] = self.get_hold()
+            results[i][3] = self._hold
 
             # set max emas value to arbitrily small number and re-iteratedates_to_strings
             _emas[max_idx[0]][max_idx[1]] = - dft.HUGE
@@ -111,19 +193,18 @@ class Topomap():
                                        columns=['span', 'buffer', 'ema', 'hold']
                                        )
 
-    def save_emas(self, date_range):
+    def save_emas(self):
         '''
         Save ema map to file
         '''
         temp = []
-
         for i, span in enumerate(self.get_spans()):
             for j, buffer in enumerate(self.get_buffers()):
                 temp.append([span, buffer, self.get_emas()[i,j], self._hold])
 
         temp = pd.DataFrame(temp, columns=['span', 'buffer', 'ema', 'hold'])
 
-        dates = util.dates_to_strings(date_range, '%Y-%m-%d')
+        dates = util.dates_to_strings(self._date_range, '%Y-%m-%d')
         suffix = f'{dates[0]}_{dates[1]}_ema_map'
         self._save_dataframe(suffix, temp, 'csv')
 
@@ -135,9 +216,9 @@ class Topomap():
         The output data is n_best rows of:
         | span | buffer | ema | hold |
         '''
-        print(f'best emas\n{self._best_emas}')
         if self._date_range is None:
-            raise ValueError('date_range should be set via set_date_range')
+            msg = 'save_best_emas: date_range should be set via set_date_range'
+            raise ValueError(msg)
         start, end = util.dates_to_strings(self._date_range, '%Y-%m-%d')
         suffix = f'{start}_{end}_results'
         self._save_dataframe(suffix, self._best_emas, 'csv')
@@ -162,7 +243,9 @@ class Topomap():
         else:
             raise ValueError(f'{extension} not supported should be pkl or csv')
 
-### Plotting functions
+
+    ### Plotting functions ###
+
     def contour_plot(self, ticker_object, date_range):
         '''
         Contour plot of EMA as a function of rolling-window span & buffer

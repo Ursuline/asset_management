@@ -102,7 +102,6 @@ def plot_maxima(emas, spans, buffers, hold, axis, n_maxima):
             max_ema  = np.max(_emas)
             max_span = spans[max_idx[0]]
             max_buff = buffers[max_idx[1]]
-            print()
 
         # Plot marker at maximum
         axis.plot(buffers[max_idx[1]],
@@ -119,10 +118,10 @@ def plot_maxima(emas, spans, buffers, hold, axis, n_maxima):
                       fontsize   = dft.MAX_LABEL_SIZE,
                       color      = dft.ANNOTATE_COLOR,
                     )
-        msg  = f'Max EMA {i}={np.max(_emas):.2%}: '
-        msg += f'{spans[max_idx[0]]:.0f}-days buffer={buffers[max_idx[1]]:.2%} '
-        msg += f'(hold={hold:.2%})'
-        print(msg)
+        # msg  = f'Max EMA {i}={np.max(_emas):.2%}: '
+        # msg += f'{spans[max_idx[0]]:.0f}-days buffer={buffers[max_idx[1]]:.2%} '
+        # msg += f'(hold={hold:.2%})'
+        # print(msg)
 
         # set max emas value to arbitrily small number and re-iterate
         _emas[max_idx[0]][max_idx[1]] = - dft.HUGE

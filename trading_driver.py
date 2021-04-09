@@ -16,6 +16,7 @@ import trading as tra
 import trading_defaults as dft
 import trading_portfolio as ptf
 import utilities as util
+import topo_map as tpm
 
 N_MAXIMA_SAVE = 20 # number of maxima to save to file
 
@@ -30,10 +31,10 @@ TICKERS += ptf.INDUSTRIAL
 TICKERS += ptf.INDICES + ptf.DEFENSE + ptf.OBSERVE
 TICKERS += ptf.CSR + ptf.LUXURY + ptf.GAFAM + ptf.CRYPTO + ptf.FINANCIAL
 
-TICKERS = ['SU.PA']
+TICKERS = ['BTC-USD']
 TICKERS = ptf.CRYPTO
 
-REFRESH = False # Download fresh Yahoo data
+REFRESH = True # Download fresh Yahoo data
 FILTER  = True # Remove securities from REMOVE
 
 END_DATE   = dft.TODAY
@@ -69,7 +70,6 @@ if __name__ == '__main__':
                                               refresh = REFRESH,
                                               period  = dft.DEFAULT_PERIOD,
                                               )
-
             # security is the Close
             security = pd.DataFrame(ticker_obj.get_market_data()[f'Close_{ticker}'])
             security.rename(columns={f'Close_{ticker}': "Close"}, inplace=True)
@@ -79,17 +79,19 @@ if __name__ == '__main__':
                                                       DATE_RANGE[0],
                                                       DATE_RANGE[1])
 
+            # Instantiate a Topomap object
+            topomap = tpm.Topomap(ticker, date_range)
+
             # Read EMA map values from file or compute if not saved
-            if os.path.exists(tra.get_ema_map_filename(ticker, date_range)):
-                topomap = tra.read_ema_map_oo(ticker_obj, date_range,)
+            if os.path.exists(topomap.get_ema_map_filename()):
+                print(f'Reading EMA map from {topomap.get_ema_map_filename()}')
+                topomap.read_ema_map()
             else: # If not saved, compute it
-                topomap = tra.build_ema_map_oo(ticker_obj, security, date_range,)
+                print('Building EMA map')
+                topomap.build_ema_map(security, date_range,)
 
             # save EMA map values to file
-            topomap.save_emas(date_range)
-
-            # Update topomap with date range values
-            topomap.set_date_range(date_range)
+            topomap.save_emas()
 
             # Build & save best EMA results to file
             topomap.build_best_emas(N_MAXIMA_SAVE)
@@ -100,7 +102,7 @@ if __name__ == '__main__':
 
             # Plot EMA 3D map
             topomap.surface_plot(ticker_object = ticker_obj,
-                                 date_range    = date_range,
+                                 date_range = date_range,
                                  colors = dft.SURFACE_COLOR_SCHEME,
                                  azim   = dft.PERSPECTIVE[0],
                                  elev   = dft.PERSPECTIVE[1],
@@ -108,27 +110,22 @@ if __name__ == '__main__':
                                  )
 
             # Plot time series with default parameters from best EMA
-            # Get default parameters (this is weird - inspect)
-            # best_span, best_buffer, best_ema, hold = tra.get_default_parameters(ticker,
-            #                                                                     date_range)
-
             best_span, best_buffer, best_ema, hold = topomap.get_global_max()
-            print(best_span, best_buffer, best_ema, hold)
-            # Convert dates to datetime
+
+            # Convert zoom dates to datetime
             date_zoom = util.get_datetime_date_range(security,
                                                      ZOOM_RANGE[0],
                                                      ZOOM_RANGE[1])
-            #display flags --
+            #display flags:
             #0: Price  | 1: EMA  | 2: buffer | 3: arrows |
             #4: statistics | 5: save
             display_flags = [True, True, False, True, True, True]
-            ticker_obj.plot_time_series(date_range = date_range,
-                                        display_dates = date_zoom,
-                                        security = security,
-                                        span = best_span,
-                                        buffer = best_buffer,
-                                        flags = display_flags,
-                                        fee_pct = dft.FEE_PCT,
+            ticker_obj.plot_time_series(display_dates = date_zoom,
+                                        security      = security,
+                                        span          = best_span,
+                                        buffer        = best_buffer,
+                                        flags         = display_flags,
+                                        fee_pct       = dft.FEE_PCT,
                                         )
 
             msg  = f'{ticker} running time: '
