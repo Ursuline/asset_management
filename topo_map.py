@@ -37,6 +37,16 @@ class Topomap():
         self._n_best     = None # number of best_emas
 
 
+    def set_buffer(self, buffers):
+        '''Reset buffers'''
+        self._buffers = buffers
+
+
+    def set_span(self, spans):
+        '''Reset spans'''
+        self._spans  = spans
+
+
     def set_date_range(self, date_range):
         '''Reset date range'''
         self._date_range = date_range
@@ -371,3 +381,104 @@ class Topomap():
                           f'{symbol}_{name_range[0]}_{name_range[1]}_3D',
                           extension='png')
         plt.show()
+
+
+    def plot_buffer_range(self, ticker_object, security, span, n_best, fee_pct):
+        '''
+        Plots all possible buffers for a given rolling window span
+        the range of buffer values is defined in defaults file
+        '''
+        target  = 'buffer'
+        xlabel  = 'buffer size (% around EMA)'
+        max_fmt = 'percent'
+        fixed = span
+        buffer_range = dft.get_buffers()
+        buffers = np.linspace(buffer_range[0],
+                              buffer_range[1],
+                              buffer_range[2])
+
+        emas, _ = trplt.build_1d_emas(security,
+                                      date_range = self._date_range,
+                                      var_name  = target,
+                                      variables = buffers,
+                                      fixed     = fixed,
+                                      fpct      = fee_pct,
+                                      )
+
+        dfr = pd.DataFrame(data=[buffers, emas]).T
+        dfr.columns = [target, 'ema']
+        min_max = [dfr['ema'].min(), dfr['ema'].max()]
+
+        # Plot
+        self.build_range_plot(ticker_object = ticker_object,
+                              dfr           = dfr,
+                              fixed         = fixed,
+                              min_max       = min_max,
+                              n_best        = n_best,
+                              target        = target,
+                              xlabel        = xlabel,
+                              max_fmt       = max_fmt,
+                              )
+
+
+    def plot_span_range(self, ticker_object, security, buffer, n_best, fee_pct):
+        '''
+        Plots all possible spans for a given buffer size
+        the range of span values is defined in defaults file
+        '''
+        target  = 'span'
+        xlabel  = 'rolling mean span (days)'
+        max_fmt = 'integer'
+        fixed = buffer
+        span_range = dft.get_spans()
+        spans = np.arange(span_range[0],
+                          span_range[1] + 1)
+
+        emas, _ = trplt.build_1d_emas(security,
+                                         date_range = self._date_range,
+                                         var_name  = target,
+                                         variables = spans,
+                                         fixed     = fixed,
+                                         fpct      = fee_pct,
+                                         )
+
+        dfr = pd.DataFrame(data=[spans, emas]).T
+        dfr.columns = [target, 'ema']
+        min_max = [dfr['ema'].min(), dfr['ema'].max()]
+
+        # Plot
+        self.build_range_plot(ticker_object = ticker_object,
+                              dfr           = dfr,
+                              fixed         = fixed,
+                              min_max       = min_max,
+                              n_best        = n_best,
+                              target        = target,
+                              xlabel        = xlabel,
+                              max_fmt       = max_fmt,
+                              )
+
+
+    def build_range_plot(self, ticker_object, dfr, fixed, min_max, n_best, target, xlabel, max_fmt):
+        '''
+        plotting function common to plot_span_range() & plot_buffer_range()
+        '''
+        _, axis   = trplt.plot_setup(dfr, target=target)
+        axis = trplt.build_range_plot_axes(axis, target=target, xlabel=xlabel)
+
+        largest_idx = trplt.plot_max_values(dfr, axis, n_best, min_max[1], min_max[0], max_fmt)
+
+        symbol = self._name
+        axis = trplt.build_title(axis,
+                                 symbol,
+                                 ticker_object.get_name(),
+                                 util.dates_to_strings(self._date_range, fmt = '%d-%b-%Y'),
+                                 min_max[1],
+                                 self._hold,
+                                 fixed,
+                                 dfr.iloc[largest_idx[0]][0],
+                                 )
+
+
+        dates    = util.dates_to_strings(self._date_range, fmt = '%Y-%m-%d')
+        filename = f'{symbol}_{dates[0]}_{dates[1]}_{target}s'
+        trplt.save_figure(dft.PLOT_DIR, filename)
