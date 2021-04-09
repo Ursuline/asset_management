@@ -7,7 +7,7 @@ All-purpose use utilities
 
 @author: charles mégnin
 """
-import datetime
+from datetime import datetime
 import pprint
 import math
 import pandas as pd
@@ -217,6 +217,45 @@ def get_summary_stats(data, level, target):
     statistic, p_value = scipy.stats.jarque_bera(data[target])
     summary_stats['jb']  = dict(zip(['statistic', 'p-value', 'gaussian', 'level'], [statistic, p_value, p_value > level, level]))
     return summary_stats
+
+
+### DATETIME Utilities ###
+def init_dates(security, start_date_string, end_date_string):
+    '''
+    Returns start and end dates in datetime format from start_date & end_date
+    in string format
+    Handles gracefully start date smaller than the one in the dataset
+    data returned in datetime format
+    '''
+    start_dt   = datetime.strptime(start_date_string, '%Y-%m-%d')
+    end_dt     = datetime.strptime(end_date_string,   '%Y-%m-%d')
+    secu_start = security.index[0]
+    # Check if data downloaded otherwise start with earliest date
+    if secu_start > start_dt:
+        start_dt = secu_start
+        print(f'start date reset to {start_dt}')
+    return [start_dt, end_dt]
+
+
+def get_datetime_date_range(security, start_date, end_date):
+    '''
+    Return start and end dates in datetime format
+    (this is just a wrapper around init_dates)
+    '''
+    return init_dates(security, start_date, end_date)
+
+
+def dates_to_strings(date_range, fmt):
+    '''
+    takes a range of datetime dates and returns the string equivalent
+    in the required format (default='%d-%b-%Y')
+    '''
+    start = date_range[0]
+    end   = date_range[1]
+    start_string = start.strftime(fmt)
+    end_string   = end.strftime(fmt)
+    return [start_string, end_string]
+
 
 if __name__ == '__main__':
     seconds = 3865

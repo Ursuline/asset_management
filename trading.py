@@ -11,7 +11,7 @@ Routines for trading
 """
 import os
 import pickle
-from datetime import datetime
+#from datetime import datetime
 import pandas as pd
 import numpy as np
 from tqdm import tqdm
@@ -19,18 +19,20 @@ import security as sec
 
 import trading_defaults as dft
 import ticker as tkr
+import topo_map as tpm
+import utilities as util
 
 ### TRADING ###
-def get_default_parameters(ticker, date_range):
-    try: # ema file exists
-        spans, buffers, emas, hold = read_ema_map(ticker, date_range)
-        df = get_best_emas(spans, buffers, emas, hold, 1)
-        opt_span, opt_buff , opt_ema, opt_hold = df.span[0], df.buffer[0], df.ema[0], df.hold[0]
-    except Exception as ex:
-        print(f'Could not process {ticker}: Exception={ex}')
-        raise ValueError('aborting')
-        opt_span, opt_buff , opt_ema, opt_hold = dft.DEFAULT_SPAN, dft.DEFAULT_BUFFER, 0, 0
-    return opt_span, opt_buff , opt_ema, opt_hold
+# def get_default_parameters(ticker, date_range):
+#     try: # ema file exists
+#         spans, buffers, emas, hold = read_ema_map(ticker, date_range)
+#         df = get_best_emas(spans, buffers, emas, hold, 1)
+#         opt_span, opt_buff , opt_ema, opt_hold = df.span[0], df.buffer[0], df.ema[0], df.hold[0]
+#     except Exception as ex:
+#         print(f'Could not process {ticker}: Exception={ex}')
+#         raise ValueError('aborting')
+#         opt_span, opt_buff , opt_ema, opt_hold = dft.DEFAULT_SPAN, dft.DEFAULT_BUFFER, 0, 0
+#     return opt_span, opt_buff , opt_ema, opt_hold
 
 
 def build_ema_map(ticker, security, dates):
@@ -77,6 +79,47 @@ def build_ema_map(ticker, security, dates):
                 hold = get_cumret(data, 'hold')
 
     return spans, buffers, emas, hold
+
+def build_ema_map_oo(ticker_object, security, dates): # push to topomap
+    '''
+    Builds a 2D numpy array of EMAs as a function of span and buffer
+    This function iteratively calls build_strategy()
+    '''
+    # define rolling window span range
+
+    span_par = dft.get_spans()
+    spans = np.arange(span_par[0],
+                      span_par[1] + 1,
+                      step = 1
+                     )
+
+    # define buffer range
+    buff_par = dft.get_buffers()
+    buffers = np.linspace(buff_par[0],
+                          buff_par[1],
+                          buff_par[2],
+                         )
+
+    # Initialize EMA returns
+    emas = np.zeros((spans.shape[0], buffers.shape[0]), dtype=np.float64)
+
+    # Fill EMAS for all span/buffer combinations
+    desc = f'Outer Level (spans) / {span_par[1] - span_par[0] + 1}'
+    for i, span in tqdm(enumerate(spans), desc = desc):
+        for j, buffer in enumerate(buffers):
+            data  = build_strategy(security.loc[dates[0]:dates[1], :].copy(),
+                                   span,
+                                   buffer,
+                                   dft.INIT_WEALTH,
+                                  )
+            emas[i][j] = get_cumret(data,
+                                    'ema',
+                                    get_fee(data,
+                                            dft.FEE_PCT,
+                                            dft.get_actions()))
+            if i == 0 and j == 0:
+                hold = get_cumret(data, 'hold')
+    return tpm.Topomap(ticker_object.get_symbol(), spans, buffers, emas, hold)
 
 
 def build_positions(d_frame):
@@ -289,6 +332,7 @@ def get_best_emas(spans, buffers, emas, hold, n_best):
                              )
 
 
+
 ### I/O ###
 
 def save_best_emas(ticker, date_range, spans, buffers, emas, hold, n_best):
@@ -300,9 +344,23 @@ def save_best_emas(ticker, date_range, spans, buffers, emas, hold, n_best):
 
     best_emas = get_best_emas(spans, buffers, emas, hold, n_best)
 
-    start, end = dates_to_strings(date_range, '%Y-%m-%d')
+    start, end = util.dates_to_strings(date_range, '%Y-%m-%d')
     suffix = f'{start}_{end}_results'
     save_dataframe(ticker, suffix, best_emas, 'csv')
+
+
+# def save_best_emas_oo(ticker_object, date_range, topomap, n_best):
+#     '''
+#     Outputs n_best results to file
+#     The output data is n_best rows of:
+#     | span | buffer | ema | hold |
+#     '''
+
+#     best_emas = topomap.get_best_emas_oo(n_best)
+
+#     start, end = util.dates_to_strings(date_range, '%Y-%m-%d')
+#     suffix = f'{start}_{end}_results'
+#     save_dataframe_oo(ticker_object, suffix, best_emas, 'csv')
 
 
 def load_security(dirname, ticker, period, refresh=False):
@@ -342,7 +400,7 @@ def load_security(dirname, ticker, period, refresh=False):
     return data, ticker_name
 
 
-def load_security_new(dirname, ticker, period, refresh=False):
+def load_security_oo(dirname, ticker, period, refresh=False):
     '''
     Load data from file else upload from Yahoo finance
     dirname -> directory where pkl data is saved
@@ -365,8 +423,6 @@ def load_security_new(dirname, ticker, period, refresh=False):
     else:
         print('Downloading data from Yahoo Finance')
         security        = sec.Security(ticker, period)
-        ticker_name     = security.get_name()
-        ticker_currency = security.get_currency()
         data = security.get_market_data()
         data.set_index('Date', inplace=True)
         ticker_obj = tkr.Ticker(ticker, security)
@@ -398,9 +454,19 @@ def get_ema_map_filename(ticker, date_range):
     data_dir = dft.DATA_DIR
     data_dir = os.path.join(data_dir, ticker)
 
-    dates    = dates_to_strings(date_range, '%Y-%m-%d')
+    dates    = util.dates_to_strings(date_range, '%Y-%m-%d')
     suffix   = f'{dates[0]}_{dates[1]}_ema_map'
     filename = f'{ticker}_{suffix}'
+    return os.path.join(data_dir, filename + '.csv')
+
+
+def get_ema_map_filename_oo(ticker_object, date_range):
+    data_dir = dft.DATA_DIR
+    data_dir = os.path.join(data_dir, ticker_object.get_symbol())
+
+    dates    = util.dates_to_strings(date_range, '%Y-%m-%d')
+    suffix   = f'{dates[0]}_{dates[1]}_ema_map'
+    filename = f'{ticker_object.get_symbol()}_{suffix}'
     return os.path.join(data_dir, filename + '.csv')
 
 
@@ -422,6 +488,26 @@ def read_ema_map(ticker, date_range):
     return spans, buffers, emas, hold[0]
 
 
+def read_ema_map_oo(ticker_object, date_range): # Incorporate into topomap
+    '''Reads raw EMA data from csv file and returns as a dataframe'''
+    pathname = get_ema_map_filename(ticker_object.get_symbol(), date_range)
+
+    ema_map = pd.read_csv(pathname, sep=';', index_col=0)
+
+    ticker_name = ticker_object.get_name()
+    spans   = ema_map['span'].to_numpy()
+    buffers = ema_map['buffer'].to_numpy()
+    emas    = ema_map['ema'].to_numpy()
+    hold    = ema_map['hold'].to_numpy()
+
+    # reshape the arrays
+    spans   = np.unique(spans)
+    buffers = np.unique(buffers)
+    emas    = np.reshape(emas, (spans.shape[0], buffers.shape[0]))
+    topomap = tpm.Topomap(ticker_name, spans, buffers, emas, hold)
+    return topomap
+
+
 def save_ema_map(ticker, date_range, spans, buffers, emas, hold):
     '''
     Save ema map to pkl
@@ -433,9 +519,27 @@ def save_ema_map(ticker, date_range, spans, buffers, emas, hold):
 
     temp = pd.DataFrame(temp, columns=['span', 'buffer', 'ema', 'hold'])
 
-    dates = dates_to_strings(date_range, '%Y-%m-%d')
+    dates = util.dates_to_strings(date_range, '%Y-%m-%d')
     suffix = f'{dates[0]}_{dates[1]}_ema_map'
     save_dataframe(ticker, suffix, temp, 'csv')
+
+
+# def save_ema_map_oo(ticker_object, date_range, topomap): # move to Topomap
+#     '''
+#     Save ema map to pkl
+#     '''
+#     print('save_ema_map_oo')
+#     temp = []
+#     hold = topomap.get_hold()
+#     for i, span in enumerate(topomap.get_spans()):
+#         for j, buffer in enumerate(topomap.get_buffers()):
+#             temp.append([span, buffer, topomap.get_emas()[i,j], hold])
+
+#     temp = pd.DataFrame(temp, columns=['span', 'buffer', 'ema', 'hold'])
+
+#     dates = util.dates_to_strings(date_range, '%Y-%m-%d')
+#     suffix = f'{dates[0]}_{dates[1]}_ema_map'
+#     save_dataframe_oo(ticker_object.get_symbol_name(), suffix, temp, 'csv')
 
 
 def save_dataframe(ticker, suffix, dataframe, extension):
@@ -458,39 +562,21 @@ def save_dataframe(ticker, suffix, dataframe, extension):
         raise ValueError(f'{extension} not supported should be pkl or csv')
 
 
-### DATETIME ###
-def init_dates(security, start_date_string, end_date_string):
-    '''
-    Returns start and end dates in datetime format from start_date & end_date
-    in string format
-    Handles gracefully start date smaller than the one in the dataset
-    data returned in datetime format
-    '''
-    start_dt   = datetime.strptime(start_date_string, '%Y-%m-%d')
-    end_dt     = datetime.strptime(end_date_string,   '%Y-%m-%d')
-    secu_start = security.index[0]
-    # Check if data downloaded otherwise start with earliest date
-    if secu_start > start_dt:
-        start_dt = secu_start
-        print(f'start date reset to {start_dt}')
-    return [start_dt, end_dt]
+# def save_dataframe_oo(ticker_object, suffix, dataframe, extension):
+#     '''
+#     Save strategy to either csv or pkl file
+#     '''
+#     data_dir = dft.DATA_DIR
+#     data_dir = os.path.join(data_dir, ticker_object.get_symbol_name())
+#     os.makedirs(data_dir, exist_ok = True)
 
+#     filename = f'{ticker_object.get_symbol_name()}_{suffix}'
 
-def get_datetime_date_range(security, start_date, end_date):
-    '''
-    Return start and end dates in datetime format
-    (this is just a wrapper around init_dates)
-    '''
-    return init_dates(security, start_date, end_date)
-
-
-def dates_to_strings(date_range, fmt):
-    '''
-    takes a range of datetime dates and returns the string equivalent
-    in the required format (default='%d-%b-%Y')
-    '''
-    start = date_range[0]
-    end   = date_range[1]
-    start_string = start.strftime(fmt)
-    end_string   = end.strftime(fmt)
-    return [start_string, end_string]
+#     if extension == 'pkl':
+#         pathname = os.path.join(data_dir, filename + '.pkl')
+#         dataframe.to_pickle(pathname)
+#     elif extension == 'csv':
+#         pathname = os.path.join(data_dir, filename + '.csv')
+#         dataframe.to_csv(pathname, sep=';')
+#     else:
+#         raise ValueError(f'{extension} not supported should be pkl or csv')

@@ -198,43 +198,6 @@ def plot_arrows(axis, data, actions, colors):
                   )
 
 
-# def plot_arrows_old(axis, data, actions, colors):
-#     '''
-#     Draws position-switching arrows on axis
-#     Called by plot_time_series()
-#     '''
-#     vertical_range = data['Close'].max() - data['Close'].min()
-#     horizont_range = (data.index[-1] - data.index[0]).days
-#     arrow_length   = vertical_range/10
-#     head_width     = horizont_range/100
-#     head_length    = vertical_range/50
-#     space          = vertical_range/100  # space bw arrow tip and curve
-#     n_buys, n_sells  = 0, 0
-
-#     for row in range(data.shape[0]):
-#         if data.ACTION[row] == actions[0]:  # buy
-#             y_start = data.loc[data.index[row], 'Close'] + arrow_length
-#             color = colors[2]
-#             delta_y = -arrow_length+space
-#             n_buys += 1
-#         elif data.ACTION[row] == actions[1]:  # sell
-#             y_start = data.loc[data.index[row], 'Close'] - arrow_length
-#             color = colors[3]
-#             delta_y = arrow_length-space
-#             n_sells += 1
-#         else:  # don't draw an arrow
-#             continue
-#         axis.arrow(x=data.index[row],
-#                    y=y_start,
-#                    dx=0, dy=delta_y,
-#                    head_width=head_width,
-#                    head_length=head_length,
-#                    length_includes_head=True,
-#                    linestyle='-',
-#                    color=color,
-#                   )
-#     return [n_buys, n_sells]
-
 def plot_stats(summary_stats, axis, data, colors):
     '''
     Place a text box with signal statistics
@@ -298,44 +261,6 @@ def build_1d_emas(secu, date_range, var_name, variables, fixed, fpct):
 
 
 ### MAIN PLOT FUNCTIONS
-# def plot_time_series_old(ticker, ticker_name, date_range, security, span, fee_pct, buffer, flags):
-#     '''
-#     Plots security prices with moving average
-#     span -> rolling window span
-#     fee_pct -> fee associated with a buy/sell action
-#     '''
-#     start = date_range[0]
-#     end   = date_range[1]
-#     title_dates = tra.dates_to_strings([start, end], '%d-%b-%Y')
-#     file_dates  = tra.dates_to_strings([start, end], '%Y-%m-%d')
-
-#     # Extract time window
-#     dfr = tra.build_strategy(security.loc[start:end, :].copy(),
-#                             span,
-#                             buffer,
-#                             dft.INIT_WEALTH,
-#                            )
-#     fee  = tra.get_fee(dfr, fee_pct, dft.get_actions())
-#     hold = tra.get_cumret(dfr, 'hold')  # cumulative returns for hold strategy
-#     ema  = tra.get_cumret(dfr, 'ema', fee)  # cumulative returns for EMA strategy
-
-#     _, axis = plt.subplots(figsize=(dft.FIG_WIDTH, dft.FIG_HEIGHT))
-#     axis.plot(dfr.index, dfr.Close, linewidth=1, label='Price')
-#     axis.plot(dfr.index, dfr.EMA, linewidth=1, label=f'{span:.0f}-day avg')
-
-#     axis.legend(loc='best')
-#     axis.set_ylabel('Price ($)')
-#     axis.xaxis.set_major_formatter(dft.get_year_month_format())
-#     axis.grid(b=None, which='both', axis='both',
-#               color=dft.GRID_COLOR, linestyle='-', linewidth=1)
-
-
-#     buy_sell = plot_arrows(axis, dfr, dft.get_actions(), dft.get_color_scheme())
-
-#     build_title(axis, ticker, ticker_name, title_dates, ema, hold, span, buffer, buy_sell)
-#     save_figure(dft.PLOT_DIR, f'{ticker}_{file_dates[0]}_{file_dates[1]}')
-#     return dfr
-
 
 def plot_time_series(ticker, ticker_name, date_range, display_dates, security, span, fee_pct, buffer, flags):
     '''
@@ -349,8 +274,8 @@ def plot_time_series(ticker, ticker_name, date_range, display_dates, security, s
     '''
     timespan = (display_dates[1] - display_dates[0]).days
 
-    title_dates = tra.dates_to_strings([display_dates[0], display_dates[1]], '%d-%b-%Y')
-    file_dates  = tra.dates_to_strings([display_dates[0], display_dates[1]], '%Y-%m-%d')
+    title_dates = util.dates_to_strings([display_dates[0], display_dates[1]], '%d-%b-%Y')
+    file_dates  = util.dates_to_strings([display_dates[0], display_dates[1]], '%Y-%m-%d')
 
     # Extract time window
     window_start = display_dates[0] - timedelta(days = span + 1)
@@ -404,20 +329,18 @@ def plot_time_series(ticker, ticker_name, date_range, display_dates, security, s
                   color = dft.COLOR_SCHEME[2],
                   label=f'EMA + {buffer:.2%}')
     axis.legend(loc='best')
-    axis.set_ylabel('Price ($)')
+    axis.set_ylabel('Price')
 
     buy_sell = None
     if flags[3]: # plot buy/sell arrows
-        def extract_actions(data, actions):
-            '''Return a dataframe consisting only of action rows '''
-            filtered =  data[(data.ACTION == actions[0]) | (data.ACTION == actions[1])]
-            return filtered
 
-        filtered = extract_actions(dfr, dft.get_actions())
-        buys  = filtered.loc[display_dates[0]:display_dates[1], 'ACTION'].str.count('buy').sum()
-        sells = filtered.loc[display_dates[0]:display_dates[1], 'ACTION'].str.count('sell').sum()
-        buy_sell = [buys, sells]
-        #buy_sell = [filtered.ACTION.str.count('buy').sum(), filtered.ACTION.str.count('sell').sum()]
+        actions  = dft.get_actions()
+        filtered = dfr[(dfr.ACTION == actions[0]) | (dfr.ACTION == actions[1])]
+        n_buys   = filtered.loc[display_dates[0]:display_dates[1],
+                                'ACTION'].str.count(actions[0]).sum()
+        n_sells  = filtered.loc[display_dates[0]:display_dates[1],
+                                'ACTION'].str.count(actions[1]).sum()
+        buy_sell = [n_buys, n_sells]
 
         plot_arrows(axis,
                     dfr.loc[display_dates[0]:display_dates[1], :],
@@ -434,7 +357,7 @@ def plot_time_series(ticker, ticker_name, date_range, display_dates, security, s
                           dfr.loc[display_dates[0]:display_dates[1], :],
                           dft.get_color_scheme(),
                           )
-        #axis, ticker, ticker_name, dates, ema, hold, span, buffer, buy_sell=None
+
     build_title(axis=axis,
                 ticker=ticker,
                 ticker_name=ticker_name,
@@ -464,12 +387,12 @@ def build_range_plot(ticker, ticker_name, date_range, dfr, fixed, hold, min_max,
     axis = build_title(axis,
                        ticker,
                        ticker_name,
-                       tra.dates_to_strings(date_range, fmt = '%d-%b-%Y'),
+                       util.dates_to_strings(date_range, fmt = '%d-%b-%Y'),
                        min_max[1], hold,
                        fixed, dfr.iloc[largest_idx[0]][0],
                        )
 
-    dates    = tra.dates_to_strings(date_range, fmt = '%Y-%m-%d')
+    dates    = util.dates_to_strings(date_range, fmt = '%Y-%m-%d')
     filename = f'{ticker}_{dates[0]}_{dates[1]}_{target}s'
     save_figure(dft.PLOT_DIR, filename)
 
@@ -549,6 +472,7 @@ def plot_buffer_span_3D(ticker, ticker_name, date_range, spans, buffers, emas, h
 
     def remove_axes_grids(axis):
         # Remove gray panes and axis grid
+        remove_z = False
         axis.xaxis.pane.fill = False
         axis.xaxis.pane.set_edgecolor('white')
         axis.yaxis.pane.fill = False
@@ -557,18 +481,19 @@ def plot_buffer_span_3D(ticker, ticker_name, date_range, spans, buffers, emas, h
         axis.zaxis.pane.set_edgecolor('white')
         axis.grid(False)
         # Remove z-axis
-        #axis.w_zaxis.line.set_lw(0.)
-        #axis.set_zticks([])
+        if remove_z:
+            axis.w_zaxis.line.set_lw(0.)
+            axis.set_zticks([])
         return axis
 
 
     # Get start & end dates in title (%d-%b-%Y) and output file (%Y-%m-%d) formats
 
-    title_range = tra.dates_to_strings([date_range[0],
+    title_range = util.dates_to_strings([date_range[0],
                                         date_range[1]],
                                        '%d-%b-%Y')
 
-    name_range   = tra.dates_to_strings([date_range[0],
+    name_range   = util.dates_to_strings([date_range[0],
                                          date_range[1]],
                                         '%Y-%m-%d')
     max_span, max_buff, max_ema, hold = extract_best_ema(spans,
@@ -608,10 +533,10 @@ def plot_buffer_span_contours(ticker, ticker_name, date_range, spans, buffers, e
     n_maxima   = dft.N_MAXIMA_DISPLAY # number of maximum points to plot
 
     # Get start & end dates in title (%d-%b-%Y) and output file (%Y-%m-%d) formats
-    title_range = tra.dates_to_strings([date_range[0],
+    title_range = util.dates_to_strings([date_range[0],
                                         date_range[1]],
                                        '%d-%b-%Y')
-    name_range   = tra.dates_to_strings([date_range[0],
+    name_range  = util.dates_to_strings([date_range[0],
                                          date_range[1]],
                                         '%Y-%m-%d')
 
