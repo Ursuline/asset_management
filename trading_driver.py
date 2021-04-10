@@ -32,13 +32,13 @@ TICKERS += ptf.INDICES + ptf.DEFENSE + ptf.OBSERVE
 TICKERS += ptf.CSR + ptf.LUXURY + ptf.GAFAM + ptf.CRYPTO + ptf.FINANCIAL
 
 TICKERS = ['BTC-USD']
-TICKERS = ptf.CRYPTO
+#TICKERS = ptf.OBSERVE
 
 REFRESH = True # Download fresh Yahoo data
 FILTER  = True # Remove securities from REMOVE
 
-END_DATE   = dft.TODAY
 #END_DATE   = '2021-04-06'
+END_DATE   = dft.YESTERDAY
 
 DATE_RANGE = ['2017-07-15', END_DATE]
 ZOOM_RANGE = ['2019-04-01', END_DATE]
@@ -88,6 +88,8 @@ if __name__ == '__main__':
                 topomap.read_ema_map()
             else: # If not saved, compute it
                 print('Building EMA map')
+                #topomap.build_ema_map_new(security, date_range,)
+
                 topomap.build_ema_map(security, date_range,)
 
             # save EMA map values to file

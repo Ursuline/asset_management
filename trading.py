@@ -67,6 +67,40 @@ def build_ema_map(ticker, security, dates):
     return spans, buffers, emas, hold
 
 
+def build_positions_new(d_frame):
+    '''
+    Builds desired positions for the EMA strategy
+    *** Long strategy only ***
+    POSITION -> cash, long (short pending)
+    ACTION -> buy, sell, n/c (no change)
+    '''
+    display(d_frame.dtypes)
+    root = d_frame.index[0]
+    print(f'root={root}')
+    d_frame.loc[root ,'POSITION'] = 'cash'
+    #d_frame.loc[root ,'ACTION']  = 'n/c'
+
+    conditions = [
+        (d_frame['POSITION'].shift(1) == 'cash') & ((d_frame['SIGN'] ==  0.0) | (d_frame['SIGN'] == -1.0)),
+        (d_frame['POSITION'].shift(1) == 'cash') & (d_frame['SIGN']  ==  1.0),
+        (d_frame['POSITION'].shift(1) == 'long') & ((d_frame['SIGN'] ==  0.0) | (d_frame['SIGN'] ==  1.0)),
+        (d_frame['POSITION'].shift(1) == 'long') & (d_frame['SIGN']  == -1.0)
+        ]
+    choices_pos = ['cash', 'long', 'long', 'cash']
+    choices_act = ['n/c', 'buy', 'n/c', 'sell']
+    choices_test = ['1', '2', '3', '4']
+
+    d_frame['POSITION'] = np.select(conditions, choices_pos, default  = 'cash')
+    d_frame['ACTION']   = np.select(conditions, choices_act, default  = 'n/c')
+    d_frame['TEST']     = np.select(conditions, choices_test, default = '5')
+
+    print(d_frame[['SIGN', 'POSITION', 'ACTION', 'TEST']].head(10))
+    print(d_frame[['SIGN', 'POSITION', 'ACTION', 'TEST']].tail(10))
+    1/0
+
+    return d_frame
+
+
 def build_positions(d_frame):
     '''
     Builds desired positions for the EMA strategy
@@ -180,7 +214,6 @@ def build_strategy(d_frame, span, buffer, init_wealth):
 
     Variables:
     span       -> number of rolling days
-    reactivity -> reactivity to market change in days (should be set to 1)
     buffer     -> % above & below ema to trigger buy/sell
 
     Returns the 'strategy' consisting of a dataframe with original data +
@@ -192,6 +225,8 @@ def build_strategy(d_frame, span, buffer, init_wealth):
     CUMRET_HOLD -> cumulative returns for a hold strategy
     RET2 -> 1 + % daily return when Close > EMA
     CUMRET_EMA -> cumulative returns for the EMA strategy
+
+    reactivity -> reactivity to market change in days (should be 1)
     '''
     #init_wealth = dft.INIT_WEALTH
     reactivity  = dft.REACTIVITY
@@ -212,7 +247,8 @@ def build_strategy(d_frame, span, buffer, init_wealth):
     d_frame = build_sign(d_frame, buffer, reactivity)
 
     # build the POSITION (long/cash) & ACTION (buy/sell) columns
-    d_frame = build_positions(d_frame)
+    #d_frame = build_positions(d_frame)
+    d_frame = build_positions_new(d_frame)
 
     # compute returns from a hold strategy
     d_frame = build_hold(d_frame, init_wealth)
@@ -364,6 +400,7 @@ def load_security_oo(dirname, ticker, period, refresh=False):
         pickle_file = open(ticker_pathname,'wb')
         pickle.dump(ticker_obj, pickle_file)
         pickle_file.close()
+    print(f'\n{ticker_obj.get_name()} data loaded')
     return ticker_obj
 
 
@@ -389,16 +426,6 @@ def get_ema_map_filename(ticker, date_range):
     suffix   = f'{dates[0]}_{dates[1]}_ema_map'
     filename = f'{ticker}_{suffix}'
     return os.path.join(data_dir, filename + '.csv')
-
-
-# def get_ema_map_filename_oo(ticker_object, date_range):
-#     data_dir = dft.DATA_DIR
-#     data_dir = os.path.join(data_dir, ticker_object.get_symbol())
-
-#     dates    = util.dates_to_strings(date_range, '%Y-%m-%d')
-#     suffix   = f'{dates[0]}_{dates[1]}_ema_map'
-#     filename = f'{ticker_object.get_symbol()}_{suffix}'
-#     return os.path.join(data_dir, filename + '.csv')
 
 
 def read_ema_map(ticker, date_range):

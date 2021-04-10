@@ -24,12 +24,25 @@ class Ticker():
         Provides ease of access to relevant meta-data and price/volume data
     '''
     def __init__(self, symbol, security):
-        print(f'Loading ticker {symbol}')
-        super().__init__()
-        self._symbol = symbol
-        self._name = security.get_name()
+        self._symbol   = symbol
+        self._name     = security.get_name()
         self._currency = security.get_currency()
-        self._data = self._load_security_data(security)
+        self._data     = self._load_security_data(security)
+        self._currency_symbol = self._set_currency_symbol()
+
+
+    def _set_currency_symbol(self):
+        if self._currency.lower() == 'usd':
+            return '$'
+        if self._currency.lower() == 'eur':
+            return '€'
+        if self._currency.lower() == 'yen':
+            return '¥'
+        if self._currency.lower() == 'hkd': # yuan same as yen
+            return '¥'
+        # else symbol = currency value
+        return self._currency
+
 
     def _load_security_data(self, security):
         dfr = security.get_market_data()
@@ -43,6 +56,10 @@ class Ticker():
     def get_currency(self):
         '''Return ticker currency'''
         return self._currency
+
+    def get_currency_symbol(self):
+        '''Return ticker currency symbol'''
+        return self._currency_symbol
 
     def get_symbol(self):
         '''Return ticker symbol'''
@@ -58,7 +75,7 @@ class Ticker():
 
 ### PLOTS
 
-    def plot_time_series(self, date_range, display_dates, security, span, buffer, flags, fee_pct):
+    def plot_time_series(self, display_dates, security, span, buffer, flags, fee_pct):
         '''
         Plots security prices with moving average
         span -> rolling window span
@@ -125,7 +142,7 @@ class Ticker():
                       color = dft.COLOR_SCHEME[2],
                       label=f'EMA + {buffer:.2%}')
         axis.legend(loc='best')
-        axis.set_ylabel('Price')
+        axis.set_ylabel(f'Price ({self._currency_symbol})')
 
         buy_sell = None
         if flags[3]: # plot buy/sell arrows
