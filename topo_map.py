@@ -116,57 +116,6 @@ class Topomap():
         return os.path.join(data_dir, filename + '.csv')
 
 
-    def build_ema_map_new(self, security, dates):
-        '''
-        Builds a 2D numpy array of EMAs as a function of span and buffer
-        This function iteratively calls build_strategy()
-        '''
-        # define rolling window span range
-        from itertools import product
-        span_par = dft.get_spans()
-        spans = pd.DataFrame(np.arange(span_par[0],
-                                       span_par[1] + 1,
-                                       step = 1
-                                       ),
-                             columns=['spans']
-                             )
-
-        # define buffer range
-        buff_par = dft.get_buffers()
-        buffers = pd.DataFrame(np.linspace(buff_par[0],
-                                           buff_par[1],
-                                           buff_par[2],
-                                           ),
-                               columns=['buffers']
-                               )
-
-        emas = pd.DataFrame(list(product(spans['spans'],
-                                         buffers['buffers']
-                                         )
-                                 ),
-                            columns=['span', 'buffer']
-                            )
-
-        def strategy_call(row, security):
-            data  = tra.build_strategy(security.loc[dates[0]:dates[1], :].copy(),
-                                       row['span'],
-                                       row['buffer'],
-                                       dft.INIT_WEALTH,
-                                      )
-            ema = tra.get_cumret(data,
-                                 'ema',
-                                 tra.get_fee(data,
-                                             dft.FEE_PCT,
-                                             dft.get_actions()
-                                             )
-                                 )
-            return ema
-
-        tqdm.pandas(desc=f'{self._name} EMA progress')
-        emas['ema']= emas.progress_apply(strategy_call, security=security, axis=1).to_numpy()
-        print(emas, emas.shape)
-
-
     def build_ema_map(self, security, dates):
         '''
         Builds a 2D numpy array of EMAs as a function of span and buffer
@@ -210,7 +159,6 @@ class Topomap():
         self._buffers = buffers
         self._emas    = emas
         self.set_hold(hold)
-        print(emas, emas.shape)
 
 
     def read_ema_map(self): # Incorporate into topomap

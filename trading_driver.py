@@ -20,6 +20,8 @@ import topo_map as tpm
 
 N_MAXIMA_SAVE = 20 # number of maxima to save to file
 
+STRATEGY = 'long' # long or short
+
 REMOVE = ['UL', 'FP.PA', 'ORA.PA', 'KC4.F', 'BNP.PA', 'KER.PA', 'SMC.PA']
 REMOVE += ['FB', 'HO.PA', 'LHN.SW', 'SQ', 'BIDU', 'ARKQ', 'KORI.PA']
 REMOVE += ['TRI.PA', 'HEXA.PA', 'CA.PA', 'ATO.PA']
@@ -32,7 +34,7 @@ TICKERS += ptf.INDICES + ptf.DEFENSE + ptf.OBSERVE
 TICKERS += ptf.CSR + ptf.LUXURY + ptf.GAFAM + ptf.CRYPTO + ptf.FINANCIAL
 
 TICKERS = ['BTC-USD']
-#TICKERS = ptf.OBSERVE
+TICKERS = ptf.OBSERVE
 
 REFRESH = True # Download fresh Yahoo data
 FILTER  = True # Remove securities from REMOVE
@@ -87,9 +89,6 @@ if __name__ == '__main__':
                 print(f'Reading EMA map from {topomap.get_ema_map_filename()}')
                 topomap.read_ema_map()
             else: # If not saved, compute it
-                print('Building EMA map')
-                #topomap.build_ema_map_new(security, date_range,)
-
                 topomap.build_ema_map(security, date_range,)
 
             # save EMA map values to file

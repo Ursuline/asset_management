@@ -46,10 +46,8 @@ def build_ema_map(ticker, security, dates):
     emas = np.zeros((spans.shape[0], buffers.shape[0]), dtype=np.float64)
 
     # Fill EMAS for all span/buffer combinations
-    desc = f'Outer Level (spans) / {span_par[1] - span_par[0] + 1}'
-    for i, span in tqdm(enumerate(spans),
-                        desc = desc
-                        ):
+    desc = f'Building ema map | Outer Level (spans) | {span_par[1] - span_par[0] + 1}'
+    for i, span in enumerate(tqdm(spans), desc = desc):
         for j, buffer in enumerate(buffers):
             data  = build_strategy(security.loc[start:end, :].copy(),
                                    span,
@@ -63,42 +61,7 @@ def build_ema_map(ticker, security, dates):
                                             dft.get_actions()))
             if i == 0 and j == 0:
                 hold = get_cumret(data, 'hold')
-
     return spans, buffers, emas, hold
-
-
-def build_positions_new(d_frame):
-    '''
-    Builds desired positions for the EMA strategy
-    *** Long strategy only ***
-    POSITION -> cash, long (short pending)
-    ACTION -> buy, sell, n/c (no change)
-    '''
-    display(d_frame.dtypes)
-    root = d_frame.index[0]
-    print(f'root={root}')
-    d_frame.loc[root ,'POSITION'] = 'cash'
-    #d_frame.loc[root ,'ACTION']  = 'n/c'
-
-    conditions = [
-        (d_frame['POSITION'].shift(1) == 'cash') & ((d_frame['SIGN'] ==  0.0) | (d_frame['SIGN'] == -1.0)),
-        (d_frame['POSITION'].shift(1) == 'cash') & (d_frame['SIGN']  ==  1.0),
-        (d_frame['POSITION'].shift(1) == 'long') & ((d_frame['SIGN'] ==  0.0) | (d_frame['SIGN'] ==  1.0)),
-        (d_frame['POSITION'].shift(1) == 'long') & (d_frame['SIGN']  == -1.0)
-        ]
-    choices_pos = ['cash', 'long', 'long', 'cash']
-    choices_act = ['n/c', 'buy', 'n/c', 'sell']
-    choices_test = ['1', '2', '3', '4']
-
-    d_frame['POSITION'] = np.select(conditions, choices_pos, default  = 'cash')
-    d_frame['ACTION']   = np.select(conditions, choices_act, default  = 'n/c')
-    d_frame['TEST']     = np.select(conditions, choices_test, default = '5')
-
-    print(d_frame[['SIGN', 'POSITION', 'ACTION', 'TEST']].head(10))
-    print(d_frame[['SIGN', 'POSITION', 'ACTION', 'TEST']].tail(10))
-    1/0
-
-    return d_frame
 
 
 def build_positions(d_frame):
@@ -111,35 +74,34 @@ def build_positions(d_frame):
     n_time_steps = d_frame.shape[0]
     positions, actions = ([] for i in range(2))
 
-    positions.append('cash')
-    actions.append('n/c')
+    positions.append(dft.POSITIONS[2])
+    actions.append(dft.ACTIONS[2])
 
-    for step in range(1, n_time_steps):  # Long strategy only
-        if positions[step - 1] == 'cash':  # if previous position was cash
-            # if in or below buffer
-            if d_frame.loc[d_frame.index[step], 'SIGN'] in [0, -1]:
+    for step in range(1, n_time_steps):
+        sign = d_frame.loc[d_frame.index[step], 'SIGN']
+        prev_position = positions[step - 1]
+        if prev_position == 'cash':  # if previous position was cash
+            if sign in [0, -1]: # in or below buffer
                 positions.append('cash')
                 actions.append('n/c')
-            elif d_frame.loc[d_frame.index[step], 'SIGN'] == 1:
+            else: # above buffer
                 positions.append('long')
                 actions.append('buy')
-            else:
-                msg = f'Inconsistent sign {d_frame.loc[d_frame.index[step], "SIGN"]}'
-                raise ValueError(msg)
-        elif positions[step - 1] == 'long':  # previous position: long
-            if d_frame.loc[d_frame.index[step], 'SIGN'] in [0, 1]:
+        elif prev_position == 'long':  # previous position: long
+            if sign in [0, 1]: # in or above buffer
                 positions.append('long')
                 actions.append('n/c')
-            elif d_frame.loc[d_frame.index[step], 'SIGN'] == -1:
+            else: # below buffer
                 positions.append('cash')
                 actions.append('sell')
-            else:
-                msg = f'Inconsistent sign {d_frame.loc[d_frame.index[step], "SIGN"]}'
-                raise ValueError(msg)
-        else:
-            msg  = f"step {step}: previous pos {positions[step - 1]} "
-            msg += "sign:{d_frame.loc[d_frame.index[step], 'SIGN']}"
-            raise ValueError(msg)
+        else: # previous position: short (to implement)
+            if sign == [0, -1]: # in or below buffer
+                positions.append('short')
+                actions.append('n/c')
+            else: # above buffer
+                positions.append('long')
+                actions.append('buy')
+
     d_frame.insert(loc=len(d_frame.columns), column='POSITION', value=positions)
     d_frame.insert(loc=len(d_frame.columns), column='ACTION', value=actions)
     return d_frame
@@ -247,8 +209,7 @@ def build_strategy(d_frame, span, buffer, init_wealth):
     d_frame = build_sign(d_frame, buffer, reactivity)
 
     # build the POSITION (long/cash) & ACTION (buy/sell) columns
-    #d_frame = build_positions(d_frame)
-    d_frame = build_positions_new(d_frame)
+    d_frame = build_positions(d_frame)
 
     # compute returns from a hold strategy
     d_frame = build_hold(d_frame, init_wealth)
