@@ -17,6 +17,7 @@ import trading_defaults as dft
 import trading_portfolio as ptf
 import utilities as util
 import topo_map as tpm
+import recommender as rec
 
 N_MAXIMA_SAVE = 20 # number of maxima to save to file
 
@@ -33,14 +34,16 @@ TICKERS += ptf.INDUSTRIAL
 TICKERS += ptf.INDICES + ptf.DEFENSE + ptf.OBSERVE
 TICKERS += ptf.CSR + ptf.LUXURY + ptf.GAFAM + ptf.CRYPTO + ptf.FINANCIAL
 
-TICKERS = ['BTC-USD']
-TICKERS = ptf.OBSERVE
+TICKERS = ['ETH-USD']
+#TICKERS = ptf.OBSERVE
 
 REFRESH = True # Download fresh Yahoo data
 FILTER  = True # Remove securities from REMOVE
 
-#END_DATE   = '2021-04-06'
-END_DATE   = dft.YESTERDAY
+END_DATE   = dft.TODAY
+END_DATE   = '2021-03-30'
+
+START_DATE = '2017-07-15'
 
 DATE_RANGE = ['2017-07-15', END_DATE]
 ZOOM_RANGE = ['2019-04-01', END_DATE]
@@ -71,9 +74,11 @@ if __name__ == '__main__':
                                               ticker  = ticker,
                                               refresh = REFRESH,
                                               period  = dft.DEFAULT_PERIOD,
+                                              dates   = DATE_RANGE
                                               )
             # security is the Close
             security = pd.DataFrame(ticker_obj.get_market_data()[f'Close_{ticker}'])
+            security = security.loc[START_DATE:END_DATE,:] # trim the data
             security.rename(columns={f'Close_{ticker}': "Close"}, inplace=True)
 
             # Convert dates to datetime
@@ -90,6 +95,8 @@ if __name__ == '__main__':
                 topomap.read_ema_map()
             else: # If not saved, compute it
                 topomap.build_ema_map(security, date_range,)
+
+            #print(f'security: {security.head()}. {security.shape}')
 
             # save EMA map values to file
             topomap.save_emas()
@@ -128,6 +135,20 @@ if __name__ == '__main__':
                                         flags         = display_flags,
                                         fee_pct       = dft.FEE_PCT,
                                         )
+
+            # Determine the action to take for the given END_DATE
+            # ticker_obj.make_recommendation(target_date = END_DATE,
+            #                                 span        = best_span,
+            #                                 buffer      = best_buffer,
+            #                                 )
+            recommendation = rec.Recommendation(ticker_obj.get_name(),
+                                                ticker,
+                                                END_DATE
+                                                )
+            recommendation.make_recommendation(ticker_object = ticker_obj,
+                                               span = best_span,
+                                               buffer = best_buffer,
+                                               )
 
             msg  = f'{ticker} running time: '
             msg += f'{util.convert_seconds(time.time()-save_tm)} | '
