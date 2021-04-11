@@ -16,6 +16,9 @@ import matplotlib.dates as mdates
 #pd.options.display.float_format = '{:,.2f}'.format
 pd.set_option("precision", 7)
 
+SSL_PORT = 465
+SMTP_SERVER = 'smtp.gmail.com'
+
 STATS_LEVEL = .05 # p-value level
 
 DATA_DIR  = 'data'
@@ -25,7 +28,7 @@ META_DIR  = 'meta'
 HUGE       = 1000000
 REACTIVITY = 1
 
-POSITIONS = ['long', 'short', 'n/c']
+POSITIONS = ['long', 'short', 'cash']
 ACTIONS   = ['buy', 'sell', 'n/c']
 
 DEFAULT_PERIOD = '5y'  # data download period

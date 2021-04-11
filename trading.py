@@ -115,14 +115,14 @@ def build_sign(d_frame, buffer, reactivity=dft.REACTIVITY):
     # Assign a value SIGN =  1 if close > EMA + buffer
     #                SIGN = -1 if close < EMA - buffer
     #                SIGN = 0 otherwise
-    d_frame['SIGN'] = np.where(d_frame.Close - d_frame.EMA*(1 + buffer) > 0,
+    d_frame.loc[:, 'SIGN'] = np.where(d_frame.Close - d_frame.EMA*(1 + buffer) > 0,
                                1,
                                np.where(d_frame.Close - d_frame.EMA*(1 - buffer) < 0,
                                         -1,
                                         0)
                           )
     # shift by reactivity days (should be 1) -> buy/sell action follows close date
-    d_frame['SIGN'] = d_frame['SIGN'].shift(reactivity)
+    d_frame.loc[:, 'SIGN'] = d_frame['SIGN'].shift(reactivity)
     d_frame.loc[d_frame.index[0], 'SIGN'] = 0.0  # set first value to 0
     return d_frame
 
@@ -133,9 +133,9 @@ def build_hold(d_frame, init_wealth):
     for hold strategy
     *** MUST INCORPORATE FEES at start/end ***
     '''
-    d_frame['RET'] = 1.0 + d_frame.Close.pct_change()
+    d_frame.loc[:, 'RET'] = 1.0 + d_frame.Close.pct_change()
     d_frame.loc[d_frame.index[0], 'RET'] = 1.0  # set first value to 1.0
-    d_frame['CUMRET_HOLD'] = init_wealth * d_frame.RET.cumprod(axis=None, skipna=True)
+    d_frame.loc[:, 'CUMRET_HOLD'] = init_wealth * d_frame.RET.cumprod(axis=None, skipna=True)
     return d_frame
 
 
@@ -146,11 +146,11 @@ def build_ema(d_frame, init_wealth):
     *** MUST INCORPORATE FEES ***
     '''
     # If long, use the daily returns from hold, else set to 1.0 (ie: cash=no change)
-    d_frame['RET_EMA'] = np.where(d_frame.POSITION == 'long',
+    d_frame.loc[:, 'RET_EMA'] = np.where(d_frame.POSITION == 'long',
                                   d_frame.RET,
                                   1.0)
     # Compute cumulative returns aka 'Wealth'
-    d_frame['CUMRET_EMA'] = d_frame.RET_EMA.cumprod(axis   = None,
+    d_frame.loc[:, 'CUMRET_EMA'] = d_frame.RET_EMA.cumprod(axis   = None,
                                                     skipna = True) * init_wealth
     # Set first value to init_wealth
     d_frame.loc[d_frame.index[0], 'CUMRET_EMA'] = init_wealth
@@ -194,7 +194,7 @@ def build_strategy(d_frame, span, buffer, init_wealth):
     reactivity  = dft.REACTIVITY
 
     # Compute exponential weighted mean 'EMA'
-    d_frame['EMA'] = d_frame.Close.ewm(span=span, adjust=False).mean()
+    d_frame.loc[:, 'EMA'] = d_frame.Close.ewm(span=span, adjust=False).mean()
 
     d_frame.insert(loc = 1,
                    column = 'EMA_MINUS',
@@ -328,7 +328,7 @@ def load_security(dirname, ticker, period, refresh=False):
     return data, ticker_name
 
 
-def load_security_oo(dirname, ticker, period, refresh=False):
+def load_security_oo(dirname, ticker, period, dates, refresh=False):
     '''
     Load data from file else upload from Yahoo finance
     dirname -> directory where pkl data is saved
@@ -352,7 +352,10 @@ def load_security_oo(dirname, ticker, period, refresh=False):
         security  = sec.Security(ticker, period)
         data      = security.get_market_data()
         data.set_index('Date', inplace=True)
-        ticker_obj = tkr.Ticker(ticker, security)
+        ticker_obj = tkr.Ticker(symbol   = ticker,
+                                security = security,
+                                dates    = dates,
+                                )
 
         os.makedirs(dirname, exist_ok = True)
         data.to_pickle(data_pathname) #store locally
