@@ -23,12 +23,16 @@ class Ticker():
     ''' A Ticker is an lightweight object extracted from a Security object
         Provides ease of access to relevant meta-data and price/volume data
     '''
-    def __init__(self, symbol, security):
+    def __init__(self, symbol, security, dates):
+        '''
+        NB: dates is date range in string format
+        '''
         self._symbol   = symbol
         self._name     = security.get_name()
+        self._dates    = dates
         self._currency = security.get_currency()
-        self._data     = self._load_security_data(security)
         self._currency_symbol = self._set_currency_symbol()
+        self._load_security_data(security)
 
 
     def _set_currency_symbol(self):
@@ -45,9 +49,14 @@ class Ticker():
 
 
     def _load_security_data(self, security):
+        '''extract market data from security object'''
         dfr = security.get_market_data()
         dfr.set_index('Date', inplace=True)
-        return dfr
+        self._data = dfr
+
+    def get_dates(self):
+        '''Return dates'''
+        return self._dates
 
     def get_name(self):
         '''Return ticker name'''
@@ -69,12 +78,87 @@ class Ticker():
         '''Return market data'''
         return self._data
 
+    # def get_recommendation(self):
+    #     '''Return market data'''
+    #     return self._recommendation
+
     def self_describe(self):
         '''Display all variables in class'''
         print(self.__dict__)
 
-### PLOTS
 
+    # def _print_recommendation(self):
+    #     '''Print recommendation to screen'''
+    #     msg  = self._recommendation['subject'] + '\n' + self._recommendation['body']
+    #     print(f'{msg}\n')
+
+
+    # def _email_recommendation(self):
+    #     '''Email recommendation'''
+    #     port         = dft.SSL_PORT
+    #     smtp_server  = dft.SMTP_SERVER
+    #     sender_email = pvt.SENDER_EMAIL
+    #     password     = pvt.PASSWORD
+
+    #     recommendation = self._recommendation
+
+    #     message = f'Subject: {recommendation["subject"]}\n\n' + recommendation['body']
+
+    #     # Create a secure SSL context
+    #     context = ssl.create_default_context()
+
+    #     with smtplib.SMTP_SSL(smtp_server, port, context=context) as server:
+    #         server.login(sender_email, password)
+    #         for recipient_email in pvt.RECIPIENT_EMAILS:
+    #             server.sendmail(sender_email, recipient_email, message)
+
+
+    # def _build_recommendation(self, target_date, span, buffer):
+    #     '''
+    #     Builds a recommendation for the target_date
+    #     The recommednation returned is a kist consisting of an action (buy, sell, n/c)
+    #     and a position (long, short, cash)
+    #     '''
+    #     security = pd.DataFrame(self._data.loc[self._dates[0]:self._dates[1], # trim the data
+    #                               f'Close_{self._symbol}'
+    #                               ]
+    #                             )
+    #     security.rename(columns={f'Close_{self._symbol}': "Close"},
+    #                     inplace=True
+    #                     )
+    #     strategy = tra.build_strategy(security, span, buffer, dft.INIT_WEALTH)
+    #     rec = strategy.loc[target_date, ["ACTION", "POSITION"]]
+
+    #     recommendation = {"ticker_name":   self._name,
+    #                       "ticker_symbol": self._symbol,
+    #                       "date":          target_date,
+    #                       "action":        rec[0],
+    #                       "position":      rec[1],
+    #                       }
+
+    #     subject  = f'Recommendation for {recommendation["ticker_name"]} '
+    #     subject += f'({recommendation["ticker_symbol"]}) | {recommendation["date"]}'
+    #     recommendation["subject"] = subject
+
+    #     body  = f'action: {recommendation["action"]} | '
+    #     body += f'new position: {recommendation["position"]}'
+    #     recommendation["body"] = body
+
+    #     self._recommendation = recommendation
+
+    # def make_recommendation(self, target_date, span, buffer, screen=True, email=False):
+    #     '''
+    #     Make recommendation & dispatches to various outputs
+    #     Allows for emailing recommendation but this is best handld with the recommender
+    #     '''
+    #     self._build_recommendation(target_date, span, buffer)
+    #     if screen:
+    #         self._print_recommendation()
+    #     if email:
+    #         self._email_recommendation()
+
+
+### PLOTS
     def plot_time_series(self, display_dates, security, span, buffer, flags, fee_pct):
         '''
         Plots security prices with moving average
@@ -185,5 +269,4 @@ class Ticker():
             trplt.save_figure(data_dir,
                               f'{self._symbol}_{file_dates[0]}_{file_dates[1]}_tmseries')
             plt.show()
-
         return dfr

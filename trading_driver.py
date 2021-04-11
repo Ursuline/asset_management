@@ -9,6 +9,7 @@ trading_driver.py
 
 @author: charles mégnin
 """
+import sys
 import os
 import time
 import pandas as pd
@@ -35,15 +36,14 @@ TICKERS += ptf.INDICES + ptf.DEFENSE + ptf.OBSERVE
 TICKERS += ptf.CSR + ptf.LUXURY + ptf.GAFAM + ptf.CRYPTO + ptf.FINANCIAL
 
 TICKERS = ['ETH-USD']
-#TICKERS = ptf.OBSERVE
+TICKERS = ptf.OBSERVE
 
-REFRESH = True # Download fresh Yahoo data
+REFRESH = False # Download fresh Yahoo data
 FILTER  = True # Remove securities from REMOVE
 
-END_DATE   = dft.TODAY
-END_DATE   = '2021-03-30'
-
 START_DATE = '2017-07-15'
+END_DATE   = dft.TODAY
+END_DATE   = '2021-04-09'
 
 DATE_RANGE = ['2017-07-15', END_DATE]
 ZOOM_RANGE = ['2019-04-01', END_DATE]
@@ -67,6 +67,7 @@ if __name__ == '__main__':
     # remove duplicates
     TICKERS  = set(TICKERS)
     describe_run(TICKERS)
+    recommender = rec.Recommender()
     for i, ticker in enumerate(TICKERS):
         print(f'{i+1}/{len(TICKERS)}: {ticker}')
         try:
@@ -137,18 +138,16 @@ if __name__ == '__main__':
                                         )
 
             # Determine the action to take for the given END_DATE
-            # ticker_obj.make_recommendation(target_date = END_DATE,
-            #                                 span        = best_span,
-            #                                 buffer      = best_buffer,
-            #                                 )
-            recommendation = rec.Recommendation(ticker_obj.get_name(),
+            rcm = rec.Recommendation(ticker_obj.get_name(),
                                                 ticker,
                                                 END_DATE
                                                 )
-            recommendation.make_recommendation(ticker_object = ticker_obj,
-                                               span = best_span,
-                                               buffer = best_buffer,
-                                               )
+
+            rcm.build_recommendation(ticker_object = ticker_obj,
+                                     span   = best_span,
+                                     buffer = best_buffer,
+                                     )
+            recommender.add_recommendation(rcm)
 
             msg  = f'{ticker} running time: '
             msg += f'{util.convert_seconds(time.time()-save_tm)} | '
@@ -158,4 +157,9 @@ if __name__ == '__main__':
             save_tm = time.time() # save intermediate time
         except Exception as ex:
             print(f'Could not process {ticker}: Exception={ex}')
+            print(sys.exc_info()[0])
+    recommender.make_recommendations(screen_nc = True,
+                                     email_nc  = False,
+                                     )
+
     print(f"Total elapsed time: {util.convert_seconds(time.time()-start_tm)}")

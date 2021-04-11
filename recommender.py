@@ -16,19 +16,92 @@ import private as pvt
 class Recommender():
     '''
     Handles the dispatching of trading recommendations
-
     '''
-    def __init__(self):
+    def __init__(self, screen = True, email = True):
+        '''
+        _screen : print to screen
+        _email : send email
+        '''
         self._recommendations = [] # list of recommendations
+        self._screen = screen
+        self._email  = email
 
+
+    def set_screen(self, screen: bool):
+        '''Switch output to screen'''
+        self._screen = screen
+
+    def set_email(self, email: bool):
+        '''Switch email'''
+        self._email = email
 
     def add_recommendation(self, recommendation):
         '''Add a recommendation to the list of recommendations'''
-        self._recommendations += recommendation
+        self._recommendations.append(recommendation)
 
     def get_recommendations(self):
         '''Return the list of recommendations'''
         return self._recommendations
+
+
+    def make_recommendations(self, screen_nc: bool, email_nc: bool):
+        '''
+        Dispatches to make recommendations
+        screen_nc : output n/c action recommendation to screen
+        email_nc : send email if n/c action
+        NB: screen & action must aalso be set to True for each to be activated
+        '''
+        if self._screen:
+            self._print_recommendations(screen_nc)
+
+        if self._email:
+                self._email_recommendations(email_nc)
+
+
+    def _print_recommendations(self, screen_nc: bool):
+        ''' Output recommendations to screen '''
+        root    = '*'
+        repeats = 75
+        line    = ''.join([char * repeats for char in root])
+
+        print('\n' + line)
+        for rec in self._recommendations:
+            if screen_nc or not (screen_nc or rec.get_action() == 'n/c'):
+                rec.print_recommendation()
+        print('\n' + line)
+
+
+    def _email_recommendations(self, email_nc: bool):
+        '''Email recommendation (migrate to Recommender)'''
+        port         = dft.SSL_PORT
+        smtp_server  = dft.SMTP_SERVER
+        sender_email = pvt.SENDER_EMAIL
+        password     = pvt.PASSWORD
+
+        subject = 'Trade recommendation'
+        body    = ''
+
+        n_tickers = 0
+        for rcm in self._recommendations:
+            name = rcm.get_name()
+            symb = rcm.get_symbol()
+            if email_nc or not (email_nc or rcm.get_action() == 'n/c'):
+                body += f'{name} ({symb})\n{rcm.get_body()}\n'
+                n_tickers += 1
+
+        if n_tickers != 0:
+            message = f'Subject: {subject}\n\n' + body
+
+            # Create a secure SSL context
+            context = ssl.create_default_context()
+
+            with smtplib.SMTP_SSL(smtp_server, port, context=context) as server:
+                server.login(sender_email, password)
+                for recipient_email in pvt.RECIPIENT_EMAILS:
+                    server.sendmail(sender_email, recipient_email, message)
+            print('email sent to list')
+        else:
+            print('no actions requred - no email sent')
 
 
 class Recommendation():
@@ -44,19 +117,32 @@ class Recommendation():
         self._subject       = None
         self._body          = None
 
+    def get_body(self):
+        ''''Return the body of the recommendation'''
+        return self._body
 
-    def make_recommendation(self, ticker_object, span, buffer, screen=True, email=False):
-        '''
-        Make recommendation & dispatches to various outputs
-        '''
-        self._build_recommendation(ticker_object, span, buffer)
-        if screen:
-            self._print_recommendation()
-        if email:
-            self._email_recommendation()
+    def get_name(self):
+        ''''Return the ticker name'''
+        return self._name
+
+    def get_symbol(self):
+        ''''Return the ticker symbol'''
+        return self._symbol
+
+    def get_action(self):
+        '''Get the recommended action '''
+        return self._action
+
+    def get_position(self):
+        '''Get the recommended position '''
+        return self._position
+
+    def self_describe(self):
+        '''Display all variables in class'''
+        print(self.__dict__)
 
 
-    def _build_recommendation(self, ticker_object, span, buffer):
+    def build_recommendation(self, ticker_object, span, buffer):
         '''
         Builds a recommendation for the target_date
         The recommednation returned is a kist consisting of an action (buy, sell, n/c)
@@ -81,35 +167,11 @@ class Recommendation():
         subject += f'({self._symbol}) | {self._date}'
         self._subject = subject
 
-        body  = f'action: {self._action} | '
-        body += f'new position: {self._position}'
+        body  = f'recommendation: {self._action} | '
+        body += f'position: {self._position}'
         self._body = body
 
 
-    def _print_recommendation(self):
+    def print_recommendation(self):
         '''Print recommendation to screen'''
-        s = '*'
-        n = 75
-        line = ''.join([char*n for char in s])
-
-        print('\n' + line)
         print(self._subject + '\n' + self._body)
-        print(line + '\n')
-
-
-    def _email_recommendation(self):
-        '''Email recommendation (migrate to Recommender)'''
-        port         = dft.SSL_PORT
-        smtp_server  = dft.SMTP_SERVER
-        sender_email = pvt.SENDER_EMAIL
-        password     = pvt.PASSWORD
-
-        message = f'Subject: {self._subject}\n\n' + self._body
-
-        # Create a secure SSL context
-        context = ssl.create_default_context()
-
-        with smtplib.SMTP_SSL(smtp_server, port, context=context) as server:
-            server.login(sender_email, password)
-            for recipient_email in pvt.RECIPIENT_EMAILS:
-                server.sendmail(sender_email, recipient_email, message)
