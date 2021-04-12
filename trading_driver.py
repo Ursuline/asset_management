@@ -22,33 +22,31 @@ import recommender as rec
 
 N_MAXIMA_SAVE = 20 # number of maxima to save to file
 
-STRATEGY = 'long' # long or short
+# Notification defaults
+SCREEN = True
+EMAIL  = True
 
-REMOVE = ['UL', 'FP.PA', 'ORA.PA', 'KC4.F', 'BNP.PA', 'KER.PA', 'SMC.PA']
+REMOVE  = ['UL', 'FP.PA', 'ORA.PA', 'KC4.F', 'BNP.PA', 'KER.PA', 'SMC.PA']
 REMOVE += ['FB', 'HO.PA', 'LHN.SW', 'SQ', 'BIDU', 'ARKQ', 'KORI.PA']
 REMOVE += ['TRI.PA', 'HEXA.PA', 'CA.PA', 'ATO.PA']
 
-TICKERS  = ptf.ADRIEN + ptf.JP + ptf.PEA_MC + ptf.PEA + ptf.JACQUELINE + ptf.SAXO_CY
-TICKERS += ptf.K_WOOD + ptf.TECH + ptf.COMM + ptf.FNB + ptf.CHEM + ptf.NRJ
-TICKERS += ptf.FRENCH + ptf.HEALTHCARE + ptf.SWISS + ptf.AUTOMOBILE
-TICKERS += ptf.INDUSTRIAL
-TICKERS += ptf.INDICES + ptf.DEFENSE + ptf.OBSERVE
-TICKERS += ptf.CSR + ptf.LUXURY + ptf.GAFAM + ptf.CRYPTO + ptf.FINANCIAL
+#TICKERS = ['BTC-USD']
 
-TICKERS = ['ETH-USD']
 TICKERS = ptf.OBSERVE
 
-REFRESH = False # Download fresh Yahoo data
+STRATEGY = 'long' # long or short
+
+REFRESH = True # Download fresh Yahoo data
 FILTER  = True # Remove securities from REMOVE
 
 START_DATE = '2017-07-15'
+#END_DATE   = '2021-04-09'
 END_DATE   = dft.TODAY
-END_DATE   = '2021-04-09'
 
-DATE_RANGE = ['2017-07-15', END_DATE]
+DATE_RANGE = [START_DATE, END_DATE]
 ZOOM_RANGE = ['2019-04-01', END_DATE]
 
-def describe_run(tickers):
+def describe_run(tickers, strategy):
     '''print run description'''
     span_range   = dft.MAX_SPAN - dft.MIN_SPAN + 1
     buffer_range = dft.N_BUFFERS
@@ -56,6 +54,7 @@ def describe_run(tickers):
     print(f'Span range: {dft.MIN_SPAN:.0f} - {dft.MAX_SPAN:.0f} days')
     print(f'Buffer range: {dft.MIN_BUFF:.2%} - {dft.MAX_BUFF:.2%} / {dft.N_BUFFERS} samples')
     print(f'Running {len(tickers)} tickers: {dims:.0f} runs/ticker')
+    print(f'Strategy: {strategy}')
 
 if __name__ == '__main__':
     start_tm = time.time() # total_time
@@ -66,8 +65,10 @@ if __name__ == '__main__':
         TICKERS[:] = (value for value in TICKERS if value not in REMOVE)
     # remove duplicates
     TICKERS  = set(TICKERS)
-    describe_run(TICKERS)
-    recommender = rec.Recommender()
+    describe_run(TICKERS, STRATEGY)
+    recommender = rec.Recommender(screen = SCREEN,
+                                  email  = EMAIL,
+                                  )
     for i, ticker in enumerate(TICKERS):
         print(f'{i+1}/{len(TICKERS)}: {ticker}')
         try:
@@ -77,6 +78,7 @@ if __name__ == '__main__':
                                               period  = dft.DEFAULT_PERIOD,
                                               dates   = DATE_RANGE
                                               )
+
             # security is the Close
             security = pd.DataFrame(ticker_obj.get_market_data()[f'Close_{ticker}'])
             security = security.loc[START_DATE:END_DATE,:] # trim the data
@@ -88,16 +90,17 @@ if __name__ == '__main__':
                                                       DATE_RANGE[1])
 
             # Instantiate a Topomap object
-            topomap = tpm.Topomap(ticker, date_range)
+            topomap = tpm.Topomap(ticker, date_range, STRATEGY)
 
-            # Read EMA map values from file or compute if not saved
-            if os.path.exists(topomap.get_ema_map_filename()):
+            # Read EMA map values  from file or compute if not saved
+            data_dir = os.path.join(dft.DATA_DIR, ticker)
+            file     = topomap.get_ema_map_filename() + '.csv'
+            map_path = os.path.join(data_dir, file)
+            if os.path.exists(map_path):
                 print(f'Reading EMA map from {topomap.get_ema_map_filename()}')
-                topomap.read_ema_map()
+                topomap.load_ema_map(data_dir)
             else: # If not saved, compute it
-                topomap.build_ema_map(security, date_range,)
-
-            #print(f'security: {security.head()}. {security.shape}')
+                topomap.build_ema_map(security, date_range)
 
             # save EMA map values to file
             topomap.save_emas()
@@ -131,6 +134,7 @@ if __name__ == '__main__':
             display_flags = [True, True, False, True, True, True]
             ticker_obj.plot_time_series(display_dates = date_zoom,
                                         security      = security,
+                                        topomap       = topomap,
                                         span          = best_span,
                                         buffer        = best_buffer,
                                         flags         = display_flags,
@@ -138,15 +142,18 @@ if __name__ == '__main__':
                                         )
 
             # Determine the action to take for the given END_DATE
+            # instantiate recommendation
             rcm = rec.Recommendation(ticker_obj.get_name(),
-                                                ticker,
-                                                END_DATE
-                                                )
-
-            rcm.build_recommendation(ticker_object = ticker_obj,
-                                     span   = best_span,
-                                     buffer = best_buffer,
+                                     ticker,
+                                     END_DATE,
                                      )
+            # build recommendation
+            rcm.build_recommendation(ticker_object = ticker_obj,
+                                     topomap       = topomap,
+                                     span          = best_span,
+                                     buffer        = best_buffer,
+                                     )
+            # add recommendation to recommender object
             recommender.add_recommendation(rcm)
 
             msg  = f'{ticker} running time: '
@@ -158,8 +165,8 @@ if __name__ == '__main__':
         except Exception as ex:
             print(f'Could not process {ticker}: Exception={ex}')
             print(sys.exc_info()[0])
-    recommender.make_recommendations(screen_nc = True,
-                                     email_nc  = False,
-                                     )
-
+    # send notifications
+    recommender.notify(screen_nc = True,
+                       email_nc  = False,
+                       )
     print(f"Total elapsed time: {util.convert_seconds(time.time()-start_tm)}")

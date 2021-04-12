@@ -20,7 +20,7 @@ class Topomap():
     ''' A Topomap encapsulates :
         span, buffer, EMA, hold
     '''
-    def __init__(self, ticker_symbol, date_range):
+    def __init__(self, ticker_symbol, date_range, strategy):
         '''
         name -> identifier / ticker name that corresponds to EMA map
         date_range in datetime format
@@ -29,6 +29,7 @@ class Topomap():
         '''
         self._name       = ticker_symbol
         self._date_range = date_range
+        self._strategy   = strategy.lower()
         self._spans      = None
         self._buffers    = None
         self._emas       = None
@@ -41,16 +42,13 @@ class Topomap():
         '''Reset buffers'''
         self._buffers = buffers
 
-
     def set_span(self, spans):
         '''Reset spans'''
         self._spans  = spans
 
-
     def set_date_range(self, date_range):
         '''Reset date range'''
         self._date_range = date_range
-
 
     def set_hold(self, hold):
         '''
@@ -67,53 +65,41 @@ class Topomap():
         '''Return ticker identifier '''
         return self._name
 
+    def get_strategy(self):
+        '''Return strategy '''
+        return self._strategy
+
+    def get_date_range(self):
+        '''Return ticker identifier '''
+        return self._date_range
 
     def get_spans(self):
         '''Return spans'''
         return self._spans
 
-
     def get_buffers(self):
         '''Return buffers'''
         return self._buffers
-
 
     def get_emas(self):
         '''Return EMAs'''
         return self._emas
 
-
     def get_hold(self):
         '''Return hold'''
         return self._hold
-
 
     def self_describe(self):
         '''Display all variables in class'''
         print(self.__dict__)
 
-
     def get_best_emas(self):
         '''Return best emas dataframe '''
         return self._best_emas
 
-
     def get_global_max(self):
         '''Returns the top span, buffer, ema, hold combination'''
         return self._best_emas.iloc[0]
-
-
-    def get_ema_map_filename(self):
-        '''
-        Return the persist filename for the ema portion of the topomap
-        '''
-        data_dir = dft.DATA_DIR
-        data_dir = os.path.join(data_dir, self._name)
-
-        dates    = util.dates_to_strings(self._date_range, '%Y-%m-%d')
-        suffix   = f'{dates[0]}_{dates[1]}_ema_map'
-        filename = f'{self._name}_{suffix}'
-        return os.path.join(data_dir, filename + '.csv')
 
 
     def build_ema_map(self, security, dates):
@@ -139,14 +125,14 @@ class Topomap():
         emas = np.zeros((spans.shape[0], buffers.shape[0]), dtype=np.float64)
 
         # Fill EMAS for all span/buffer combinations
-        desc = f'Outer Level (spans) / {span_par[1] - span_par[0] + 1}'
+        desc = f'Building ema map | (spans) / {span_par[1] - span_par[0] + 1}'
         for i, span in tqdm(enumerate(spans), desc = desc):
             for j, buffer in enumerate(buffers):
-                data  = tra.build_strategy(security.loc[dates[0]:dates[1], :].copy(),
-                                       span,
-                                       buffer,
-                                       dft.INIT_WEALTH,
-                                      )
+                data  = self.build_strategy(security.loc[dates[0]:dates[1], :].copy(),
+                                             span,
+                                             buffer,
+                                             dft.INIT_WEALTH,
+                                             )
                 emas[i][j] = tra.get_cumret(data,
                                         'ema',
                                         tra.get_fee(data,
@@ -161,9 +147,80 @@ class Topomap():
         self.set_hold(hold)
 
 
-    def read_ema_map(self): # Incorporate into topomap
+    def build_strategy(self, d_frame, span, buffer, init_wealth):
+        '''
+        *** At this point, only a long strategy is considered ***
+        Implements running-mean (ewm) strategy
+        Input dataframe d_frame has date index & security value 'Close'
+
+        Variables:
+        span       -> number of rolling days
+        buffer     -> % above & below ema to trigger buy/sell
+
+        Returns the 'strategy' consisting of a dataframe with original data +
+        following columns:
+        EMA -> exponential moving average
+        SIGN -> 1 : above buffer 0: in buffer -1: below buffer
+        ACTION -> buy / sell / n/c (no change)
+        RET -> 1 + % daily return
+        CUMRET_HOLD -> cumulative returns for a hold strategy
+        RET2 -> 1 + % daily return when Close > EMA
+        CUMRET_EMA -> cumulative returns for the EMA strategy
+
+        reactivity -> reactivity to market change in days (should be 1)
+        '''
+        #init_wealth = dft.INIT_WEALTH
+        reactivity  = dft.REACTIVITY
+
+        # Compute exponential weighted mean 'EMA'
+        d_frame.loc[:, 'EMA'] = d_frame.Close.ewm(span=span, adjust=False).mean()
+
+        # Add the buffer boundaries as columns
+        d_frame.insert(loc = 1,
+                       column = 'EMA_MINUS',
+                       value  = d_frame['EMA']*(1-buffer)
+                       )
+        d_frame.insert(loc = len(d_frame.columns),
+                       column = 'EMA_PLUS',
+                       value  = d_frame['EMA']*(1+buffer)
+                       )
+
+        # build the SIGN column (above/in/below buffer)
+        d_frame = tra.build_sign(d_frame, buffer, reactivity)
+
+        # build the POSITION (long/cash) & ACTION (buy/sell) columns
+        d_frame = tra.build_positions(d_frame, self._strategy)
+
+        # compute returns from a hold strategy
+        d_frame = tra.build_hold(d_frame, init_wealth)
+
+        # compute returns from the EMA strategy
+        d_frame = tra.build_ema(d_frame, init_wealth)
+
+        # remove junk
+        d_frame = tra.cleanup_strategy(d_frame)
+
+        return d_frame
+
+
+### I/O
+    def get_ema_map_filename(self):
+        '''
+        Return the persist filename for the ema map without extension
+        '''
+        # data_dir = dft.DATA_DIR
+        # data_dir = os.path.join(data_dir, self._name)
+
+        dates   = util.dates_to_strings(self._date_range, '%Y-%m-%d')
+        suffix  = f'{dates[0]}_{dates[1]}_{self._strategy}_ema_map'
+        suffix = f'{self._name}_{suffix}'
+        return suffix
+
+
+    def load_ema_map(self, data_dir):
         '''Reads raw EMA data from csv file, reshape and  and returns as a dataframe'''
-        pathname = self.get_ema_map_filename()
+        pathname = os.path.join(data_dir,
+                                self.get_ema_map_filename() + '.csv')
 
         ema_map = pd.read_csv(pathname, sep=';', index_col=0)
 
@@ -220,11 +277,11 @@ class Topomap():
             for j, buffer in enumerate(self.get_buffers()):
                 temp.append([span, buffer, self.get_emas()[i,j], self._hold])
 
-        temp = pd.DataFrame(temp, columns=['span', 'buffer', 'ema', 'hold'])
+        temp   = pd.DataFrame(temp, columns=['span', 'buffer', 'ema', 'hold'])
+        suffix = self.get_ema_map_filename()
+        data_dir = os.path.join(dft.DATA_DIR, self._name)
 
-        dates = util.dates_to_strings(self._date_range, '%Y-%m-%d')
-        suffix = f'{dates[0]}_{dates[1]}_ema_map'
-        self._save_dataframe(suffix, temp, 'csv')
+        self._save_dataframe(temp, data_dir, suffix, 'csv')
 
 
     def save_best_emas(self):
@@ -238,25 +295,27 @@ class Topomap():
             msg = 'save_best_emas: date_range should be set via set_date_range'
             raise ValueError(msg)
         start, end = util.dates_to_strings(self._date_range, '%Y-%m-%d')
-        suffix = f'{start}_{end}_results'
-        self._save_dataframe(suffix, self._best_emas, 'csv')
+        suffix = f'{self._name}_{start}_{end}_{self._strategy}_results'
+
+        data_dir = os.path.join(dft.DATA_DIR, self._name)
+        os.makedirs(data_dir, exist_ok = True)
+
+        self._save_dataframe(self._best_emas, data_dir, suffix, 'csv')
 
 
-    def _save_dataframe(self, suffix, dataframe, extension): # Implement json save
+    @staticmethod
+    def _save_dataframe(dataframe, data_dir, suffix, extension): # Implement json save
         '''
         Save a dataframe in either csv or pkl format
         '''
-        data_dir = dft.DATA_DIR
-        data_dir = os.path.join(data_dir, self._name)
         os.makedirs(data_dir, exist_ok = True)
-
-        filename = f'{self._name}_{suffix}'
+        rootname = os.path.join(data_dir, suffix)
 
         if extension == 'pkl':
-            pathname = os.path.join(data_dir, filename + '.pkl')
+            pathname = rootname + '.pkl'
             dataframe.to_pickle(pathname)
         elif extension == 'csv':
-            pathname = os.path.join(data_dir, filename + '.csv')
+            pathname = rootname + '.csv'
             dataframe.to_csv(pathname, sep=';')
         else:
             raise ValueError(f'{extension} not supported should be pkl or csv')
@@ -299,15 +358,23 @@ class Topomap():
                                                         n_maxima,)
 
         # Build title
+
         symbol = ticker_object.get_symbol()
-        axis = trplt.build_title(axis,
-                                 symbol,
-                                 ticker_object.get_name(),
-                                 title_range,
-                                 max_ema, self._hold, max_span, max_buff)
+        axis = trplt.build_title(axis        = axis,
+                                 ticker      = symbol,
+                                 ticker_name = ticker_object.get_name(),
+                                 strategy    = self._strategy,
+                                 dates       = title_range,
+                                 ema         = max_ema,
+                                 hold        = self._hold,
+                                 span        = max_span,
+                                 buffer      = max_buff,
+                                 buy_sell    = None,
+                                 )
 
         plt.grid(b=None, which='major', axis='both', color=dft.GRID_COLOR)
-        trplt.save_figure(dft.PLOT_DIR,
+        plot_dir = os.path.join(dft.PLOT_DIR, self._name)
+        trplt.save_figure(plot_dir,
                           f'{symbol}_{name_range[0]}_{name_range[1]}_contours',
                           extension='png')
         plt.show()
@@ -375,16 +442,21 @@ class Topomap():
         #axis.set_zlabel(r'Return', rotation=60)
         axis = remove_axes_grids(axis)
         symbol = ticker_object.get_symbol()
-        axis = trplt.build_title(axis,
-                                 symbol,
-                                 self._name,
-                                 title_range,
-                                 max_ema,
-                                 self._hold,
-                                 max_span,
-                                 max_buff)
 
-        trplt.save_figure(dft.PLOT_DIR,
+        axis = trplt.build_title(axis        = axis,
+                                 ticker      = symbol,
+                                 ticker_name = self._name,
+                                 dates       = title_range,
+                                 strategy    = self._strategy,
+                                 ema         = max_ema,
+                                 hold        = self._hold,
+                                 span        = max_span,
+                                 buffer      = max_buff,
+                                 buy_sell    = None,
+                                 )
+
+        plot_dir = os.path.join(dft.PLOT_DIR, self._name)
+        trplt.save_figure(plot_dir,
                           f'{symbol}_{name_range[0]}_{name_range[1]}_3D',
                           extension='png')
         plt.show()
@@ -404,13 +476,13 @@ class Topomap():
                               buffer_range[1],
                               buffer_range[2])
 
-        emas, _ = trplt.build_1d_emas(security,
-                                      date_range = self._date_range,
-                                      var_name  = target,
-                                      variables = buffers,
-                                      fixed     = fixed,
-                                      fpct      = fee_pct,
-                                      )
+        emas, _ = trplt.build_ema_profile(security,
+                                          date_range = self._date_range,
+                                          var_name  = target,
+                                          variables = buffers,
+                                          fixed     = fixed,
+                                          fpct      = fee_pct,
+                                          )
 
         dfr = pd.DataFrame(data=[buffers, emas]).T
         dfr.columns = [target, 'ema']
@@ -439,9 +511,10 @@ class Topomap():
         fixed = buffer
         span_range = dft.get_spans()
         spans = np.arange(span_range[0],
-                          span_range[1] + 1)
+                          span_range[1] + 1,
+                          )
 
-        emas, _ = trplt.build_1d_emas(security,
+        emas, _ = trplt.build_ema_profile(security,
                                          date_range = self._date_range,
                                          var_name  = target,
                                          variables = spans,
@@ -475,17 +548,20 @@ class Topomap():
         largest_idx = trplt.plot_max_values(dfr, axis, n_best, min_max[1], min_max[0], max_fmt)
 
         symbol = self._name
-        axis = trplt.build_title(axis,
-                                 symbol,
-                                 ticker_object.get_name(),
-                                 util.dates_to_strings(self._date_range, fmt = '%d-%b-%Y'),
-                                 min_max[1],
-                                 self._hold,
-                                 fixed,
-                                 dfr.iloc[largest_idx[0]][0],
-                                 )
 
+        axis = trplt.build_title(axis = axis,
+                                 ticker = symbol,
+                                 ticker_name = ticker_object.get_name(),
+                                 strategy = self._strategy,
+                                 dates = util.dates_to_strings(self._date_range, fmt = '%d-%b-%Y'),
+                                 ema = min_max[1],
+                                 hold = self._hold,
+                                 span = fixed,
+                                 buffer = dfr.iloc[largest_idx[0]][0],
+                                 buy_sell = None,
+                                 )
 
         dates    = util.dates_to_strings(self._date_range, fmt = '%Y-%m-%d')
         filename = f'{symbol}_{dates[0]}_{dates[1]}_{target}s'
-        trplt.save_figure(dft.PLOT_DIR, filename)
+        plot_dir = os.path.join(dft.PLOT_DIR, self._name)
+        trplt.save_figure(plot_dir, filename)

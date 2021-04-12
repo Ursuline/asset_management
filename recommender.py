@@ -8,10 +8,13 @@ Created on Sun Apr 11 14:33:03 2021
 import smtplib
 import ssl
 import pandas as pd
+import time
+from time import sleep
+#from sinchsms import SinchSMS
 
 import trading as tra
 import trading_defaults as dft
-import private as pvt
+import private as pvt # recipient names, smtp sender name/pwd
 
 class Recommender():
     '''
@@ -44,7 +47,36 @@ class Recommender():
         return self._recommendations
 
 
-    def make_recommendations(self, screen_nc: bool, email_nc: bool):
+    def notify_SMS():
+
+        # enter all the details
+        # get app_key and app_secret by registering
+        # a app on sinchSMS
+        number = 'your_mobile_number'
+        app_key = 'your_app_key'
+        app_secret = 'your_app_secret'
+
+        # enter the message to be sent
+        message = 'Hello Message!!!'
+
+        client = SinchSMS(app_key, app_secret)
+        print("Sending '%s' to %s" % (message, number))
+
+        response = client.send_message(number, message)
+        message_id = response['messageId']
+        response = client.check_status(message_id)
+
+        # keep trying unless the status retured is Successful
+        while response['status'] != 'Successful':
+            print(response['status'])
+            time.sleep(1)
+            response = client.check_status(message_id)
+
+        print(response['status'])
+
+
+
+    def notify(self, screen_nc: bool, email_nc: bool):
         '''
         Dispatches to make recommendations
         screen_nc : output n/c action recommendation to screen
@@ -68,6 +100,7 @@ class Recommender():
         for rec in self._recommendations:
             if screen_nc or not (screen_nc or rec.get_action() == 'n/c'):
                 rec.print_recommendation()
+                print()
         print('\n' + line)
 
 
@@ -101,7 +134,7 @@ class Recommender():
                     server.sendmail(sender_email, recipient_email, message)
             print('email sent to list')
         else:
-            print('no actions requred - no email sent')
+            print('no actions required - no email sent')
 
 
 class Recommendation():
@@ -142,7 +175,7 @@ class Recommendation():
         print(self.__dict__)
 
 
-    def build_recommendation(self, ticker_object, span, buffer):
+    def build_recommendation(self, ticker_object, topomap, span, buffer):
         '''
         Builds a recommendation for the target_date
         The recommednation returned is a kist consisting of an action (buy, sell, n/c)
@@ -152,12 +185,12 @@ class Recommendation():
         dates = ticker_object.get_dates()
 
         security = pd.DataFrame(data.loc[dates[0]:dates[1], #trim
-                                f'Close_{self._symbol}']
+                                f'Close_{self._symbol}'],
                                 )
-        security.rename(columns={f'Close_{self._symbol}': "Close"},
-                        inplace=True
+        security.rename(columns = {f'Close_{self._symbol}': "Close"},
+                        inplace = True,
                         )
-        strategy = tra.build_strategy(security, span, buffer, dft.INIT_WEALTH)
+        strategy = topomap.build_strategy(security, span, buffer, dft.INIT_WEALTH)
         rec = strategy.loc[self._date, ["ACTION", "POSITION"]]
 
         self._action   = rec[0]
