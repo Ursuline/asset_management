@@ -13,6 +13,7 @@ https://aroussi.com/post/python-yahoo-finance
 @author: charles mégnin
 """
 import sys
+import traceback
 import datetime as dt
 import pandas as pd
 import yfinance as yf
@@ -34,6 +35,7 @@ class Security(eq.Equity):
         except Exception as ex:
             print(f"Couldn't load {symbol}: Exception={ex}")
             print(sys.exc_info())
+            traceback.print_tb(ex.__traceback__)
         else:
             self.history = yf.download(symbol,
                                        util.get_start(period),
