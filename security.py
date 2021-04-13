@@ -35,7 +35,7 @@ class Security(eq.Equity):
         except Exception as ex:
             print(f"Couldn't load {symbol}: Exception={ex}")
             print(sys.exc_info())
-            traceback.print_tb(ex.__traceback__)
+            print(traceback.format_exc())
         else:
             self.history = yf.download(symbol,
                                        util.get_start(period),

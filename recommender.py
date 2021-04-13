@@ -8,11 +8,8 @@ Created on Sun Apr 11 14:33:03 2021
 import smtplib
 import ssl
 import pandas as pd
-import time
-from time import sleep
-#from sinchsms import SinchSMS
+#import time
 
-import trading as tra
 import trading_defaults as dft
 import private as pvt # recipient names, smtp sender name/pwd
 
@@ -47,32 +44,32 @@ class Recommender():
         return self._recommendations
 
 
-    def notify_SMS():
+    # def notify_SMS(self):
 
-        # enter all the details
-        # get app_key and app_secret by registering
-        # a app on sinchSMS
-        number = 'your_mobile_number'
-        app_key = 'your_app_key'
-        app_secret = 'your_app_secret'
+    #     # enter all the details
+    #     # get app_key and app_secret by registering
+    #     # a app on sinchSMS
+    #     number = 'your_mobile_number'
+    #     app_key = 'your_app_key'
+    #     app_secret = 'your_app_secret'
 
-        # enter the message to be sent
-        message = 'Hello Message!!!'
+    #     # enter the message to be sent
+    #     message = 'Hello Message!!!'
 
-        client = SinchSMS(app_key, app_secret)
-        print("Sending '%s' to %s" % (message, number))
+    #     client = SinchSMS(app_key, app_secret)
+    #     print("Sending '%s' to %s" % (message, number))
 
-        response = client.send_message(number, message)
-        message_id = response['messageId']
-        response = client.check_status(message_id)
+    #     response = client.send_message(number, message)
+    #     message_id = response['messageId']
+    #     response = client.check_status(message_id)
 
-        # keep trying unless the status retured is Successful
-        while response['status'] != 'Successful':
-            print(response['status'])
-            time.sleep(1)
-            response = client.check_status(message_id)
+    #     # keep trying unless the status retured is Successful
+    #     while response['status'] != 'Successful':
+    #         print(response['status'])
+    #         time.sleep(1)
+    #         response = client.check_status(message_id)
 
-        print(response['status'])
+    #     print(response['status'])
 
 
 
@@ -87,7 +84,7 @@ class Recommender():
             self._print_recommendations(screen_nc)
 
         if self._email:
-                self._email_recommendations(email_nc)
+            self._email_recommendations(email_nc)
 
 
     def _print_recommendations(self, screen_nc: bool):
@@ -99,9 +96,9 @@ class Recommender():
         print('\n' + line)
         for rec in self._recommendations:
             if screen_nc or not (screen_nc or rec.get_action() == 'n/c'):
-                rec.print_recommendation()
+                rec.print_recommendation(notify=True)
                 print()
-        print('\n' + line)
+        print(line)
 
 
     def _email_recommendations(self, email_nc: bool):
@@ -139,16 +136,17 @@ class Recommender():
 
 class Recommendation():
     '''
-    A recommendation
+    encapsulates the recommendation to buy | sell | n/c
+    captured in the target date row ACTION column of tthe ticker object's data
     '''
     def __init__(self, ticker_name, ticker_symbol, target_date):
         self._name   = ticker_name
         self._symbol = ticker_symbol
-        self._date          = target_date
-        self._action        = None
-        self._position      = None
-        self._subject       = None
-        self._body          = None
+        self._date     = target_date
+        self._action   = None
+        self._position = None
+        self._subject  = None
+        self._body     = None
 
     def get_body(self):
         ''''Return the body of the recommendation'''
@@ -205,6 +203,9 @@ class Recommendation():
         self._body = body
 
 
-    def print_recommendation(self):
+    def print_recommendation(self, notify: bool):
         '''Print recommendation to screen'''
-        print(self._subject + '\n' + self._body)
+        if notify:
+            msg  = f'recommendation {self._name} ({self._symbol}): '
+            msg += f'{self._action} | position: {self._position}'
+            print(msg)

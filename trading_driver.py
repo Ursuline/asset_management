@@ -25,6 +25,7 @@ N_MAXIMA_SAVE = 20 # number of maxima to save to file
 # Notification defaults
 SCREEN = True
 EMAIL  = True
+NOTIFY = True # item-per-item notificatiton
 
 REMOVE  = ['UL', 'FP.PA', 'ORA.PA', 'KC4.F', 'BNP.PA', 'KER.PA', 'SMC.PA']
 REMOVE += ['FB', 'HO.PA', 'LHN.SW', 'SQ', 'BIDU', 'ARKQ', 'KORI.PA']
@@ -32,7 +33,7 @@ REMOVE += ['TRI.PA', 'HEXA.PA', 'CA.PA', 'ATO.PA']
 
 #TICKERS = ['BTC-USD']
 
-TICKERS = ptf.OBSERVE
+TICKERS = ptf.K_WOOD
 
 STRATEGY = 'long' # long or short
 
@@ -41,7 +42,7 @@ FILTER  = True # Remove securities from REMOVE
 
 START_DATE = '2017-07-15'
 #END_DATE   = '2021-04-09'
-END_DATE   = dft.TODAY
+END_DATE   = dft.YESTERDAY
 
 DATE_RANGE = [START_DATE, END_DATE]
 ZOOM_RANGE = ['2019-04-01', END_DATE]
@@ -51,6 +52,7 @@ def describe_run(tickers, strategy):
     span_range   = dft.MAX_SPAN - dft.MIN_SPAN + 1
     buffer_range = dft.N_BUFFERS
     dims         = span_range * buffer_range
+    print(f'Date range: {DATE_RANGE[0]} to {DATE_RANGE[1]}')
     print(f'Span range: {dft.MIN_SPAN:.0f} - {dft.MAX_SPAN:.0f} days')
     print(f'Buffer range: {dft.MIN_BUFF:.2%} - {dft.MAX_BUFF:.2%} / {dft.N_BUFFERS} samples')
     print(f'Running {len(tickers)} tickers: {dims:.0f} runs/ticker')
@@ -97,9 +99,10 @@ if __name__ == '__main__':
             file     = topomap.get_ema_map_filename() + '.csv'
             map_path = os.path.join(data_dir, file)
             if os.path.exists(map_path):
-                print(f'Reading EMA map from {topomap.get_ema_map_filename()}')
+                print(f'Loading EMA map {map_path}')
                 topomap.load_ema_map(data_dir)
             else: # If not saved, compute it
+                #print(f'No EMA map {map_path}')
                 topomap.build_ema_map(security, date_range)
 
             # save EMA map values to file
@@ -153,6 +156,7 @@ if __name__ == '__main__':
                                      span          = best_span,
                                      buffer        = best_buffer,
                                      )
+            rcm.print_recommendation(notify = NOTIFY)
             # add recommendation to recommender object
             recommender.add_recommendation(rcm)
 
@@ -164,7 +168,7 @@ if __name__ == '__main__':
             save_tm = time.time() # save intermediate time
         except Exception as ex:
             print(f'Could not process {ticker}: Exception={ex}')
-            print(sys.exc_info()[0])
+            print(sys.exc_info())
     # send notifications
     recommender.notify(screen_nc = True,
                        email_nc  = False,
