@@ -12,6 +12,7 @@ https://aroussi.com/post/python-yahoo-finance
 
 @author: charles mégnin
 """
+import sys
 import datetime as dt
 import pandas as pd
 import yfinance as yf
@@ -29,8 +30,10 @@ class Security(eq.Equity):
         self.data['period'] = period
         try:
             self.ticker   = yf.Ticker(self.data['symbol'])
-        except:
-            print(f"Couldn't load {symbol}")
+
+        except Exception as ex:
+            print(f"Couldn't load {symbol}: Exception={ex}")
+            print(sys.exc_info())
         else:
             self.history = yf.download(symbol,
                                        util.get_start(period),
