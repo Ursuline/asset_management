@@ -31,23 +31,22 @@ REMOVE  = ['UL', 'FP.PA', 'ORA.PA', 'KC4.F', 'BNP.PA', 'KER.PA', 'SMC.PA']
 REMOVE += ['FB', 'HO.PA', 'LHN.SW', 'SQ', 'BIDU', 'ARKQ', 'KORI.PA']
 REMOVE += ['TRI.PA', 'HEXA.PA', 'CA.PA', 'ATO.PA']
 
-#TICKERS = ['BTC-USD']
+TICKERS = ptf.OBSERVE
+TICKERS = ['AAPL']
 
-TICKERS = ptf.K_WOOD
-
-STRATEGY = 'long' # long or short
+POSITION = 'long' # long or short
 
 REFRESH = True # Download fresh Yahoo data
 FILTER  = True # Remove securities from REMOVE
 
-START_DATE = '2017-07-15'
+START_DATE = '2017-07-17'
 #END_DATE   = '2021-04-09'
 END_DATE   = dft.YESTERDAY
 
 DATE_RANGE = [START_DATE, END_DATE]
 ZOOM_RANGE = ['2019-04-01', END_DATE]
 
-def describe_run(tickers, strategy):
+def describe_run(tickers, position):
     '''print run description'''
     span_range   = dft.MAX_SPAN - dft.MIN_SPAN + 1
     buffer_range = dft.N_BUFFERS
@@ -55,8 +54,9 @@ def describe_run(tickers, strategy):
     print(f'Date range: {DATE_RANGE[0]} to {DATE_RANGE[1]}')
     print(f'Span range: {dft.MIN_SPAN:.0f} - {dft.MAX_SPAN:.0f} days')
     print(f'Buffer range: {dft.MIN_BUFF:.2%} - {dft.MAX_BUFF:.2%} / {dft.N_BUFFERS} samples')
+    print(f"Broker's fee: {dft.FEE_PCT:.2%}")
     print(f'Running {len(tickers)} tickers: {dims:.0f} runs/ticker')
-    print(f'Strategy: {strategy}')
+    print(f'Position: {position}')
 
 if __name__ == '__main__':
     start_tm = time.time() # total_time
@@ -67,7 +67,7 @@ if __name__ == '__main__':
         TICKERS[:] = (value for value in TICKERS if value not in REMOVE)
     # remove duplicates
     TICKERS  = set(TICKERS)
-    describe_run(TICKERS, STRATEGY)
+    describe_run(TICKERS, POSITION)
     recommender = rec.Recommender(screen = SCREEN,
                                   email  = EMAIL,
                                   )
@@ -78,7 +78,7 @@ if __name__ == '__main__':
                                               ticker  = ticker,
                                               refresh = REFRESH,
                                               period  = dft.DEFAULT_PERIOD,
-                                              dates   = DATE_RANGE
+                                              dates   = DATE_RANGE,
                                               )
 
             # security is the Close
@@ -92,7 +92,7 @@ if __name__ == '__main__':
                                                       DATE_RANGE[1])
 
             # Instantiate a Topomap object
-            topomap = tpm.Topomap(ticker, date_range, STRATEGY)
+            topomap = tpm.Topomap(ticker, date_range, POSITION)
 
             # Read EMA map values  from file or compute if not saved
             data_dir = os.path.join(dft.DATA_DIR, ticker)

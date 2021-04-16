@@ -17,130 +17,190 @@ import security as sec
 
 import trading_defaults as dft
 import ticker as tkr
-import utilities as util
+#import utilities as util
+
+# def build_positions(d_frame, position):
+#     '''
+#     Builds desired positions for the EMA strategy
+#     POSITION -> cash, long, short
+#     ACTION -> buy, sell, n/c (no change)
+#     '''
+#     def handle_long(prev_position, sign):
+#         '''handler for long trading position'''
+#         if prev_position == 'cash':  # if previous position was cash
+#             if sign in [0, -1]: # in or below buffer
+#                 return ['cash', 'n/c']
+#             return ['long', 'buy']
+#         if prev_position == 'long':  # previous position: long
+#             if sign in [0, 1]: # in or above buffer
+#                 return ['long', 'n/c']
+#             return ['cash', 'sell']
+
+#     def handle_short(prev_position, sign):
+#         '''handler for short trading position'''
+#         if prev_position == 'cash':  # if previous position was cash
+#             if sign in [0, 1]: # in or above buffer
+#                 return ['cash', 'n/c']
+#             return ['short', 'sell']
+#         if prev_position == 'short':  # previous position: short
+#             if sign in [0, -1]: # in or below buffer
+#                 return ['short', 'n/c']
+#             return ['cash', 'buy']
+
+#     n_time_steps       = d_frame.shape[0]
+#     positions, actions = ([] for i in range(2))
+
+#     positions.append(dft.POSITIONS[2])
+#     actions.append(dft.ACTIONS[2])
+
+#     for step in range(1, n_time_steps):
+#         sign = d_frame.loc[d_frame.index[step], 'SIGN']
+#         prev_position = positions[step - 1]
+#         if position.lower() == 'long':
+#             pos_act = handle_long(prev_position, sign)
+#         elif position.lower() == 'short':
+#             pos_act = handle_short(prev_position, sign)
+#         else:
+#             raise ValueError('build_positions: long or short positions only')
+#         positions.append(pos_act[0])
+#         actions.append(pos_act[1])
+
+#     d_frame.insert(loc=len(d_frame.columns), column='POSITION', value=positions)
+#     d_frame.insert(loc=len(d_frame.columns), column='ACTION', value=actions)
+#     return d_frame
+
+# Implement with Python 3.10
+# def build_positions_next(d_frame, position):
+#     '''
+#     Builds desired positions for the EMA strategy
+#     POSITION -> cash, long (short pending)
+#     ACTION -> buy, sell, n/c (no change)
+#     *** REWRITE AS SWITCH ***
+#     '''
+#     def handle_long(prev_position, sign):
+#         '''handler for long trading position'''
+#         match prev_position:
+#             case 'long':
+#                 match sign:
+#                     case 0:
+#                         return ['long', 'n/c']
+#                     case -1:
+#                         return ['long', 'n/c']
+#                     case 1:
+#                         return ['cash', 'sell']
+#             case 'cash':
+#                 match sign:
+#                     case 0:
+#                         return ['cash', 'n/c']
+#                     case 1:
+#                         return ['cash', 'n/c']
+#                     case -1:
+#                         return ['long', 'buy']
+
+#     def handle_short(prev_position, sign):
+#         '''handler for short trading position'''
+#         match prev_position:
+#             case 'short':
+#                 match sign:
+#                     case 0:
+#                         return ['short', 'n/c']
+#                     case -1:
+#                         return ['short', 'n/c']
+#                     case 1:
+#                         return ['cash', 'buy']
+#             case 'cash':
+#                 match sign:
+#                     case 0:
+#                         return ['cash', 'n/c']
+#                     case 1:
+#                         return ['cash', 'n/c']
+#                     case -1:
+#                         return ['short', 'sell']
+
+#     n_time_steps = d_frame.shape[0]
+
+#     positions, actions = ([] for i in range(2))
+#     positions.append(dft.POSITIONS[2])
+#     actions.append(dft.ACTIONS[2])
+
+#     for step in range(1, n_time_steps):
+#         sign = d_frame.loc[d_frame.index[step], 'SIGN']
+#         prev_position = positions[step - 1]
+
+#         match position.lower():
+#             case 'long':
+#                 pos_act = handle_long(prev_position, sign)
+#             case 'short':
+#                 pos_act = handle_short(prev_position, sign)
+#             case _:
+#                 msg = 'build_positions: long or short positions only'
+#                 raise ValueError(msg)
+
+#         positions.append(pos_act[0])
+#         actions.append(pos_act[1])
 
 
-def build_positions(d_frame, position):
-    '''
-    Builds desired positions for the EMA strategy
-    POSITION -> cash, long (short pending)
-    ACTION -> buy, sell, n/c (no change)
-    *** REWRITE AS SWITCH ***
-    '''
-    n_time_steps = d_frame.shape[0]
-    positions, actions = ([] for i in range(2))
-
-    positions.append(dft.POSITIONS[2])
-    actions.append(dft.ACTIONS[2])
-
-    for step in range(1, n_time_steps):
-        sign = d_frame.loc[d_frame.index[step], 'SIGN']
-        prev_position = positions[step - 1]
-        if position.lower() == 'long':
-            if prev_position == 'cash':  # if previous position was cash
-                if sign in [0, -1]: # in or below buffer
-                    positions.append('cash')
-                    actions.append('n/c')
-                else: # above buffer
-                    positions.append('long')
-                    actions.append('buy')
-            elif prev_position == 'long':  # previous position: long
-                if sign in [0, 1]: # in or above buffer
-                    positions.append('long')
-                    actions.append('n/c')
-                else: # below buffer
-                    positions.append('cash')
-                    actions.append('sell')
-            else: # previous position: short (to implement)
-                if sign == [0, -1]: # in or below buffer
-                    positions.append('short')
-                    actions.append('n/c')
-                else: # above buffer
-                    positions.append('long')
-                    actions.append('buy')
-        elif position.lower() == 'short':
-            if prev_position == 'cash':  # if previous position was cash
-                if sign in [0, 1]: # in or above buffer
-                    positions.append('cash')
-                    actions.append('n/c')
-                else: # below buffer
-                    positions.append('short')
-                    actions.append('sell')
-            elif prev_position == 'short':  # previous position: short
-                if sign in [0, -1]: # in or below buffer
-                    positions.append('short')
-                    actions.append('n/c')
-                else: # above buffer
-                    positions.append('cash')
-                    actions.append('buy')
-        else:
-            raise ValueError('build_positions: long or short positions only')
-
-    d_frame.insert(loc=len(d_frame.columns), column='POSITION', value=positions)
-    d_frame.insert(loc=len(d_frame.columns), column='ACTION', value=actions)
-    return d_frame
+# def build_sign(d_frame, buffer):
+#     '''
+#     The SIGN column corresponds to the position wrt ema +/- buffer:
+#     -1 below buffer / 0 within buffer / 1 above buffer
+#     '''
+#     reactivity = dft.REACTIVITY
+#     d_frame.loc[:, 'SIGN'] = np.where(d_frame.Close - d_frame.EMA*(1 + buffer) > 0,
+#                                       1, np.where(d_frame.Close - d_frame.EMA*(1 - buffer) < 0,
+#                                                   -1, 0)
+#                                       )
+#     # shift by reactivity days (should be 1) -> buy/sell action follows close date
+#     d_frame.loc[:, 'SIGN'] = d_frame['SIGN'].shift(reactivity)
+#     d_frame.loc[d_frame.index[0], 'SIGN'] = 0.0  # set first value to 0
+#     return d_frame
 
 
-def build_sign(d_frame, buffer, reactivity=dft.REACTIVITY):
-    '''
-    The SIGN column corresponds to the position wrt ema +/- buffer:
-    -1 below buffer / 0 within buffer / 1 above buffer
-    '''
-    d_frame.loc[:, 'SIGN'] = np.where(d_frame.Close - d_frame.EMA*(1 + buffer) > 0,
-                                      1, np.where(d_frame.Close - d_frame.EMA*(1 - buffer) < 0,
-                                                  -1, 0)
-                                      )
-    # shift by reactivity days (should be 1) -> buy/sell action follows close date
-    d_frame.loc[:, 'SIGN'] = d_frame['SIGN'].shift(reactivity)
-    d_frame.loc[d_frame.index[0], 'SIGN'] = 0.0  # set first value to 0
-    return d_frame
+# def build_hold(d_frame, position, init_wealth):
+#     '''
+#     Computes returns, cumulative returns and 'wealth' from initial_wealth
+#     for hold strategy
+#     *** MUST INCORPORATE FEES at start/end ***
+#     '''
+#     if position == 'long':
+#         d_frame.loc[:, 'RET'] = 1.0 + d_frame.Close.pct_change()
+#     else: # short
+#         d_frame.loc[:, 'RET'] = 1.0 - d_frame.Close.pct_change()
+#     d_frame.loc[d_frame.index[0], 'RET'] = 1.0  # set first value to 1.0
+#     d_frame.loc[:, 'CUMRET_HOLD'] = init_wealth * d_frame.RET.cumprod(axis   = None,
+#                                                                       skipna = True)
+#     return d_frame
 
 
-def build_hold(d_frame, position, init_wealth):
-    '''
-    Computes returns, cumulative returns and 'wealth' from initial_wealth
-    for hold strategy
-    *** MUST INCORPORATE FEES at start/end ***
-    '''
-    if position == 'long':
-        d_frame.loc[:, 'RET'] = 1.0 + d_frame.Close.pct_change()
-    else: # short
-        d_frame.loc[:, 'RET'] = 1.0 - d_frame.Close.pct_change()
-    d_frame.loc[d_frame.index[0], 'RET'] = 1.0  # set first value to 1.0
-    d_frame.loc[:, 'CUMRET_HOLD'] = init_wealth * d_frame.RET.cumprod(axis   = None,
-                                                                      skipna = True)
-    return d_frame
+# def build_ema(d_frame, init_wealth):
+#     '''
+#     Computes returns, cumulative returns and 'wealth' from initial_wealth
+#     from EMA strategy
+#     *** INCORPORATE FEES ***
+#     '''
+#     # If long, use the daily returns from hold, if short set to 1.0 (ie: cash=no change)
+#     d_frame.loc[:, 'RET_EMA'] = np.where(d_frame.POSITION == 'cash',
+#                                          1.0,
+#                                          d_frame.RET,
+#                                          )
+
+#     # Compute cumulative returns aka 'Wealth'
+#     d_frame.loc[:, 'CUMRET_EMA'] = d_frame.RET_EMA.cumprod(axis   = None,
+#                                                            skipna = True) * init_wealth
+#     # Set first value to init_wealth
+#     d_frame.loc[d_frame.index[0], 'CUMRET_EMA'] = init_wealth
+
+#     return d_frame
 
 
-def build_ema(d_frame, init_wealth):
-    '''
-    Computes returns, cumulative returns and 'wealth' from initial_wealth
-    from EMA strategy
-    *** INCORPORATE FEES ***
-    '''
-    # If long, use the daily returns from hold, if short set to 1.0 (ie: cash=no change)
-    d_frame.loc[:, 'RET_EMA'] = np.where(d_frame.POSITION == 'cash',
-                                         1.0,
-                                         d_frame.RET,
-                                         )
+# def cleanup_strategy(dataframe):
+#     '''
+#     Remove unnecessary columns
+#     '''
+#     dataframe = dataframe.drop(['SIGN'], axis=1)
+#     dataframe = dataframe.drop(['RET_EMA'], axis=1)
 
-    # Compute cumulative returns aka 'Wealth'
-    d_frame.loc[:, 'CUMRET_EMA'] = d_frame.RET_EMA.cumprod(axis   = None,
-                                                           skipna = True) * init_wealth
-    # Set first value to init_wealth
-    d_frame.loc[d_frame.index[0], 'CUMRET_EMA'] = init_wealth
-
-    return d_frame
-
-
-def cleanup_strategy(dataframe):
-    '''
-    Remove unnecessary columns
-    '''
-    dataframe = dataframe.drop(['SIGN'], axis=1)
-    dataframe = dataframe.drop(['RET_EMA'], axis=1)
-
-    return dataframe
+#     return dataframe
 
 
 def get_fee(data, fee_pct, actions):

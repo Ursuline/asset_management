@@ -17,12 +17,13 @@ class Recommender():
     '''
     Handles the dispatching of trading recommendations
     '''
-    def __init__(self, screen = True, email = True):
+    def __init__(self, position='long', screen = True, email = True):
         '''
         _screen : print to screen
         _email : send email
         '''
         self._recommendations = [] # list of recommendations
+        self._position = position
         self._screen = screen
         self._email  = email
 
@@ -93,7 +94,7 @@ class Recommender():
         repeats = 75
         line    = ''.join([char * repeats for char in root])
 
-        print('\n' + line)
+        #$print(f'Position: {self._position}\n' + line)
         for rec in self._recommendations:
             if screen_nc or not (screen_nc or rec.get_action() == 'n/c'):
                 rec.print_recommendation(notify=True)
@@ -188,7 +189,7 @@ class Recommendation():
         security.rename(columns = {f'Close_{self._symbol}': "Close"},
                         inplace = True,
                         )
-        strategy = topomap.build_strategy(security, span, buffer, dft.INIT_WEALTH)
+        strategy = topomap.build_strategy(security, span, buffer)
         rec = strategy.loc[self._date, ["ACTION", "POSITION"]]
 
         self._action   = rec[0]

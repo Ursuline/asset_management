@@ -26,7 +26,7 @@ PLOT_DIR  = 'plots'
 META_DIR  = 'meta'
 
 HUGE       = 1000000
-REACTIVITY = 1
+REACTIVITY = 0
 
 POSITIONS = ['long', 'short', 'cash']
 ACTIONS   = ['buy', 'sell', 'n/c']
@@ -34,13 +34,13 @@ ACTIONS   = ['buy', 'sell', 'n/c']
 DEFAULT_PERIOD = '5y'  # data download period
 
 #Min & max rolling window spans
-MIN_SPAN = 5
-MAX_SPAN = 75
+MIN_SPAN = 1
+MAX_SPAN = 10
 DEFAULT_SPAN = 20
 
 # Min & max buffer around mean
 MIN_BUFF  = 0.0
-MAX_BUFF  = 0.035
+MAX_BUFF  = 0.01
 DEFAULT_BUFFER = .01
 N_BUFFERS = 51
 
@@ -48,7 +48,7 @@ INIT_WEALTH    = 100.0
 
 N_MAXIMA_DISPLAY = 10 # number of maxima to display on contour plot
 
-FEE_PCT        = .004  # broker's fee
+FEE_PCT        = .05  # broker's fee
 
 #### PLOT DEFAULTS ####
 plt.rcParams['font.family'] = 'sans-serif'

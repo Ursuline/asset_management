@@ -20,16 +20,19 @@ class Topomap():
     ''' A Topomap encapsulates :
         span, buffer, EMA, hold
     '''
-    def __init__(self, ticker_symbol, date_range, strategy):
+    def __init__(self, ticker_symbol, date_range, position):
         '''
         name -> identifier / ticker name that corresponds to EMA map
         date_range in datetime format
         spans, buffers, emas -> numpy arrays
         hold -> float
+        trading position strategy: position = 'long' or 'short'
         '''
         self._name       = ticker_symbol
         self._date_range = date_range
-        self._strategy   = strategy.lower()
+        self._position   = position.lower()
+        self._fee        = dft.FEE_PCT
+        self._init_wealth = dft.INIT_WEALTH
         self._spans      = None
         self._buffers    = None
         self._emas       = None
@@ -60,14 +63,18 @@ class Topomap():
         else:
             self._hold = hold
 
+    def set_fee(self, fee):
+        '''reset broker's fee'''
+        self._fee = fee
+
 
     def get_name(self):
         '''Return ticker identifier '''
         return self._name
 
-    def get_strategy(self):
-        '''Return strategy '''
-        return self._strategy
+    def get_position(self):
+        '''Return position '''
+        return self._position
 
     def get_date_range(self):
         '''Return ticker identifier '''
@@ -126,12 +133,12 @@ class Topomap():
 
         # Fill EMAS for all span/buffer combinations
         desc = f'Building ema map | (spans) / {span_par[1] - span_par[0] + 1}'
+        #window = security.loc[dates[0]:dates[1], :].copy()
         for i, span in tqdm(enumerate(spans), desc = desc):
             for j, buffer in enumerate(buffers):
                 data  = self.build_strategy(security.loc[dates[0]:dates[1], :].copy(),
                                              span,
                                              buffer,
-                                             dft.INIT_WEALTH,
                                              )
                 emas[i][j] = tra.get_cumret(data,
                                         'ema',
@@ -147,9 +154,9 @@ class Topomap():
         self.set_hold(hold)
 
 
-    def build_strategy(self, d_frame, span, buffer, init_wealth):
+    def build_strategy(self, d_frame, span, buffer):
         '''
-        *** At this point, only a long strategy is considered ***
+        *** At this point, only a long position is considered ***
         Implements running-mean (ewm) strategy
         Input dataframe d_frame has date index & security value 'Close'
 
@@ -166,11 +173,7 @@ class Topomap():
         CUMRET_HOLD -> cumulative returns for a hold strategy
         RET2 -> 1 + % daily return when Close > EMA
         CUMRET_EMA -> cumulative returns for the EMA strategy
-
-        reactivity -> reactivity to market change in days (should be 1)
         '''
-        #init_wealth = dft.INIT_WEALTH
-        reactivity  = dft.REACTIVITY
 
         # Compute exponential weighted mean 'EMA'
         d_frame.loc[:, 'EMA'] = d_frame.Close.ewm(span=span, adjust=False).mean()
@@ -186,21 +189,138 @@ class Topomap():
                        )
 
         # build the SIGN column (above/in/below buffer)
-        d_frame = tra.build_sign(d_frame, buffer, reactivity)
+        d_frame = self.build_sign(d_frame, buffer)
 
         # build the POSITION (long/cash) & ACTION (buy/sell) columns
-        d_frame = tra.build_positions(d_frame, self._strategy)
+        d_frame = self.build_positions(d_frame)
 
         # compute returns from a hold strategy
-        d_frame = tra.build_hold(d_frame, init_wealth)
+        d_frame = self.build_hold(d_frame)
 
         # compute returns from the EMA strategy
-        d_frame = tra.build_ema(d_frame, init_wealth)
+        d_frame = self.build_ema(d_frame)
 
         # remove junk
-        d_frame = tra.cleanup_strategy(d_frame)
+        d_frame = self.cleanup_strategy(d_frame)
 
         return d_frame
+
+
+    @staticmethod
+    def build_sign(d_frame, buffer):
+        '''
+        The SIGN column corresponds to the position wrt ema +/- buffer:
+        -1 below buffer / 0 within buffer / 1 above buffer
+        '''
+        #reactivity = dft.REACTIVITY
+        d_frame.loc[:, 'SIGN'] = np.where(d_frame.Close - d_frame.EMA*(1 + buffer) > 0,
+                                          1, np.where(d_frame.Close - d_frame.EMA*(1 - buffer) < 0,
+                                                      -1, 0)
+                                          )
+        # shift by reactivity days -> buy/sell action follows close date#
+        #d_frame.loc[:, 'SIGN'] = d_frame['SIGN'].shift(reactivity)
+        d_frame.loc[d_frame.index[0], 'SIGN'] = 0.0  # set first value to 0
+        return d_frame
+
+
+    def build_positions(self, d_frame):
+        '''
+        Builds desired positions for the EMA strategy
+        POSITION -> cash, long, short
+        ACTION -> buy, sell, n/c (no change)
+        '''
+        def handle_long(prev_position, sign):
+            '''handler for long trading position'''
+            if prev_position == 'cash':  # if previous position was cash
+                if sign in [0, -1]: # in or below buffer
+                    return ['cash', 'n/c']
+                return ['long', 'buy']
+            if prev_position == 'long':  # previous position: long
+                if sign in [0, 1]: # in or above buffer
+                    return ['long', 'n/c']
+                return ['cash', 'sell']
+            return None
+
+        def handle_short(prev_position, sign):
+            '''handler for short trading position'''
+            if prev_position == 'cash':  # if previous position was cash
+                if sign in [0, 1]: # in or above buffer
+                    return ['cash', 'n/c']
+                return ['short', 'sell']
+            if prev_position == 'short':  # previous position: short
+                if sign in [0, -1]: # in or below buffer
+                    return ['short', 'n/c']
+                return ['cash', 'buy']
+            return None
+
+        n_time_steps       = d_frame.shape[0]
+        positions, actions = ([] for i in range(2))
+
+        positions.append(dft.POSITIONS[2])
+        actions.append(dft.ACTIONS[2])
+
+        for step in range(1, n_time_steps):
+            sign = d_frame.loc[d_frame.index[step], 'SIGN']
+            prev_position = positions[step - 1]
+            if self._position == 'long':
+                pos_act = handle_long(prev_position, sign)
+            elif self._position == 'short':
+                pos_act = handle_short(prev_position, sign)
+            else:
+                raise ValueError('build_positions: long or short positions only')
+            positions.append(pos_act[0])
+            actions.append(pos_act[1])
+
+        d_frame.insert(loc=len(d_frame.columns), column='POSITION', value=positions)
+        d_frame.insert(loc=len(d_frame.columns), column='ACTION', value=actions)
+        return d_frame
+
+
+    def build_hold(self, d_frame):
+        '''
+        Computes returns, cumulative returns and 'wealth' from initial_wealth
+        for hold strategy
+        *** MUST INCORPORATE FEES at start/end ***
+        '''
+        if self._position == 'long':
+            d_frame.loc[:, 'RET'] = 1.0 + d_frame.Close.pct_change()
+        else: # short
+            d_frame.loc[:, 'RET'] = 1.0 - d_frame.Close.pct_change()
+        d_frame.loc[d_frame.index[0], 'RET'] = 1.0  # set first value to 1.0
+        d_frame.loc[:, 'CUMRET_HOLD'] = self._init_wealth * d_frame.RET.cumprod(axis   = None,
+                                                                                skipna = True)
+        return d_frame
+
+
+    def build_ema(self, d_frame):
+        '''
+        Computes returns, cumulative returns and 'wealth' from initial_wealth
+        for EMA strategy
+        *** INCORPORATE FEES ***
+        '''
+        # return: cash=no change
+        d_frame.loc[:, 'RET_EMA'] = np.where(d_frame.POSITION == 'cash',
+                                             1.0,
+                                             d_frame.RET,
+                                             )
+
+        # Compute cumulative returns aka 'Wealth'
+        d_frame.loc[:, 'CUMRET_EMA'] = d_frame.RET_EMA.cumprod(axis   = None,
+                                                               skipna = True) * self._init_wealth
+        # Set initial value to init_wealth
+        d_frame.loc[d_frame.index[0], 'CUMRET_EMA'] = self._init_wealth
+
+        return d_frame
+
+    @staticmethod
+    def cleanup_strategy(dataframe):
+        '''
+        Remove unnecessary columns
+        '''
+        dataframe = dataframe.drop(['SIGN'], axis=1)
+        dataframe = dataframe.drop(['RET_EMA'], axis=1)
+
+        return dataframe
 
 
 ### I/O
@@ -208,11 +328,9 @@ class Topomap():
         '''
         Return the persist filename for the ema map without extension
         '''
-        # data_dir = dft.DATA_DIR
-        # data_dir = os.path.join(data_dir, self._name)
 
         dates   = util.dates_to_strings(self._date_range, '%Y-%m-%d')
-        suffix  = f'{dates[0]}_{dates[1]}_{self._strategy}_ema_map'
+        suffix  = f'{dates[0]}_{dates[1]}_{self._position}_ema_map'
         suffix = f'{self._name}_{suffix}'
         return suffix
 
@@ -295,7 +413,7 @@ class Topomap():
             msg = 'save_best_emas: date_range should be set via set_date_range'
             raise ValueError(msg)
         start, end = util.dates_to_strings(self._date_range, '%Y-%m-%d')
-        suffix = f'{self._name}_{start}_{end}_{self._strategy}_results'
+        suffix = f'{self._name}_{start}_{end}_{self._position}_results'
 
         data_dir = os.path.join(dft.DATA_DIR, self._name)
         os.makedirs(data_dir, exist_ok = True)
@@ -363,7 +481,7 @@ class Topomap():
         axis = trplt.build_title(axis        = axis,
                                  ticker      = symbol,
                                  ticker_name = ticker_object.get_name(),
-                                 strategy    = self._strategy,
+                                 position    = self._position,
                                  dates       = title_range,
                                  ema         = max_ema,
                                  hold        = self._hold,
@@ -375,7 +493,7 @@ class Topomap():
         plt.grid(b=None, which='major', axis='both', color=dft.GRID_COLOR)
         plot_dir = os.path.join(dft.PLOT_DIR, self._name)
         trplt.save_figure(plot_dir,
-                          f'{symbol}_{name_range[0]}_{name_range[1]}_contours',
+                          f'{symbol}_{name_range[0]}_{name_range[1]}_contours_{self._position}',
                           extension='png')
         plt.show()
 
@@ -445,9 +563,9 @@ class Topomap():
 
         axis = trplt.build_title(axis        = axis,
                                  ticker      = symbol,
-                                 ticker_name = self._name,
+                                 ticker_name = ticker_object.get_name(),
                                  dates       = title_range,
-                                 strategy    = self._strategy,
+                                 position    = self._position,
                                  ema         = max_ema,
                                  hold        = self._hold,
                                  span        = max_span,
@@ -457,7 +575,7 @@ class Topomap():
 
         plot_dir = os.path.join(dft.PLOT_DIR, self._name)
         trplt.save_figure(plot_dir,
-                          f'{symbol}_{name_range[0]}_{name_range[1]}_3D',
+                          f'{symbol}_{name_range[0]}_{name_range[1]}_3D_{self._position}',
                           extension='png')
         plt.show()
 
@@ -476,8 +594,7 @@ class Topomap():
                               buffer_range[1],
                               buffer_range[2])
 
-        emas, _ = trplt.build_ema_profile(security,
-                                          date_range = self._date_range,
+        emas, _ = self.build_ema_profile(security,
                                           var_name  = target,
                                           variables = buffers,
                                           fixed     = fixed,
@@ -514,13 +631,12 @@ class Topomap():
                           span_range[1] + 1,
                           )
 
-        emas, _ = trplt.build_ema_profile(security,
-                                         date_range = self._date_range,
-                                         var_name  = target,
-                                         variables = spans,
-                                         fixed     = fixed,
-                                         fpct      = fee_pct,
-                                         )
+        emas, _ = self.build_ema_profile(security,
+                                          var_name  = target,
+                                          variables = spans,
+                                          fixed     = fixed,
+                                          fpct      = fee_pct,
+                                          )
 
         dfr = pd.DataFrame(data=[spans, emas]).T
         dfr.columns = [target, 'ema']
@@ -552,7 +668,7 @@ class Topomap():
         axis = trplt.build_title(axis = axis,
                                  ticker = symbol,
                                  ticker_name = ticker_object.get_name(),
-                                 strategy = self._strategy,
+                                 position = self._position,
                                  dates = util.dates_to_strings(self._date_range, fmt = '%d-%b-%Y'),
                                  ema = min_max[1],
                                  hold = self._hold,
@@ -562,6 +678,41 @@ class Topomap():
                                  )
 
         dates    = util.dates_to_strings(self._date_range, fmt = '%Y-%m-%d')
-        filename = f'{symbol}_{dates[0]}_{dates[1]}_{target}s'
+        filename = f'{symbol}_{dates[0]}_{dates[1]}_{target}s_{self._position}'
         plot_dir = os.path.join(dft.PLOT_DIR, self._name)
         trplt.save_figure(plot_dir, filename)
+
+
+    def build_ema_profile(self, security, var_name, variables, fixed, fpct):
+        ''' Aggregates a 1D numpy array of EMAs as a function of
+            the target variable (span or buffer)
+            the fixed variable (buffer or span)
+            returns the numpy array of EMAs as well as the value for a hold strategy
+        '''
+        emas  = np.zeros(variables.shape)
+        date_range = self.get_date_range()
+
+        if var_name == 'span':
+            buffer = fixed
+        elif var_name == 'buffer':
+            span   = fixed
+        else:
+            raise ValueError(f'var_name {var_name} should be span or buffer')
+
+        for i, variable in enumerate(variables):
+            if var_name == 'span':
+                span   = variable
+            else:
+                buffer = variable
+
+            dfr = self.build_strategy(security.loc[date_range[0]:date_range[1], :].copy(),
+                                      span,
+                                      buffer,
+                                      )
+            fee = tra.get_fee(dfr, fpct, dft.get_actions())
+            ema = tra.get_cumret(dfr, 'ema', fee)
+            emas[i] = ema
+            if i == 0:
+                hold = tra.get_cumret(dfr, 'hold', dft.INIT_WEALTH)
+
+        return emas, hold

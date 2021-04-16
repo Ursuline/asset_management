@@ -104,7 +104,6 @@ class Ticker():
         dfr = topomap.build_strategy(security.loc[window_start:display_dates[1], :].copy(),
                                      span,
                                      buffer,
-                                     dft.INIT_WEALTH,
                                      )
 
         fee  = tra.get_fee(dfr, fee_pct, dft.get_actions())
@@ -183,7 +182,7 @@ class Ticker():
         trplt.build_title(axis        = axis,
                           ticker      = self._symbol,
                           ticker_name = self._name,
-                          strategy    = topomap.get_strategy(),
+                          position    = topomap.get_position(),
                           dates       = title_dates,
                           span        = span,
                           buffer      = buffer,
