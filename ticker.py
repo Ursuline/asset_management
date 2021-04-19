@@ -36,6 +36,7 @@ class Ticker():
 
 
     def _set_currency_symbol(self):
+        '''Set the symbol corresponding to the currency'''
         if self._currency.lower() == 'usd':
             return '$'
         if self._currency.lower() == 'eur':
@@ -106,9 +107,9 @@ class Ticker():
                                      buffer,
                                      )
 
-        fee  = tra.get_fee(dfr, fee_pct, dft.get_actions())
-        hold = tra.get_cumret(dfr, 'hold')  # cumulative returns for hold
-        ema  = tra.get_cumret(dfr, 'ema', fee)  # cumulative returns for EMA
+        fee  = topomap.get_fee(dfr, dft.get_actions())
+        hold = topomap.get_cumret(dfr, 'hold')  # cumulative returns for hold
+        ema  = topomap.get_cumret(dfr, 'ema', fee)  # cumulative returns for EMA
 
         _, axis = plt.subplots(figsize=(dft.FIG_WIDTH, dft.FIG_HEIGHT))
 
@@ -175,8 +176,8 @@ class Ticker():
                                                    'RET')
             axis = trplt.plot_stats(summary_stats,
                                     axis,
-                                    dfr.loc[display_dates[0]:display_dates[1], :],
-                                    dft.get_color_scheme(),
+                                    #dfr.loc[display_dates[0]:display_dates[1], :],
+                                    colors = dft.get_color_scheme(),
                                     )
 
         trplt.build_title(axis        = axis,

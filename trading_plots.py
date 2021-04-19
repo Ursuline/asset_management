@@ -9,13 +9,14 @@ trading_plots.py
 """
 import os
 import sys
+import datetime
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.ticker as mtick
 from matplotlib.offsetbox import (TextArea, AnnotationBbox)
 
-import trading as tra
+#import trading as tra
 import trading_defaults as dft
 import utilities as util
 
@@ -117,10 +118,6 @@ def plot_maxima(emas, spans, buffers, hold, axis, n_maxima):
                       fontsize   = dft.MAX_LABEL_SIZE,
                       color      = dft.ANNOTATE_COLOR,
                     )
-        # msg  = f'Max EMA {i}={np.max(_emas):.2%}: '
-        # msg += f'{spans[max_idx[0]]:.0f}-days buffer={buffers[max_idx[1]]:.2%} '
-        # msg += f'(hold={hold:.2%})'
-        # print(msg)
 
         # set max emas value to arbitrily small number and re-iterate
         _emas[max_idx[0]][max_idx[1]] = - dft.HUGE
@@ -155,21 +152,33 @@ def plot_max_values(data, axis, n_values, max_val, min_val, fmt):
 
 
 def plot_arrows(axis, data, actions, colors):
+    '''Plot arrows '''
     vertical_range = data['Close'].max() - data['Close'].min()
     horizont_range = (data.index[-1] - data.index[0]).days
     arrow_length   = vertical_range/10
     head_width     = horizont_range/100
     head_length    = vertical_range/50
     space          = vertical_range/100  # space bw arrow tip and curve
+    lag            = dft.LAG
+
+    def shift_arrow(data, target_date, lag):
+        '''Correct for the lag shift on the plot'''
+        data_index = data.index.get_loc(target_date) # row number
+        y_start = data.iloc[data_index - lag]['Close']
+        x_pos   = data.iloc[data_index - lag].name
+        return x_pos, y_start
 
     # filter actions rows
     # buys
     filtered = data[data.ACTION == actions[0]].copy()
     for row in range(filtered.shape[0]):
-        y_start = filtered.loc[filtered.index[row], 'Close']
-        color   = colors[2]
-        axis.arrow(x  = filtered.index[row],
-                   y  = y_start + arrow_length,
+
+        x_pos, y_start = shift_arrow(data, filtered.index[row], lag)
+        y_pos = y_start + arrow_length
+
+        color = colors[2]
+        axis.arrow(x  = x_pos,
+                   y  = y_pos,
                    dx = 0,
                    dy = -arrow_length + space,
                    head_width  = head_width,
@@ -182,10 +191,11 @@ def plot_arrows(axis, data, actions, colors):
     # sells
     filtered = data[data.ACTION == actions[1]].copy()
     for row in range(filtered.shape[0]):
-        y_start = filtered.loc[filtered.index[row], 'Close']
+        x_pos, y_start = shift_arrow(data, filtered.index[row], lag)
+        y_pos = y_start - arrow_length
         color   = colors[3]
-        axis.arrow(x  = filtered.index[row],
-                   y  = y_start - arrow_length,
+        axis.arrow(x  = x_pos,
+                   y  = y_pos,
                    dx = 0,
                    dy = arrow_length - space,
                    head_width  = head_width,
@@ -196,11 +206,11 @@ def plot_arrows(axis, data, actions, colors):
                   )
 
 
-def plot_stats(summary_stats, axis, data, colors):
+def plot_stats(summary_stats, axis, colors):
     '''
     Place a text box with signal statistics
     '''
-    xy = (.95, .0075)
+    xy_pos = (.95, .0075)
 
     text  = 'Daily returns:\n'
     text += f'$\mu$={summary_stats["mean"]-1:.2%}\n'
@@ -212,51 +222,16 @@ def plot_stats(summary_stats, axis, data, colors):
     text += f'p-value={summary_stats["jb"]["gaussian"]:.3g})\n'
     offsetbox = TextArea(text)
 
-    ab = AnnotationBbox(offsetbox,
-                        xy,
-                        xybox=(-20, 40),
-                        xycoords='axes fraction',
-                        boxcoords="offset points",
-                        frameon = False,
-                        #arrowprops=dict(arrowstyle="->")
-                        )
-    axis.add_artist(ab)
+    anb = AnnotationBbox(offsetbox,
+                         xy_pos,
+                         xybox=(-20, 40),
+                         xycoords='axes fraction',
+                         boxcoords="offset points",
+                         frameon = False,
+                         #arrowprops=dict(arrowstyle="->")
+                         )
+    axis.add_artist(anb)
     return axis
-
-# def build_ema_profile(security, topomap, var_name, variables, fixed, fpct):
-#     ''' Aggregates a 1D numpy array of EMAs as a function of
-#         the variable (span or buffer)
-#         the fixed value (buffer or span)
-#         returns the numpy array of EMAs as well as the value for a hold strategy
-#     '''
-#     emas  = np.zeros(variables.shape)
-#     date_range = topomap.get_date_range()
-
-#     if var_name == 'span':
-#         buffer = fixed
-#     elif var_name == 'buffer':
-#         span   = fixed
-#     else:
-#         raise ValueError(f'var_name {var_name} should be span or buffer')
-
-#     for i, variable in enumerate(variables):
-#         if var_name == 'span':
-#             span   = variable
-#         else:
-#             buffer = variable
-
-#         dfr = topomap.build_strategy(security.loc[date_range[0]:date_range[1], :].copy(),
-#                                      span,
-#                                      buffer,
-#                                      dft.INIT_WEALTH,
-#                                      )
-#         fee = tra.get_fee(dfr, fpct, dft.get_actions())
-#         ema = tra.get_cumret(dfr, 'ema', fee)
-#         emas[i] = ema
-#         if i == 0:
-#             hold = tra.get_cumret(dfr, 'hold', dft.INIT_WEALTH)
-
-#     return emas, hold
 
 
 ### MAIN PLOT FUNCTIONS
@@ -308,13 +283,12 @@ def plot_span_range(ticker_object, topomap, security, buffer, n_best, fee_pct, e
     spans = np.arange(span_range[0],
                       span_range[1] + 1)
 
-    emas, hold = build_ema_profile(security   = security,
-                                   topomap    = topomap,
-                                   var_name   = target,
-                                   variables  = spans,
-                                   fixed      = fixed,
-                                   fpct       = fee_pct,
-                                   )
+    emas, hold = topomap.build_ema_profile(security  = security,
+                                           var_name  = target,
+                                           variables = spans,
+                                           fixed     = fixed,
+                                           fpct      = fee_pct,
+                                           )
 
     dfr = pd.DataFrame(data=[spans, emas]).T
     dfr.columns = [target, 'ema']
@@ -348,13 +322,12 @@ def plot_buffer_range(ticker_object, topomap, security, span, n_best, fee_pct, e
                           buffer_range[1],
                           buffer_range[2])
 
-    emas, hold = build_ema_profile(security   = security,
-                                   topomap    = topomap,
-                                   var_name   = target,
-                                   variables  = buffers,
-                                   fixed      = fixed,
-                                   fpct       = fee_pct,
-                                   )
+    emas, hold = topomap.build_ema_profile(security   = security,
+                                           var_name   = target,
+                                           variables  = buffers,
+                                           fixed      = fixed,
+                                           fpct       = fee_pct,
+                                           )
 
     dfr = pd.DataFrame(data=[buffers, emas]).T
     dfr.columns = [target, 'ema']

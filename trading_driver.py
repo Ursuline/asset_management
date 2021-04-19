@@ -5,12 +5,11 @@ Created on Fri Mar 26 14:58:19 2021
 
 trading_driver.py
 
-# Moving average trading
+# Moving average trading main driver
 
 @author: charles mégnin
 """
 import sys
-import os
 import time
 import pandas as pd
 import trading as tra
@@ -20,6 +19,11 @@ import utilities as util
 import topo_map as tpm
 import recommender as rec
 
+# Skip these securities
+REMOVE  = ['UL', 'FP.PA', 'ORA.PA', 'KC4.F', 'BNP.PA', 'KER.PA', 'SMC.PA']
+REMOVE += ['FB', 'HO.PA', 'LHN.SW', 'SQ', 'BIDU', 'ARKQ', 'KORI.PA']
+REMOVE += ['TRI.PA', 'HEXA.PA', 'CA.PA', 'ATO.PA']
+
 N_MAXIMA_SAVE = 20 # number of maxima to save to file
 
 # Notification defaults
@@ -27,24 +31,21 @@ SCREEN = True
 EMAIL  = True
 NOTIFY = True # item-per-item notificatiton
 
-REMOVE  = ['UL', 'FP.PA', 'ORA.PA', 'KC4.F', 'BNP.PA', 'KER.PA', 'SMC.PA']
-REMOVE += ['FB', 'HO.PA', 'LHN.SW', 'SQ', 'BIDU', 'ARKQ', 'KORI.PA']
-REMOVE += ['TRI.PA', 'HEXA.PA', 'CA.PA', 'ATO.PA']
-
-TICKERS = ptf.OBSERVE
-TICKERS = ['AAPL']
+REFRESH_YAHOO = True # Download fresh Yahoo data
+REFRESH_EMA   = True # Recompute ema map
+FILTER  = True # Remove securities from REMOVE
 
 POSITION = 'long' # long or short
 
-REFRESH = True # Download fresh Yahoo data
-FILTER  = True # Remove securities from REMOVE
+TICKERS = ptf.K_WOOD
+TICKERS = ['ARKK']
 
-START_DATE = '2017-07-17'
-#END_DATE   = '2021-04-09'
-END_DATE   = dft.YESTERDAY
+START_DATE = '2019-01-02'
+END_DATE   = '2021-04-16'
+END_DATE   = dft.TODAY
 
 DATE_RANGE = [START_DATE, END_DATE]
-ZOOM_RANGE = ['2019-04-01', END_DATE]
+ZOOM_RANGE = [START_DATE, END_DATE]
 
 def describe_run(tickers, position):
     '''print run description'''
@@ -74,12 +75,12 @@ if __name__ == '__main__':
     for i, ticker in enumerate(TICKERS):
         print(f'{i+1}/{len(TICKERS)}: {ticker}')
         try:
-            ticker_obj = tra.load_security_oo(dirname = dft.DATA_DIR,
-                                              ticker  = ticker,
-                                              refresh = REFRESH,
-                                              period  = dft.DEFAULT_PERIOD,
-                                              dates   = DATE_RANGE,
-                                              )
+            ticker_obj = tra.load_security(dirname = dft.DATA_DIR,
+                                           ticker  = ticker,
+                                           refresh = REFRESH_YAHOO,
+                                           period  = dft.DEFAULT_PERIOD,
+                                           dates   = DATE_RANGE,
+                                           )
 
             # security is the Close
             security = pd.DataFrame(ticker_obj.get_market_data()[f'Close_{ticker}'])
@@ -87,26 +88,20 @@ if __name__ == '__main__':
             security.rename(columns={f'Close_{ticker}': "Close"}, inplace=True)
 
             # Convert dates to datetime
-            date_range = util.get_datetime_date_range(security,
-                                                      DATE_RANGE[0],
-                                                      DATE_RANGE[1])
+            date_range = util.get_date_range(security,
+                                             DATE_RANGE[0],
+                                             DATE_RANGE[1],
+                                             )
 
             # Instantiate a Topomap object
             topomap = tpm.Topomap(ticker, date_range, POSITION)
 
-            # Read EMA map values  from file or compute if not saved
-            data_dir = os.path.join(dft.DATA_DIR, ticker)
-            file     = topomap.get_ema_map_filename() + '.csv'
-            map_path = os.path.join(data_dir, file)
-            if os.path.exists(map_path):
-                print(f'Loading EMA map {map_path}')
-                topomap.load_ema_map(data_dir)
-            else: # If not saved, compute it
-                #print(f'No EMA map {map_path}')
-                topomap.build_ema_map(security, date_range)
+            # # Read EMA map values  from file or compute if not saved
+            topomap.load_ema_map_new(ticker     = ticker,
+                                      security   = security,
+                                      refresh    = REFRESH_EMA,
+                                      )
 
-            # save EMA map values to file
-            topomap.save_emas()
 
             # Build & save best EMA results to file
             topomap.build_best_emas(N_MAXIMA_SAVE)
@@ -128,9 +123,10 @@ if __name__ == '__main__':
             best_span, best_buffer, best_ema, hold = topomap.get_global_max()
 
             # Convert zoom dates to datetime
-            date_zoom = util.get_datetime_date_range(security,
-                                                     ZOOM_RANGE[0],
-                                                     ZOOM_RANGE[1])
+            date_zoom = util.get_date_range(security,
+                                            ZOOM_RANGE[0],
+                                            ZOOM_RANGE[1],
+                                            )
             #display flags:
             #0: Price  | 1: EMA  | 2: buffer | 3: arrows |
             #4: statistics | 5: save
@@ -148,7 +144,7 @@ if __name__ == '__main__':
             # instantiate recommendation
             rcm = rec.Recommendation(ticker_obj.get_name(),
                                      ticker,
-                                     END_DATE,
+                                     date_range[1],
                                      )
             # build recommendation
             rcm.build_recommendation(ticker_object = ticker_obj,

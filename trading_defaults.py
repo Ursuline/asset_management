@@ -26,21 +26,26 @@ PLOT_DIR  = 'plots'
 META_DIR  = 'meta'
 
 HUGE       = 1000000
-REACTIVITY = 0
 
 POSITIONS = ['long', 'short', 'cash']
 ACTIONS   = ['buy', 'sell', 'n/c']
 
+# Time constants
+TODAY     = datetime.strftime(datetime.now(), '%Y-%m-%d')
+YESTERDAY = datetime.strftime(datetime.now() - timedelta(days = 1), '%Y-%m-%d')
 DEFAULT_PERIOD = '5y'  # data download period
+
+# days after closing. Next day = 1, omniscient = 0
+LAG = 1
 
 #Min & max rolling window spans
 MIN_SPAN = 1
-MAX_SPAN = 10
+MAX_SPAN = 75
 DEFAULT_SPAN = 20
 
 # Min & max buffer around mean
 MIN_BUFF  = 0.0
-MAX_BUFF  = 0.01
+MAX_BUFF  = 0.04
 DEFAULT_BUFFER = .01
 N_BUFFERS = 51
 
@@ -48,7 +53,7 @@ INIT_WEALTH    = 100.0
 
 N_MAXIMA_DISPLAY = 10 # number of maxima to display on contour plot
 
-FEE_PCT        = .05  # broker's fee
+FEE_PCT        = .004  # broker's fee
 
 #### PLOT DEFAULTS ####
 plt.rcParams['font.family'] = 'sans-serif'
@@ -63,7 +68,7 @@ VLINE_COLOR    = 'tomato'
 GRID_COLOR     = '#ededed'
 TITLE_COLOR    = 'dimgrey'
 
-#Plot dimensions
+# Plot dimensions
 CONTOUR_WIDTH  = 12
 SURFACE_WIDTH  = 10
 FIG_WIDTH      = 14
@@ -100,10 +105,6 @@ DELTA_DISTANCE = 1
 
 # default azimuth, elevation, distance
 PERSPECTIVE = [315, 35, 10]
-
-# Time constaants
-TODAY     = datetime.strftime(datetime.now(), '%Y-%m-%d')
-YESTERDAY = datetime.strftime(datetime.now() - timedelta(days = 1), '%Y-%m-%d')
 
 def get_spans():
     '''returns max & min rolling window spans '''

@@ -11,7 +11,6 @@ import pandas as pd
 import matplotlib.pyplot as plt
 from tqdm import tqdm
 
-import trading as tra
 import trading_defaults as dft
 import trading_plots as trplt
 import utilities as util
@@ -41,11 +40,11 @@ class Topomap():
         self._n_best     = None # number of best_emas
 
 
-    def set_buffer(self, buffers):
+    def set_buffers(self, buffers):
         '''Reset buffers'''
         self._buffers = buffers
 
-    def set_span(self, spans):
+    def set_spans(self, spans):
         '''Reset spans'''
         self._spans  = spans
 
@@ -140,13 +139,12 @@ class Topomap():
                                              span,
                                              buffer,
                                              )
-                emas[i][j] = tra.get_cumret(data,
-                                        'ema',
-                                        tra.get_fee(data,
-                                                dft.FEE_PCT,
-                                                dft.get_actions()))
+                emas[i][j] = self.get_cumret(data,
+                                             'ema',
+                                             self.get_fee(data, dft.get_actions()),
+                                             )
                 if i == 0 and j == 0:
-                    hold = tra.get_cumret(data, 'hold')
+                    hold = self.get_cumret(data, 'hold')
 
         self._spans   = spans
         self._buffers = buffers
@@ -210,15 +208,14 @@ class Topomap():
     def build_sign(d_frame, buffer):
         '''
         The SIGN column corresponds to the position wrt ema +/- buffer:
-        -1 below buffer / 0 within buffer / 1 above buffer
+        below buffer: -1 / within buffer: 0 / above buffer: 1
         '''
-        #reactivity = dft.REACTIVITY
         d_frame.loc[:, 'SIGN'] = np.where(d_frame.Close - d_frame.EMA*(1 + buffer) > 0,
                                           1, np.where(d_frame.Close - d_frame.EMA*(1 - buffer) < 0,
                                                       -1, 0)
                                           )
-        # shift by reactivity days -> buy/sell action follows close date#
-        #d_frame.loc[:, 'SIGN'] = d_frame['SIGN'].shift(reactivity)
+        # shift by lag days -> buy/sell action follows close date 1 is next day#
+        d_frame.loc[:, 'SIGN'] = d_frame['SIGN'].shift(dft.LAG)
         d_frame.loc[d_frame.index[0], 'SIGN'] = 0.0  # set first value to 0
         return d_frame
 
@@ -303,7 +300,6 @@ class Topomap():
                                              1.0,
                                              d_frame.RET,
                                              )
-
         # Compute cumulative returns aka 'Wealth'
         d_frame.loc[:, 'CUMRET_EMA'] = d_frame.RET_EMA.cumprod(axis   = None,
                                                                skipna = True) * self._init_wealth
@@ -323,7 +319,36 @@ class Topomap():
         return dataframe
 
 
-### I/O
+    def get_fee(self, data, actions):
+        '''
+        Return fees associated to buys / sells
+        FEE_PCT -> brokers fee
+        actions = ['buy', 'sell', 'n/c']
+        fee -> $ fee corresponding to fee_pct
+        '''
+        # Add a fee for each movement: mask buys
+        fee  = (self._fee * data[data.ACTION == actions[0]].CUMRET_EMA.sum())
+        # Mask sells
+        fee += (self._fee * data[data.ACTION == actions[1]].CUMRET_EMA.sum())
+        return fee
+
+    @staticmethod
+    def get_cumret(data, strategy, fee=0):
+        '''
+        Returns cumulative return for the given strategy
+        Value returned is relative difference between final and initial wealth
+        If strategy is EMA, returns cumulative returns net of fees
+        *** FIX FEES ***
+        '''
+        if strategy.lower() == 'hold':
+            return data.CUMRET_HOLD[-1]/dft.INIT_WEALTH - 1
+        if strategy.lower() == 'ema':
+            return (data.CUMRET_EMA[-1]-fee)/dft.INIT_WEALTH - 1
+        raise ValueError(f'option {strategy} should be either ema or hold')
+
+    #################
+    ###### I/O ######
+    #################
     def get_ema_map_filename(self):
         '''
         Return the persist filename for the ema map without extension
@@ -336,7 +361,9 @@ class Topomap():
 
 
     def load_ema_map(self, data_dir):
-        '''Reads raw EMA data from csv file, reshape and  and returns as a dataframe'''
+        '''
+        Reads raw EMA data from csv file, reshape and  and returns as a dataframe
+        '''
         pathname = os.path.join(data_dir,
                                 self.get_ema_map_filename() + '.csv')
 
@@ -356,6 +383,42 @@ class Topomap():
         self._buffers = buffers
         self._emas    = emas
         self.set_hold(hold)
+
+
+    def load_ema_map_new(self, ticker, security, refresh):
+        '''
+        Reads raw EMA data from csv file, reshape and  and returns as a dataframe
+        '''
+        # Read EMA map values  from file or compute if not saved
+        data_dir = os.path.join(dft.DATA_DIR, ticker)
+        file     = self.get_ema_map_filename() + '.csv'
+        map_path = os.path.join(data_dir, file)
+        if (os.path.exists(map_path)) & (not refresh):
+            print(f'Loading EMA map {map_path}')
+
+            pathname = os.path.join(data_dir,
+                                    self.get_ema_map_filename() + '.csv')
+
+            ema_map = pd.read_csv(pathname, sep=';', index_col=0)
+
+            spans   = ema_map['span'].to_numpy()
+            buffers = ema_map['buffer'].to_numpy()
+            emas    = ema_map['ema'].to_numpy()
+            hold    = ema_map['hold'].to_numpy()
+
+            # reshape the arrays
+            spans   = np.unique(spans)
+            buffers = np.unique(buffers)
+            emas    = np.reshape(emas, (spans.shape[0], buffers.shape[0]))
+
+            self._spans   = spans
+            self._buffers = buffers
+            self._emas    = emas
+            self.set_hold(hold)
+        else: # If not saved, compute it
+            self.build_ema_map(security, self._date_range)
+        # Save ema map to file
+        self.save_emas()
 
 
     def build_best_emas(self, n_best):
@@ -439,7 +502,9 @@ class Topomap():
             raise ValueError(f'{extension} not supported should be pkl or csv')
 
 
+    ##########################
     ### Plotting functions ###
+    ##########################
     def contour_plot(self, ticker_object, date_range):
         '''
         Contour plot of EMA as a function of rolling-window span & buffer
@@ -476,7 +541,6 @@ class Topomap():
                                                         n_maxima,)
 
         # Build title
-
         symbol = ticker_object.get_symbol()
         axis = trplt.build_title(axis        = axis,
                                  ticker      = symbol,
@@ -580,7 +644,7 @@ class Topomap():
         plt.show()
 
 
-    def plot_buffer_range(self, ticker_object, security, span, n_best, fee_pct):
+    def plot_buffer_range(self, ticker_object, security, span, n_best):
         '''
         Plots all possible buffers for a given rolling window span
         the range of buffer values is defined in defaults file
@@ -598,7 +662,6 @@ class Topomap():
                                           var_name  = target,
                                           variables = buffers,
                                           fixed     = fixed,
-                                          fpct      = fee_pct,
                                           )
 
         dfr = pd.DataFrame(data=[buffers, emas]).T
@@ -617,7 +680,7 @@ class Topomap():
                               )
 
 
-    def plot_span_range(self, ticker_object, security, buffer, n_best, fee_pct):
+    def plot_span_range(self, ticker_object, security, buffer, n_best):
         '''
         Plots all possible spans for a given buffer size
         the range of span values is defined in defaults file
@@ -635,7 +698,6 @@ class Topomap():
                                           var_name  = target,
                                           variables = spans,
                                           fixed     = fixed,
-                                          fpct      = fee_pct,
                                           )
 
         dfr = pd.DataFrame(data=[spans, emas]).T
@@ -683,7 +745,7 @@ class Topomap():
         trplt.save_figure(plot_dir, filename)
 
 
-    def build_ema_profile(self, security, var_name, variables, fixed, fpct):
+    def build_ema_profile(self, security, var_name, variables, fixed):
         ''' Aggregates a 1D numpy array of EMAs as a function of
             the target variable (span or buffer)
             the fixed variable (buffer or span)
@@ -709,10 +771,11 @@ class Topomap():
                                       span,
                                       buffer,
                                       )
-            fee = tra.get_fee(dfr, fpct, dft.get_actions())
-            ema = tra.get_cumret(dfr, 'ema', fee)
+            fee = self.get_fee(dfr,
+                               dft.get_actions())
+            ema = self.get_cumret(dfr, 'ema', fee)
             emas[i] = ema
             if i == 0:
-                hold = tra.get_cumret(dfr, 'hold', dft.INIT_WEALTH)
+                hold = self.get_cumret(dfr, 'hold', dft.INIT_WEALTH)
 
         return emas, hold

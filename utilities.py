@@ -15,7 +15,9 @@ import scipy.stats
 from dateutil.relativedelta import relativedelta
 import moments
 
+
 MAX_YEARS = 20 # number of years corresponding to 'max'
+
 
 def display_stats(data, feature):
     '''
@@ -221,30 +223,47 @@ def get_summary_stats(data, level, target):
 
 
 ### DATETIME Utilities ###
-def init_dates(security, start_date_string, end_date_string):
+def to_dt_format(start_date_string, end_date_string, fmt):
     '''
     Returns start and end dates in datetime format from start_date & end_date
     in string format
-    Handles gracefully start date smaller than the one in the dataset
-    data returned in datetime format
     '''
-    fmt = '%Y-%m-%d'
     start_dt   = datetime.strptime(start_date_string, fmt)
     end_dt     = datetime.strptime(end_date_string,   fmt)
+    return[start_dt, end_dt]
+
+
+def reset_dates(security, date_range):
+    '''
+    Checks if requested start and end dates are prent in the dataset
+    if not, returns best date range
+    '''
     secu_start = security.index[0]
+    secu_end   = security.index[-1]
+    start_dt = date_range[0]
+    end_dt   = date_range[1]
     # Check if data downloaded otherwise start with earliest date
-    if secu_start > start_dt:
+    if secu_start > date_range[0]:
+        print(f'start date reset from {date_range[0]} to {secu_start}')
         start_dt = secu_start
-        print(f'start date reset to {start_dt}')
+    if secu_end < date_range[1]:
+        end_dt = secu_end
+        print(f'end date reset from {date_range[1]} to {secu_end}')
+    if start_dt > end_dt:
+        raise ValueError('reset_dates: start date {start_dt} later than end date {end_dt}')
     return [start_dt, end_dt]
 
 
-def get_datetime_date_range(security, start_date, end_date):
+def get_date_range(security, start_date, end_date):
     '''
-    Return start and end dates in datetime format
-    (this is just a wrapper around init_dates)
+    Return start and end dates in datetime format by:
+        1. converting to datetime format
+        2. checking for consistency in dates
     '''
-    return init_dates(security, start_date, end_date)
+    fmt = '%Y-%m-%d'
+    date_range = to_dt_format(start_date, end_date, fmt)
+    date_range = reset_dates(security, date_range)
+    return date_range
 
 
 def dates_to_strings(date_range, fmt):

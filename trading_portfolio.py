@@ -15,7 +15,7 @@ CHEM       = ['AI.PA', 'SIKA.SW']
 
 COMM       = ['ROKU', 'ZM', 'BIDU', 'NFLX', 'ORA.PA', 'XIL.PA']
 
-CONSUMER   = ['NKE', 'MDM.PA']
+CONSUMER   = ['NKE', 'MDM.PA', 'ITX.MC', 'RETAIL', 'AMZN']
 
 DEFENSE    = ['NOC' ,'HO.PA', 'BA', 'PLTR', 'RTX', 'LMT']
 
@@ -46,7 +46,7 @@ SWISS      = ['LHN.SW', 'SIKA.SW']
 
 FRENCH     = ['ELIS.PA', 'KER.PA', 'SMCP.PA', 'BEN.PA']
 
-CRYPTO     = ['BTC-USD', 'ETH-USD']
+CRYPTO     = ['BTC-USD', 'ETH-USD', 'DOGE-USD']
 
 CSR        = ['MSFT', 'DIS', 'GOOGL', 'BMW.DE', 'DAI.DE', 'SNE', 'INTC']
 CSR       += ['VWAGY', 'AAPL', 'NSRGY', 'LEGO', 'CAJ', 'K', 'JNJ']
@@ -55,7 +55,7 @@ GAFAM       = ['GOOGL', 'AAPL', 'FB', 'AMZN', 'MSFT']
 
 K_WOOD     = ['ARKF', 'ARKG', 'ARKK', 'ARKQ', 'ARKW']
 
-FUTURES     = ['SB=F', 'GC=F']
+FUTURES     = ['SB=F', 'GC=F', 'CL=F']
 
 
 ADRIEN     = ['ATO.PA', 'BN.PA', 'BON.PA', 'CA.PA', 'GLE.PA', 'HEXA.PA']
@@ -80,7 +80,6 @@ SAXO_CY    += ['ORP.PA', 'PHA.PA', 'SOP.PA', 'STLA.PA', 'WLN.PA']
 
 PORTFOLIOS  = ADRIEN + JACQUELINE + JP + PEA_MC + PEA + SAXO_CY
 
-
 WANTS       = ['RMS.PA', 'MC.PA', 'SU.PA', 'CPR.MI']
 
 DIG         = ['NFLX', 'CAJ', 'MKGAF', 'BLC.PA', 'NVDA', 'ZM', 'MSFT']
@@ -91,7 +90,7 @@ STABLE     += ['HEIA.AS', 'EDPR.LS', 'NOC', 'BEN.PA']
 ACTIVE  = ['ABI.BR', 'SAN.PA', 'SIKA.SW', 'ALFA.ST', 'BIG.PA', 'AI.PA', 'BEN.PA']
 ACTIVE += ['BOI.PA', 'MLM', 'POM.PA', 'ORP.PA', 'NKE', 'STF.PA', 'RXL.PA', 'LHN.SW']
 ACTIVE += ['VCT.PA', 'NEOEN.PA', 'ABIO.PA', 'EN.PA', 'VIE.PA', 'AIR.PA', 'MDM.PA']
-ACTIVE += ['RBT.PA']
+ACTIVE += ['RBT.PA', 'ITX.MC']
 ACTIVE += CRYPTO + PORTFOLIOS
 
 OBSERVE = ACTIVE + K_WOOD + GAFAM + CSR + INDICES + WANTS
