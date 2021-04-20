@@ -36,16 +36,16 @@ YESTERDAY = datetime.strftime(datetime.now() - timedelta(days = 1), '%Y-%m-%d')
 DEFAULT_PERIOD = '5y'  # data download period
 
 # days after closing. Next day = 1, omniscient = 0
-LAG = 1
+LAG = 1 # Don't change this
 
 #Min & max rolling window spans
-MIN_SPAN = 1
-MAX_SPAN = 75
+MIN_SPAN = 5
+MAX_SPAN = 90
 DEFAULT_SPAN = 20
 
 # Min & max buffer around mean
 MIN_BUFF  = 0.0
-MAX_BUFF  = 0.04
+MAX_BUFF  = 0.05
 DEFAULT_BUFFER = .01
 N_BUFFERS = 51
 

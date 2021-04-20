@@ -14,7 +14,7 @@ import os
 from datetime import timedelta
 import matplotlib.pyplot as plt
 
-import trading as tra
+#import trading as tra
 import trading_defaults as dft
 import trading_plots as trplt
 import utilities as util

@@ -9,7 +9,7 @@ trading_plots.py
 """
 import os
 import sys
-import datetime
+#import datetime
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
@@ -37,15 +37,16 @@ def plot_setup(data, target):
 
 
 def build_range_plot_axes(axis, target, xlabel):
+    '''Buildsx & y axes and their tickers'''
     axis.legend(loc='best')
     axis.set_xlabel(xlabel)
     if target == 'buffer':
         axis.xaxis.set_major_formatter(mtick.PercentFormatter(xmax=1,
-                                                          decimals=None,
-                                                          symbol='%',
-                                                          is_latex=False,
-                                                          )
-                                   )
+                                                              decimals=None,
+                                                              symbol='%',
+                                                              is_latex=False,
+                                                              )
+                                       )
     axis.set_ylabel('return (x)')
     plt.grid(b=None, which='major', axis='both', color=dft.GRID_COLOR)
     return axis
@@ -172,7 +173,6 @@ def plot_arrows(axis, data, actions, colors):
     # buys
     filtered = data[data.ACTION == actions[0]].copy()
     for row in range(filtered.shape[0]):
-
         x_pos, y_start = shift_arrow(data, filtered.index[row], lag)
         y_pos = y_start + arrow_length
 

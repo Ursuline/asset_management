@@ -24,6 +24,7 @@ REMOVE  = ['UL', 'FP.PA', 'ORA.PA', 'KC4.F', 'BNP.PA', 'KER.PA', 'SMC.PA']
 REMOVE += ['FB', 'HO.PA', 'LHN.SW', 'SQ', 'BIDU', 'ARKQ', 'KORI.PA']
 REMOVE += ['TRI.PA', 'HEXA.PA', 'CA.PA', 'ATO.PA']
 
+# SWITCHES
 N_MAXIMA_SAVE = 20 # number of maxima to save to file
 
 # Notification defaults
@@ -37,12 +38,12 @@ FILTER  = True # Remove securities from REMOVE
 
 POSITION = 'long' # long or short
 
-TICKERS = ptf.K_WOOD
+TICKERS = ptf.OBSERVE
 TICKERS = ['ARKK']
 
-START_DATE = '2019-01-02'
-END_DATE   = '2021-04-16'
-END_DATE   = dft.TODAY
+START_DATE = '2018-01-02'
+END_DATE   = '2021-04-19'
+#END_DATE   = dft.YESTERDAY
 
 DATE_RANGE = [START_DATE, END_DATE]
 ZOOM_RANGE = [START_DATE, END_DATE]
@@ -98,9 +99,9 @@ if __name__ == '__main__':
 
             # # Read EMA map values  from file or compute if not saved
             topomap.load_ema_map_new(ticker     = ticker,
-                                      security   = security,
-                                      refresh    = REFRESH_EMA,
-                                      )
+                                     security   = security,
+                                     refresh    = REFRESH_EMA,
+                                     )
 
 
             # Build & save best EMA results to file
@@ -142,15 +143,15 @@ if __name__ == '__main__':
 
             # Determine the action to take for the given END_DATE
             # instantiate recommendation
-            rcm = rec.Recommendation(ticker_obj.get_name(),
-                                     ticker,
-                                     date_range[1],
+            rcm = rec.Recommendation(ticker_name   = ticker_obj.get_name(),
+                                     ticker_symbol = ticker,
+                                     target_date   = date_range[1],
+                                     span          = best_span,
+                                     buffer        = best_buffer,
                                      )
             # build recommendation
             rcm.build_recommendation(ticker_object = ticker_obj,
                                      topomap       = topomap,
-                                     span          = best_span,
-                                     buffer        = best_buffer,
                                      )
             rcm.print_recommendation(notify = NOTIFY)
             # add recommendation to recommender object

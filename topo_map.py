@@ -39,7 +39,7 @@ class Topomap():
         self._best_emas  = None
         self._n_best     = None # number of best_emas
 
-
+    ## Setters
     def set_buffers(self, buffers):
         '''Reset buffers'''
         self._buffers = buffers
@@ -66,7 +66,7 @@ class Topomap():
         '''reset broker's fee'''
         self._fee = fee
 
-
+    ## Getters
     def get_name(self):
         '''Return ticker identifier '''
         return self._name
@@ -154,8 +154,7 @@ class Topomap():
 
     def build_strategy(self, d_frame, span, buffer):
         '''
-        *** At this point, only a long position is considered ***
-        Implements running-mean (ewm) strategy
+        Implements EMA running-mean (aka emw) strategy
         Input dataframe d_frame has date index & security value 'Close'
 
         Variables:
@@ -324,7 +323,7 @@ class Topomap():
         Return fees associated to buys / sells
         FEE_PCT -> brokers fee
         actions = ['buy', 'sell', 'n/c']
-        fee -> $ fee corresponding to fee_pct
+        fee -> $ fee corresponding to self._fee (%)
         '''
         # Add a fee for each movement: mask buys
         fee  = (self._fee * data[data.ACTION == actions[0]].CUMRET_EMA.sum())
@@ -353,7 +352,6 @@ class Topomap():
         '''
         Return the persist filename for the ema map without extension
         '''
-
         dates   = util.dates_to_strings(self._date_range, '%Y-%m-%d')
         suffix  = f'{dates[0]}_{dates[1]}_{self._position}_ema_map'
         suffix = f'{self._name}_{suffix}'
@@ -385,7 +383,7 @@ class Topomap():
         self.set_hold(hold)
 
 
-    def load_ema_map_new(self, ticker, security, refresh):
+    def load_ema_map_new(self, ticker, security, refresh, verbose=False):
         '''
         Reads raw EMA data from csv file, reshape and  and returns as a dataframe
         '''
@@ -394,7 +392,8 @@ class Topomap():
         file     = self.get_ema_map_filename() + '.csv'
         map_path = os.path.join(data_dir, file)
         if (os.path.exists(map_path)) & (not refresh):
-            print(f'Loading EMA map {map_path}')
+            if verbose:
+                print(f'Loading EMA map {map_path}')
 
             pathname = os.path.join(data_dir,
                                     self.get_ema_map_filename() + '.csv')
@@ -416,6 +415,8 @@ class Topomap():
             self._emas    = emas
             self.set_hold(hold)
         else: # If not saved, compute it
+            if verbose & (not refresh):
+                print(f'No EMA map in {map_path}')
             self.build_ema_map(security, self._date_range)
         # Save ema map to file
         self.save_emas()
@@ -485,9 +486,9 @@ class Topomap():
 
 
     @staticmethod
-    def _save_dataframe(dataframe, data_dir, suffix, extension): # Implement json save
+    def _save_dataframe(dataframe, data_dir, suffix, extension):
         '''
-        Save a dataframe in either csv or pkl format
+        Save a dataframe in either csv or pkl format # Implement json save
         '''
         os.makedirs(data_dir, exist_ok = True)
         rootname = os.path.join(data_dir, suffix)

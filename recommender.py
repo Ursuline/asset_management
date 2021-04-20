@@ -8,7 +8,6 @@ Created on Sun Apr 11 14:33:03 2021
 import smtplib
 import ssl
 import pandas as pd
-#import time
 
 import trading_defaults as dft
 import private as pvt # recipient names, smtp sender name/pwd
@@ -23,9 +22,9 @@ class Recommender():
         _email : send email
         '''
         self._recommendations = [] # list of recommendations
-        self._position = position
-        self._screen = screen
-        self._email  = email
+        self._position        = position
+        self._screen          = screen
+        self._email           = email
 
 
     def set_screen(self, screen: bool):
@@ -94,7 +93,6 @@ class Recommender():
         repeats = 75
         line    = ''.join([char * repeats for char in root])
 
-        #$print(f'Position: {self._position}\n' + line)
         for rec in self._recommendations:
             if screen_nc or not (screen_nc or rec.get_action() == 'n/c'):
                 rec.print_recommendation(notify=True)
@@ -140,15 +138,18 @@ class Recommendation():
     encapsulates the recommendation to buy | sell | n/c
     captured in the target date row ACTION column of tthe ticker object's data
     '''
-    def __init__(self, ticker_name, ticker_symbol, target_date):
+    def __init__(self, ticker_name, ticker_symbol, target_date, span, buffer):
         self._name   = ticker_name
         self._symbol = ticker_symbol
         self._date     = target_date
         self._action   = None
         self._position = None
+        self._span     = span
+        self._buffer    = buffer
         self._subject  = None
         self._body     = None
 
+    # Getters
     def get_body(self):
         ''''Return the body of the recommendation'''
         return self._body
@@ -174,11 +175,10 @@ class Recommendation():
         print(self.__dict__)
 
 
-    def build_recommendation(self, ticker_object, topomap, span, buffer):
+    def build_recommendation(self, ticker_object, topomap):
         '''
         Builds a recommendation for the target_date
-        The recommednation returned is a kist consisting of an action (buy, sell, n/c)
-        and a position (long, short, cash)
+
         '''
         data  = ticker_object.get_market_data()
         dates = ticker_object.get_dates()
@@ -189,8 +189,12 @@ class Recommendation():
         security.rename(columns = {f'Close_{self._symbol}': "Close"},
                         inplace = True,
                         )
-        strategy = topomap.build_strategy(security, span, buffer)
-        rec = strategy.loc[self._date, ["ACTION", "POSITION"]]
+        strategy = topomap.build_strategy(security, self._span, self._buffer)
+
+        # Update the date by shifting dft.LAG days
+        data_index = strategy.index.get_loc(self._date) # row number
+        target_date   = strategy.iloc[data_index - dft.LAG].name
+        rec = strategy.loc[target_date, ["ACTION", "POSITION"]]
 
         self._action   = rec[0]
         self._position = rec[1]
@@ -200,7 +204,8 @@ class Recommendation():
         self._subject = subject
 
         body  = f'recommendation: {self._action} | '
-        body += f'position: {self._position}'
+        body += f'position: {self._position} | '
+        body += f'span={self._span} days buffer={self._buffer:.2%}'
         self._body = body
 
 
@@ -208,5 +213,6 @@ class Recommendation():
         '''Print recommendation to screen'''
         if notify:
             msg  = f'recommendation {self._name} ({self._symbol}): '
-            msg += f'{self._action} | position: {self._position}'
+            msg += f'{self._action} | position: {self._position} | '
+            msg += f'span={self._span} days buffer={self._buffer:.2%}'
             print(msg)
