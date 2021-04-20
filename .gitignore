@@ -1,0 +1,17 @@
+private.py
+data/
+plots/
+__pycache__/
+.ipynb_checkpoints/
+meta/
+.spyproject/
+keygen*
+plot_span_range.prof
+portfolio_space.py
+spectral.py
+toolkit.py
+latex/
+asset_management.shapesdoc/
+comparison_io.py
+comparison_plots.py
+figurewidget-app.ipynb

@@ -5,12 +5,14 @@ Created on Fri Jan 22 17:34:49 2021
 
 A Portfolio object is a collection of Assets
 
+Optimization & exploration algorithms borrowed from :
+https://towardsdatascience.com/python-markowitz-optimization-b5e1623060f5
+
 @author: charles mégnin
 """
 import time
 import numpy as np
 import pandas as pd
-import matplotlib.pyplot as plt
 import scipy.optimize as opt
 from tqdm import tqdm
 import asset as ast
@@ -21,14 +23,14 @@ import portfolio_plot as pplot
 import utilities as util
 
 ### Efficient frontier functions ###
-def check_sum(weights):
+def check_sum(weights: list):
     ''' Checks that weights sum up to 1 '''
     return np.sum(weights) - 1
 ### END Efficient frontier functions ###
 
 #Helper utilities
 def sample_space(ptf):
-    ''' Explore NUM_PORTS portfolio combinations returns_df is log(returns) '''
+    ''' Explore NUM_PORTS portfolio combinations returns is log(returns) '''
     returns   = ptf.log_ret
     ncolumns  = len(returns.columns)
     ndays     = ptf.data['ndays']
@@ -50,6 +52,7 @@ def sample_space(ptf):
         # Expected volatility = SQRT(W^T . COV . W)
         p_volat[port] = np.sqrt(np.dot(weights.T, np.dot(returns.cov() * ndays, weights) ) )
 
+        # Compute Sharpe ratio (should subtract risk-free rate)
         p_sharpe[port] = p_returns[port]/p_volat[port]
 
         #print(port, p_returns[port], p_volat[port], p_sharpe[port])
@@ -72,7 +75,8 @@ def sample_space_to_df(p_weights, rvs_arr):
 
 def get_portfolio_stats(ptf):
     ''' Compute existing portfolio weights, return, volatility & Sharpe
-        ratio from Q_S '''
+        ratio from Q_S
+    '''
     ndays      = ptf.data['ndays']
     weights    = np.zeros(ptf.data['nassets'])
     returns_df = ptf.log_ret
@@ -180,31 +184,14 @@ class Portfolio(eq.Equity):
         print(f'Total portfolio value: {self.data["value"]:.2f} {self.data["currency"]}')
 
 
-    def minimize_volatility(self, weights):
-        ''' return minimum volatility '''
-        return self.get_rvs(weights)[1]
-
-
-    def get_rvs(self, weights):
-        ''' returns return, volatility & sharpe ratio for a given weight distribution '''
-        weights = np.array(weights)
-        ret     = np.sum(self.log_ret.mean() * weights) * self.data['ndays']
-        vol     = np.sqrt(np.dot(weights.T, np.dot(self.log_ret.cov() * self.data['ndays'], weights)))
-        sharpe  = ret/vol
-        return np.array([ret, vol, sharpe])
-
-
-    def neg_sharpe(self, weights):
-        ''' Returns negative Sharpe ratio to feed optimization function '''
-        return self.get_rvs(weights)[2] * -1
-
-
+### Optimization methods
     def get_frontier(self, rvs, init_guess, bounds):
         ''' returns efficient frontier '''
-        maxy = util.round_up(np.max(rvs[:,0]), 1) * 1.1 # round up & add 10%
+        NSTEPS = 500 # number of y axis increments
+        maxy   = util.round_up(np.max(rvs[:,0]), 1)
         print(f'maxy = {maxy}')
 
-        frontier_y = np.linspace(0, maxy, 200)
+        frontier_y = np.linspace(0, maxy, NSTEPS)
         frontier_x = []
 
         # Find the minimum volatility for a given return:
@@ -223,9 +210,34 @@ class Portfolio(eq.Equity):
         return frontier
 
 
+    def minimize_volatility(self, weights):
+        ''' return minimum volatility '''
+        return self.get_rvs(weights)[1]
+
+
+    def neg_sharpe(self, weights):
+        ''' Returns negative Sharpe ratio to feed optimization function '''
+        return self.get_rvs(weights)[2] * -1
+
+### END optimization methods
+
+    def get_rvs(self, weights):
+         ''' Returns return, volatility & sharpe ratio for a given weight distribution
+         '''
+         weights = np.array(weights)
+         ret     = np.sum(self.log_ret.mean() * weights) * self.data['ndays']
+         vol     = np.sqrt(np.dot(weights.T,
+                                  np.dot(self.log_ret.cov() * self.data['ndays'],
+                                         weights)))
+         sharpe  = ret/vol
+         return np.array([ret, vol, sharpe])
+
+
     def efficient_frontier(self):
-        ''' WIP '''
-        # Sample portfolio space. Returns weights, returns, volatility & sharpe ratios
+        ''' Samples solution space and calls get_frontier to yield
+             efficient frontier
+        '''
+        # Sample portfolio space.
         all_weights, ret_arr, vol_arr, sharpe_arr = sample_space(self)
 
         # Merge returns, volatility and Sharpe ratio into one 3-D array
@@ -239,7 +251,7 @@ class Portfolio(eq.Equity):
         # add present portfolio from Q_S as last value in arrays
         p_weights, p_returns, p_volat, p_sharpe = get_portfolio_stats(self)
         all_weights = np.vstack([all_weights, p_weights])
-        rvs = np.vstack([rvs, [p_returns, p_volat, p_sharpe]])
+        rvs         = np.vstack([rvs, [p_returns, p_volat, p_sharpe]])
 
         # 0:Max Sharpe 1:Min volatility 2:Max Revenue 3: Present portfolio
         indices = [rvs[:,2].argmax(),
@@ -251,12 +263,12 @@ class Portfolio(eq.Equity):
         init_guess = [1./len(self.assets) for asset in self.assets]
         bounds     = [(0, 1) for asset in self.assets]
 
-        # Find result which minimizes sharpe ratio
+        # Compute result which maximizes sharpe ratio (minimizes neg sharpe)
         opt_results = opt.minimize(self.neg_sharpe,
                                    init_guess,
-                                   method='SLSQP',
-                                   bounds=bounds,
-                                   constraints=cons)
+                                   method      = 'SLSQP',
+                                   bounds      = bounds,
+                                   constraints = cons)
         print(f'optimal result: {opt_results}')
         print(f'RVS={self.get_rvs(opt_results.x)}')
 
@@ -272,22 +284,30 @@ class Portfolio(eq.Equity):
         frontier = self.get_frontier(rvs, init_guess, bounds)
         pplot.plot_rvs(self, rvs, frontier, indices, NUM_PORTS, LOG_PLOT)
 
+        # plot portfolio weights for each scenario
+        for i, descrip in enumerate(self.descriptions):
+            print(f'{descrip} index = {indices[i]}')
+            pplot.plot_portfolio_weights(all_weights[int(indices[i])],
+                                         descrip,
+                                         self.get_asset_names())
+
 
 #### Driver ####
 if __name__ == '__main__':
+    start_time = time.time()
     SEED     = 42
+    np.random.seed(SEED)
+
     LOG_PLOT = True # display data as log of return
     SKIP     = ['ELIS.PA'] # do not optimize for these values
     prefixes = ['Adrien_ptf', 'JP_ptf', 'Jacqueline_ptf']
-    prefixes = ['Adrien_ptf']
+    prefixes = ['Adrien_titres_ptf']
+    R_F      = [] #risk-free stock
 
     # periods: 1d,5d,1mo,3mo,6mo,1y,2y,3y,5y,10y,ytd,max
     periods   = ['10y', '5y', '1y']
     periods   = ['10y']
     NUM_PORTS = int( 1e5 ) # number of portfolios
-
-    start_time = time.time()
-    np.random.seed(SEED)
 
     for prefix in prefixes: # Loop over files
         # download current portfolio

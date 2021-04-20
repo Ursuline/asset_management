@@ -7,12 +7,15 @@ Plotting functions
 
 @author: charles mégnin
 """
+import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
+import seaborn as sns
 import utilities as util
 
 EXT = 'png' # file extension (png, jpg, gif, etc)
 
+# Support functions #
 def build_parameters(portfolio):
     ''' constructs dictionary of plot parameters '''
     params = {}
@@ -28,7 +31,7 @@ def build_parameters(portfolio):
     return params
 
 
-def build_data(ptf, n_p):
+def build_data(ptf, n_p: int):
     ''' returns a dictionary that encapsulates several portfolio parameters '''
     data = {}
     data['period']    = ptf.data['period']
@@ -51,16 +54,17 @@ def plot_caption(ptf, parameters, data, fig):
              style = parameters['caption_st'])
 
 
-def save_plot(title, period):
+def save_plot(title: str, period: str):
     ''' Save plot to file '''
     fig_name = f'{title}_{period}'
 
     plt.savefig(f'{fig_name}.{EXT}')
     plt.show()
+# END Support functions #
 
 
-def plot_rvs(ptf, rvs, e_front, indices, num_ports, log_plot=False):
-    ''' Plot distribution
+def plot_rvs(ptf, rvs, e_front, indices: list, num_ports: int, log_plot=False):
+    ''' Plot distribution & efficient frontier (main function)
         rvs = return, volatility, Sharpe ratio array
         indices[0]=Max Sharpe ratio (from grid search)
         indices[1]=Min Volat
@@ -103,7 +107,30 @@ def plot_rvs(ptf, rvs, e_front, indices, num_ports, log_plot=False):
                       xy = (rvs[index, 1], rvs[index, 0]),
                       xytext = (rvs[index, 1] + x_offset, rvs[index, 0]))
 
+    # plot efficient frontier
     axis.plot(e_front[:,0], e_front[:,1], 'r--', linewidth=3)
 
     plot_caption(ptf, parameters, data, fig)
     save_plot(ptf.data["title"], data['period'])
+
+
+def plot_portfolio_weights(opt_weights, title, names):
+    ''' plots the set of portfolio weights as a bar plot'''
+
+    d = {'weight':opt_weights, 'security':names}
+    opt_weights = pd.DataFrame(d, columns=['security','weight'])
+
+    plt.figure(figsize=(16,8))
+    sns.set_theme()
+    sns.set_style("whitegrid")
+    bar = sns.barplot(x='security',
+                      y='weight',
+                      data=opt_weights).set_title(f"{title} portfolio weights")
+    bar.set_xticklabels(bar.get_xticklabels(),
+                        rotation=45,
+                        horizontalalignment='right')
+    bar.set_ylim(0, 1)
+    #ax.set_yaxis(np.linspace(0.0, 1.0, num=11))
+
+    plt.tight_layout()
+    plt.show()
