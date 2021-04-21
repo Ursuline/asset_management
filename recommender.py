@@ -93,10 +93,11 @@ class Recommender():
         repeats = 75
         line    = ''.join([char * repeats for char in root])
 
-        for rec in self._recommendations:
+        for i, rec in enumerate(self._recommendations):
+            if i == 0:
+                print(line)
             if screen_nc or not (screen_nc or rec.get_action() == 'n/c'):
-                rec.print_recommendation(notify=True)
-                print()
+                rec.print_recommendation(notify=True, enhanced = True)
         print(line)
 
 
@@ -129,6 +130,7 @@ class Recommender():
                 for recipient_email in pvt.RECIPIENT_EMAILS:
                     server.sendmail(sender_email, recipient_email, message)
             print('email sent to list')
+            server.close()
         else:
             print('no actions required - no email sent')
 
@@ -209,10 +211,13 @@ class Recommendation():
         self._body = body
 
 
-    def print_recommendation(self, notify: bool):
+    def print_recommendation(self, notify: bool, enhanced = True):
         '''Print recommendation to screen'''
         if notify:
             msg  = f'recommendation {self._name} ({self._symbol}): '
             msg += f'{self._action} | position: {self._position} | '
             msg += f'span={self._span} days buffer={self._buffer:.2%}'
+            if (self._action in ['buy', 'sell']) & enhanced:
+                msg  = '----> ' + msg
+                msg += ' <-----'
             print(msg)

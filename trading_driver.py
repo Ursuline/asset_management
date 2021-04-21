@@ -27,13 +27,13 @@ REMOVE += ['TRI.PA', 'HEXA.PA', 'CA.PA', 'ATO.PA']
 # SWITCHES
 N_MAXIMA_SAVE = 20 # number of maxima to save to file
 
-# Notification defaults
+# Notifications defaults
 SCREEN = True
-EMAIL  = True
-NOTIFY = True # item-per-item notificatiton
+EMAIL  = False
+NOTIFY = True # item-per-item notificattion
 
-REFRESH_YAHOO = True # Download fresh Yahoo data
-REFRESH_EMA   = True # Recompute ema map
+REFRESH_YAHOO = False # Download fresh Yahoo data
+REFRESH_EMA   = False # Recompute ema map
 FILTER  = True # Remove securities from REMOVE
 
 POSITION = 'long' # long or short
@@ -43,7 +43,7 @@ TICKERS = ['ARKK']
 
 START_DATE = '2018-01-02'
 END_DATE   = '2021-04-19'
-#END_DATE   = dft.YESTERDAY
+END_DATE   = dft.YESTERDAY
 
 DATE_RANGE = [START_DATE, END_DATE]
 ZOOM_RANGE = [START_DATE, END_DATE]
