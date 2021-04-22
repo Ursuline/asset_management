@@ -9,19 +9,18 @@ trading_plots.py
 """
 import os
 import sys
-#import datetime
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.ticker as mtick
 from matplotlib.offsetbox import (TextArea, AnnotationBbox)
 
-#import trading as tra
 import trading_defaults as dft
 import utilities as util
 
 
 ### PLOT SUPPORT FUNCTIONS
+
 def plot_setup(data, target):
     '''
     Build line plot structure: dimensions, axes, label & grid

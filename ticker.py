@@ -23,6 +23,19 @@ class Ticker():
     A Ticker is an lightweight object extracted from a Security object
     Provides ease of access to relevant meta-data and price/volume data
     '''
+    @classmethod
+    def get_default_display_flags(cls):
+        '''Returns default flags for display'''
+        flags = {}
+        flags['close']      = True
+        flags['ema']        = True
+        flags['ema_buffer'] = False
+        flags['sma']        = False
+        flags['sma_buffer'] = False
+        flags['arrows']     = True
+        flags['statistics'] = True
+        flags['save']       = True
+        return flags
 
     def __init__(self, symbol, security, dates):
         '''
@@ -127,8 +140,8 @@ class Ticker():
         fee_pct -> fee associated with a buy/sell action
         date_range is entire time series
         display_dates are zoom dates
-        flags display -> 0: Price  | 1: EMA  | 2: buffer |
-                         3: arrows | 4 : statistics | 5: save
+        flags display -> 0: Price  | 1: EMA  | 2: EMA buffer | 3: SMA | 4: SMA buffer
+                         5: arrows | 6 : statistics | 7: save
         '''
         timespan = (display_dates[1] - display_dates[0]).days
 
@@ -157,39 +170,67 @@ class Ticker():
         axis.grid(b=None, which='both', axis='both',
                   color=dft.GRID_COLOR, linestyle='-', linewidth=1)
 
-        # Plot Close
-        if flags[0]:
+        if flags['close']: # Close
             axis.plot(dfr.loc[display_dates[0]:display_dates[1], :].index,
                       dfr.loc[display_dates[0]:display_dates[1], :].Close,
                       linewidth=1,
                       color = dft.COLOR_SCHEME[0],
-                      label='Price')
-        # Plot EMA
-        if flags[1]:
+                      label='Price',
+                      )
+
+        if flags['ema']: # EMA
             axis.plot(dfr.loc[display_dates[0]:display_dates[1], :].index,
                       dfr.loc[display_dates[0]:display_dates[1], :].EMA,
                       linewidth=1,
                       color = dft.COLOR_SCHEME[1],
-                      label=f'{span:.0f}-day EMA')
-        # Plot EMA +/- buffer
-        if flags[2]:
+                      label=f'{span:.0f}-day EMA',
+                      )
+
+        if flags['ema_buffer']: #EMA +/- buffer
             axis.plot(dfr.loc[display_dates[0]:display_dates[1], :].index,
                       dfr.loc[display_dates[0]:display_dates[1], :].EMA_MINUS,
                       linewidth = 1,
                       linestyle = '--',
-                      color = dft.COLOR_SCHEME[2],
-                      label=f'EMA - {buffer:.2%}')
+                      color = dft.COLOR_SCHEME[1],
+                      label=f'EMA - {buffer:.2%}',
+                      )
             axis.plot(dfr.loc[display_dates[0]:display_dates[1], :].index,
                       dfr.loc[display_dates[0]:display_dates[1], :].EMA_PLUS,
                       linewidth = 1,
                       linestyle = '--',
-                      color = dft.COLOR_SCHEME[2],
-                      label=f'EMA + {buffer:.2%}')
+                      color = dft.COLOR_SCHEME[1],
+                      label=f'EMA + {buffer:.2%}',
+                      )
+
+        if flags['sma']: # SMA
+            axis.plot(dfr.loc[display_dates[0]:display_dates[1], :].index,
+                      dfr.loc[display_dates[0]:display_dates[1], :].SMA,
+                      linewidth = 1,
+                      color     = dft.COLOR_SCHEME[4],
+                      label     = f'{span:.0f}-day SMA',
+                      )
+
+        if flags['sma_buffer']: #SMA +/- buffer
+            axis.plot(dfr.loc[display_dates[0]:display_dates[1], :].index,
+                      dfr.loc[display_dates[0]:display_dates[1], :].SMA_MINUS,
+                      linewidth = 1,
+                      linestyle = '--',
+                      color = dft.COLOR_SCHEME[4],
+                      label=f'SMA - {buffer:.2%}',
+                      )
+            axis.plot(dfr.loc[display_dates[0]:display_dates[1], :].index,
+                      dfr.loc[display_dates[0]:display_dates[1], :].SMA_PLUS,
+                      linewidth = 1,
+                      linestyle = '--',
+                      color = dft.COLOR_SCHEME[4],
+                      label=f'SMA + {buffer:.2%}',
+                      )
+
         axis.legend(loc='best')
         axis.set_ylabel(f'Price ({self._currency_symbol})')
 
         buy_sell = None
-        if flags[3]: # plot buy/sell arrows
+        if flags['arrows']: # Buy/sell arrows
 
             actions  = dft.get_actions()
             filtered = dfr[(dfr.ACTION == actions[0]) | (dfr.ACTION == actions[1])]
@@ -205,7 +246,7 @@ class Ticker():
                               dft.get_color_scheme(),
                               )
 
-        if flags[4]:
+        if flags['statistics']: # Statistics
             summary_stats = util.get_summary_stats(dfr.loc[display_dates[0]:display_dates[1], :],
                                                    dft.STATS_LEVEL,
                                                    'RET')
@@ -224,8 +265,10 @@ class Ticker():
                           buffer      = buffer,
                           ema         = ema,
                           hold        = hold,
-                          buy_sell    = buy_sell,)
-        if flags[5]:
+                          buy_sell    = buy_sell,
+                          )
+
+        if flags['save']: # Save plot to file
             plot_dir = os.path.join(dft.PLOT_DIR, self._symbol)
             self.save_figure(directory = plot_dir,
                              pathname  = self.get_plot_pathname(file_dates,
@@ -235,8 +278,7 @@ class Ticker():
                              dpi = dft.DPI,
                              )
 
-
-            plt.show()
+        plt.show()
         return dfr
 
     @staticmethod

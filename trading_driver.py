@@ -17,6 +17,9 @@ import trading_portfolio as ptf
 import utilities as util
 import topo_map as tpm
 import recommender as rec
+#import trading_plots as trp
+import ticker as tck
+
 
 # Skip these securities
 REMOVE  = ['UL', 'FP.PA', 'ORA.PA', 'KC4.F', 'BNP.PA', 'KER.PA', 'SMC.PA']
@@ -37,11 +40,11 @@ FILTER  = True # Remove securities from REMOVE
 POSITIONS = ['long', 'short']
 
 TICKERS = ptf.OBSERVE
-TICKERS = ['ARKK']
+#TICKERS = ['ARKK']
 
 START_DATE = '2018-01-02'
 END_DATE   = '2021-04-19'
-END_DATE   = dft.YESTERDAY
+END_DATE   = dft.TODAY
 
 DATE_RANGE = [START_DATE, END_DATE]
 ZOOM_RANGE = [START_DATE, END_DATE]
@@ -127,9 +130,7 @@ if __name__ == '__main__':
                                                 ZOOM_RANGE[1],
                                                 )
                 #display flags:
-                #0: Price  | 1: EMA  | 2: buffer | 3: arrows |
-                #4: statistics | 5: save
-                display_flags = [True, True, False, True, True, True]
+                display_flags = tck.Ticker.get_default_display_flags()
                 ticker_obj.plot_time_series(display_dates = date_zoom,
                                             security      = security,
                                             topomap       = topomap,
@@ -141,6 +142,7 @@ if __name__ == '__main__':
 
                 # Determine the action to take for the given END_DATE
                 # instantiate recommendation
+                # Merge the next 2 commands
                 rcm = rec.Recommendation(ticker_name   = ticker_obj.get_name(),
                                          ticker_symbol = ticker,
                                          target_date   = date_range[1],

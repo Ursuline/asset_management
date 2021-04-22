@@ -88,7 +88,7 @@ def load_security(dirname, ticker, period, dates, refresh=False):
         pickle_file = open(ticker_pathname,'wb')
         pickle.dump(ticker_obj, pickle_file)
         pickle_file.close()
-    print(f'{ticker_obj.get_name()} Yahoo data loaded')
+    print(f'{ticker_obj.get_name()} Yahoo data loaded\n')
     return ticker_obj
 
 

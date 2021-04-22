@@ -150,6 +150,32 @@ class Topomap():
         self._emas    = emas
         self.set_hold(hold)
 
+    @staticmethod
+    def build_moving_average(dataframe, span, buffer, mean_type):
+        '''
+        Builds moving average column and its buffers
+        mean_type = string either 'EMA' (exponential) or 'SMA' (simple)
+        '''
+        # Compute exponential weighted mean 'EMA'
+        if mean_type == 'EMA':
+            dataframe.loc[:, 'EMA'] = dataframe.Close.ewm(span=span, adjust=False).mean()
+        elif mean_type == 'SMA':
+            dataframe.loc[:, 'SMA'] = dataframe.Close.rolling(window=int(span)).mean()
+        else:
+            msg  = 'Topomap.build_moving_average(): '
+            msg += 'mean_type {mean_type} should be EMA or SMA'
+            raise ValueError(msg)
+        # Add the buffer boundaries as columns
+        dataframe.insert(loc = 1,
+                       column = f'{mean_type}_MINUS',
+                       value  = dataframe[mean_type]*(1-buffer)
+                       )
+        dataframe.insert(loc = len(dataframe.columns),
+                       column = f'{mean_type}_PLUS',
+                       value  = dataframe[mean_type]*(1+buffer)
+                       )
+        return dataframe
+
 
     def build_strategy(self, d_frame, span, buffer):
         '''
@@ -163,6 +189,7 @@ class Topomap():
         Returns the 'strategy' consisting of a dataframe with original data +
         following columns:
         EMA -> exponential moving average
+        SMA -> Simple moving average
         SIGN -> 1 : above buffer 0: in buffer -1: below buffer
         ACTION -> buy / sell / n/c (no change)
         RET -> 1 + % daily return
@@ -170,19 +197,11 @@ class Topomap():
         RET2 -> 1 + % daily return when Close > EMA
         CUMRET_EMA -> cumulative returns for the EMA strategy
         '''
+        # Build EMA & its buffers
+        d_frame = self.build_moving_average(d_frame, span, buffer, 'EMA')
 
-        # Compute exponential weighted mean 'EMA'
-        d_frame.loc[:, 'EMA'] = d_frame.Close.ewm(span=span, adjust=False).mean()
-
-        # Add the buffer boundaries as columns
-        d_frame.insert(loc = 1,
-                       column = 'EMA_MINUS',
-                       value  = d_frame['EMA']*(1-buffer)
-                       )
-        d_frame.insert(loc = len(d_frame.columns),
-                       column = 'EMA_PLUS',
-                       value  = d_frame['EMA']*(1+buffer)
-                       )
+        # Build SMA & its buffers
+        d_frame = self.build_moving_average(d_frame, span, buffer, 'SMA')
 
         # build the SIGN column (above/in/below buffer)
         d_frame = self.build_sign(d_frame, buffer)
