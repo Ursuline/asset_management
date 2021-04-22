@@ -266,13 +266,18 @@ def get_date_range(security, start_date, end_date):
     return date_range
 
 
-def dates_to_strings(date_range, fmt):
+def date_to_string(date, fmt):
+    return(date.strftime(fmt))
+
+
+def dates_to_strings(date_range, fmt='%d-%b-%Y'):
     '''
     takes a range of datetime dates and returns the string equivalent
     in the required format (default='%d-%b-%Y')
     '''
-    start = date_range[0]
-    end   = date_range[1]
-    start_string = start.strftime(fmt)
-    end_string   = end.strftime(fmt)
-    return [start_string, end_string]
+    # start = date_range[0]
+    # end   = date_range[1]
+    # start_string = start.strftime(fmt)
+    # end_string   = end.strftime(fmt)
+    return [date_to_string(date_range[0], fmt), date_to_string(date_range[1], fmt)]
+

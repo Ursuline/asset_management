@@ -51,7 +51,7 @@ N_BUFFERS = 51
 
 INIT_WEALTH    = 100.0
 
-N_MAXIMA_DISPLAY = 10 # number of maxima to display on contour plot
+N_MAXIMA_SAVE = 20 # number of maxima to save to file
 
 FEE_PCT        = .004  # broker's fee
 
@@ -76,6 +76,8 @@ FIG_HEIGHT     = 8
 
 # Contour plots
 N_CONTOURS     = 10
+N_MAXIMA_DISPLAY = 10 # number of maxima to display on contour plot
+
 
 # markers & their legends
 ANNOTATE_COLOR = 'black'

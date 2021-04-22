@@ -131,9 +131,8 @@ class Topomap():
         emas = np.zeros((spans.shape[0], buffers.shape[0]), dtype=np.float64)
 
         # Fill EMAS for all span/buffer combinations
-        desc = f'Building ema map | (spans) / {span_par[1] - span_par[0] + 1}'
-        #window = security.loc[dates[0]:dates[1], :].copy()
-        for i, span in tqdm(enumerate(spans), desc = desc):
+        desc = f'Building ema map /{span_par[1] - span_par[0] + 1}'
+        for i, span in tqdm(enumerate(spans), desc = desc, ncols=40):
             for j, buffer in enumerate(buffers):
                 data  = self.build_strategy(security.loc[dates[0]:dates[1], :].copy(),
                                              span,
@@ -358,29 +357,29 @@ class Topomap():
         return suffix
 
 
-    def load_ema_map(self, data_dir):
-        '''
-        Reads raw EMA data from csv file, reshape and  and returns as a dataframe
-        '''
-        pathname = os.path.join(data_dir,
-                                self.get_ema_map_filename() + '.csv')
+    # def load_ema_map(self, data_dir):
+    #     '''
+    #     Reads raw EMA data from csv file, reshape and  and returns as a dataframe
+    #     '''
+    #     pathname = os.path.join(data_dir,
+    #                             self.get_ema_map_filename() + '.csv')
 
-        ema_map = pd.read_csv(pathname, sep=';', index_col=0)
+    #     ema_map = pd.read_csv(pathname, sep=';', index_col=0)
 
-        spans   = ema_map['span'].to_numpy()
-        buffers = ema_map['buffer'].to_numpy()
-        emas    = ema_map['ema'].to_numpy()
-        hold    = ema_map['hold'].to_numpy()
+    #     spans   = ema_map['span'].to_numpy()
+    #     buffers = ema_map['buffer'].to_numpy()
+    #     emas    = ema_map['ema'].to_numpy()
+    #     hold    = ema_map['hold'].to_numpy()
 
-        # reshape the arrays
-        spans   = np.unique(spans)
-        buffers = np.unique(buffers)
-        emas    = np.reshape(emas, (spans.shape[0], buffers.shape[0]))
+    #     # reshape the arrays
+    #     spans   = np.unique(spans)
+    #     buffers = np.unique(buffers)
+    #     emas    = np.reshape(emas, (spans.shape[0], buffers.shape[0]))
 
-        self._spans   = spans
-        self._buffers = buffers
-        self._emas    = emas
-        self.set_hold(hold)
+    #     self._spans   = spans
+    #     self._buffers = buffers
+    #     self._emas    = emas
+    #     self.set_hold(hold)
 
 
     def load_ema_map_new(self, ticker, security, refresh, verbose=False):
@@ -448,6 +447,7 @@ class Topomap():
         self._best_emas = pd.DataFrame(results,
                                        columns=['span', 'buffer', 'ema', 'hold']
                                        )
+        self.save_best_emas() # save to file
 
 
     def save_emas(self):

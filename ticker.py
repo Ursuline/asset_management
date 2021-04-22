@@ -8,21 +8,21 @@ used for trading
 
 @author: charles mégnin
 """
-# import pandas as pd
-# import security as sec
 import os
 from datetime import timedelta
+import pandas as pd
 import matplotlib.pyplot as plt
 
-#import trading as tra
 import trading_defaults as dft
 import trading_plots as trplt
 import utilities as util
 
 class Ticker():
-    ''' A Ticker is an lightweight object extracted from a Security object
-        Provides ease of access to relevant meta-data and price/volume data
     '''
+    A Ticker is an lightweight object extracted from a Security object
+    Provides ease of access to relevant meta-data and price/volume data
+    '''
+
     def __init__(self, symbol, security, dates):
         '''
         NB: dates is date range in string format
@@ -31,22 +31,20 @@ class Ticker():
         self._name     = security.get_name()
         self._dates    = dates
         self._currency = security.get_currency()
-        self._currency_symbol = self._set_currency_symbol()
+        self._set_currency_symbol()
         self._load_security_data(security)
 
 
     def _set_currency_symbol(self):
         '''Set the symbol corresponding to the currency'''
         if self._currency.lower() == 'usd':
-            return '$'
-        if self._currency.lower() == 'eur':
-            return '€'
-        if self._currency.lower() == 'yen':
-            return '¥'
-        if self._currency.lower() == 'hkd': # yuan same as yen
-            return '¥'
-        # else symbol = currency value
-        return self._currency
+            self._currency_symbol = '$'
+        elif self._currency.lower() == 'eur':
+            self._currency_symbol = '€'
+        elif self._currency.lower() in ['jpy', 'yen', 'hkd', 'cny']:
+            self._currency_symbol = '¥'
+        else: # symbol = currency value
+            self._currency_symbol = self._currency
 
 
     def _load_security_data(self, security):
@@ -54,6 +52,7 @@ class Ticker():
         dfr = security.get_market_data()
         dfr.set_index('Date', inplace=True)
         self._data = dfr
+
 
     def get_dates(self):
         '''Return dates'''
@@ -79,9 +78,44 @@ class Ticker():
         '''Return market data'''
         return self._data
 
+    def get_close(self):
+        '''Return Close as DataFrame'''
+        security = pd.DataFrame(self.get_market_data()[f'Close_{self._symbol}'])
+        security = security.loc[self._dates[0]:self._dates[1],:] # trim the data
+        security.rename(columns={f'Close_{self._symbol}': "Close"}, inplace=True)
+        return security
+
+
     def self_describe(self):
         '''Display all variables in class'''
         print(self.__dict__)
+
+
+    def get_plot_filename(self, display_dates, with_extension, extension):
+        '''
+        Returns time series plot filename with extension
+        accepts input date in string or datetime format
+        optionally add extension for compatibility with save_figure()
+        '''
+        file_dates = []
+        for date in display_dates:
+            if isinstance(date, str):
+                file_dates.append(date)
+            else:
+                file_dates.append(util.date_to_strings(date, '%Y-%m-%d'))
+        filename   = f'{self._symbol}_{file_dates[0]}_{file_dates[1]}_tmseries'
+        if with_extension:
+            filename    += f'.{extension}'
+        return filename
+
+
+    def get_plot_pathname(self, display_dates, with_extension=True, extension='png'):
+        '''
+        Returns time series plot full path
+        '''
+        plot_dir   = os.path.join(dft.PLOT_DIR, self._symbol)
+        filename = self.get_plot_filename(display_dates, with_extension, extension)
+        return os.path.join(plot_dir, filename)
 
 
 ### PLOTS
@@ -193,6 +227,8 @@ class Ticker():
         if flags[5]:
             plot_dir = os.path.join(dft.PLOT_DIR, self._symbol)
             trplt.save_figure(plot_dir,
-                              f'{self._symbol}_{file_dates[0]}_{file_dates[1]}_tmseries')
+                              self.get_plot_pathname(file_dates, with_extension=False),
+                              'png',
+                              )
             plt.show()
         return dfr
