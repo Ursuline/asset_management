@@ -9,6 +9,7 @@ used for trading
 @author: charles mégnin
 """
 import os
+import sys
 from datetime import timedelta
 import pandas as pd
 import matplotlib.pyplot as plt
@@ -102,7 +103,7 @@ class Ticker():
             if isinstance(date, str):
                 file_dates.append(date)
             else:
-                file_dates.append(util.date_to_strings(date, '%Y-%m-%d'))
+                file_dates.append(util.date_to_string(date, '%Y-%m-%d'))
         filename   = f'{self._symbol}_{file_dates[0]}_{file_dates[1]}_tmseries'
         if with_extension:
             filename    += f'.{extension}'
@@ -118,7 +119,7 @@ class Ticker():
         return os.path.join(plot_dir, filename)
 
 
-### PLOTS
+    ### PLOTS
     def plot_time_series(self, display_dates, security, topomap, span, buffer, flags, fee_pct):
         '''
         Plots security prices with moving average
@@ -226,9 +227,39 @@ class Ticker():
                           buy_sell    = buy_sell,)
         if flags[5]:
             plot_dir = os.path.join(dft.PLOT_DIR, self._symbol)
-            trplt.save_figure(plot_dir,
-                              self.get_plot_pathname(file_dates, with_extension=False),
-                              'png',
-                              )
+            self.save_figure(directory = plot_dir,
+                             pathname  = self.get_plot_pathname(file_dates,
+                                                                with_extension=True,
+                                                                extension='png',
+                                                                ),
+                             dpi = dft.DPI,
+                             )
+
+
             plt.show()
         return dfr
+
+    @staticmethod
+    def save_figure(directory, pathname, dpi):
+        '''
+        Saves figure to file
+        variables:
+            directory - directory to plot to
+            prefix - filename with its extension
+        '''
+        os.makedirs(directory, exist_ok = True)
+        try:
+            plt.savefig(pathname,
+                        dpi         = dpi,
+                        transparent = False,
+                        facecolor   ='white',
+                        edgecolor   ='none',
+                        orientation = 'landscape',
+                        bbox_inches = 'tight',
+                        )
+        except TypeError as ex:
+            print(f'Could not save to {pathname}: {ex}')
+        except:
+            print(f'Error type {sys.exc_info()[0]}')
+        else:
+            pass

@@ -56,6 +56,7 @@ N_MAXIMA_SAVE = 20 # number of maxima to save to file
 FEE_PCT        = .004  # broker's fee
 
 #### PLOT DEFAULTS ####
+DPI = 360
 plt.rcParams['font.family'] = 'sans-serif'
 plt.rcParams['font.sans-serif'] = 'STIXGeneral'
 
