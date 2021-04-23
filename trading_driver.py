@@ -40,11 +40,11 @@ FILTER  = True # Remove securities from REMOVE
 POSITIONS = ['long', 'short']
 
 TICKERS = ptf.OBSERVE
-#TICKERS = ['ARKK']
+TICKERS = ['DOGE-USD']
 
 START_DATE = '2018-01-02'
 END_DATE   = '2021-04-19'
-END_DATE   = dft.TODAY
+END_DATE   = dft.YESTERDAY
 
 DATE_RANGE = [START_DATE, END_DATE]
 ZOOM_RANGE = [START_DATE, END_DATE]
@@ -143,17 +143,17 @@ if __name__ == '__main__':
                 # Determine the action to take for the given END_DATE
                 # instantiate recommendation
                 # Merge the next 2 commands
-                rcm = rec.Recommendation(ticker_name   = ticker_obj.get_name(),
-                                         ticker_symbol = ticker,
+                rcm = rec.Recommendation(ticker_object = ticker_obj,
+                                         topomap       = topomap,
                                          target_date   = date_range[1],
                                          span          = best_span,
                                          buffer        = best_buffer,
-                                         strategic_position = strat_pos,
+                                         stratpos      = strat_pos,
                                          )
                 # build recommendation
-                rcm.build_recommendation(ticker_object = ticker_obj,
-                                         topomap       = topomap,
-                                         )
+                # rcm.build_recommendation(ticker_object = ticker_obj,
+                #                          topomap       = topomap,
+                #                          )
                 rcm.print_recommendation(notify = NOTIFY)
                 # add recommendation to recommender object
                 recommender.add_recommendation(rcm)

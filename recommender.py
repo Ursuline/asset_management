@@ -8,7 +8,6 @@ Created on Sun Apr 11 14:33:03 2021
 import smtplib
 import ssl
 
-
 import trading_defaults as dft
 import utilities as util
 import private as pvt # recipient names, smtp sender name/pwd
@@ -49,14 +48,6 @@ class Recommender():
             msg += f'position {recommendation.get_strategic_position()} '
             msg += 'should be long or short.'
             raise ValueError(msg)
-
-    # def get_long_recommendations(self):
-    #     '''Return the list of long recommendations'''
-    #     return self._long_recommendations
-
-    # def get_short_recommendations(self):
-    #     '''Return the list of short recommendations'''
-    #     return self._short_recommendations
 
 
     # def notify_SMS(self):
@@ -172,19 +163,23 @@ class Recommendation():
     encapsulates the recommendation to buy | sell | n/c
     captured in the target date row ACTION column of tthe ticker object's data
     NB: position is the recommended position for the security
-        strategic_position is the long/short position strategy for the security
+        stratpos is the long/short position strategy for the security
     '''
-    def __init__(self, ticker_name, ticker_symbol, target_date, span, buffer, strategic_position):
-        self._name   = ticker_name
-        self._symbol = ticker_symbol
+    def __init__(self, ticker_object, topomap, target_date, span, buffer, stratpos):
+        self._ticker   = ticker_object
         self._date     = target_date
-        self._stratpos = strategic_position
-        self._action   = None
-        self._position = None
+        self._stratpos = stratpos
         self._span     = span
         self._buffer   = buffer
+        self._name     = None
+        self._symbol   = None
+        self._action   = None
+        self._position = None
         self._subject  = None
         self._body     = None
+        self.set_name()
+        self.set_symbol()
+        self._build_recommendation(topomap)
 
     # Getters
     def get_body(self):
@@ -215,14 +210,19 @@ class Recommendation():
         '''Display all variables in class'''
         print(self.__dict__)
 
+    # Setters
+    def set_name(self):
+        self._name = self._ticker.get_name()
 
-    def build_recommendation(self, ticker_object, topomap):
+    def set_symbol(self):
+        self._symbol = self._ticker.get_symbol()
+
+
+    def _build_recommendation(self, topomap):
         '''
         Builds a recommendation for the target_date
         '''
-        #data  = ticker_object.get_market_data()
-        #dates = ticker_object.get_dates()
-        security = ticker_object.get_close()
+        security = self._ticker.get_close()
         strategy = topomap.build_strategy(security, self._span, self._buffer)
 
         # Update the date by shifting dft.LAG days
@@ -252,5 +252,5 @@ class Recommendation():
             msg += f'{self._action} | position: {self._position} | '
             msg += f'span={self._span} days buffer={self._buffer:.2%}'
             if (self._action in ['buy', 'sell']) & enhanced:
-                msg += ' <-----'
+                msg = '-----> ' + msg + ' <-----'
             print(msg)
