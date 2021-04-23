@@ -19,17 +19,17 @@ class Topomap():
     ''' A Topomap encapsulates :
         span, buffer, EMA, hold
     '''
-    def __init__(self, ticker_symbol, date_range, position):
+    def __init__(self, ticker_symbol, date_range, strategic_position):
         '''
         name -> identifier / ticker name that corresponds to EMA map
         date_range in datetime format
         spans, buffers, emas -> numpy arrays
         hold -> float
-        trading position strategy: position = 'long' or 'short'
+        strategic trading position: strat_pos = 'long' or 'short'
         '''
         self._name       = ticker_symbol
         self._date_range = date_range
-        self._position   = position.lower()
+        self._strat_pos  = strategic_position.lower()
         self._fee        = dft.FEE_PCT
         self._init_wealth = dft.INIT_WEALTH
         self._spans      = None
@@ -71,9 +71,9 @@ class Topomap():
         '''Return ticker identifier '''
         return self._name
 
-    def get_position(self):
+    def get_strategic_position(self):
         '''Return position '''
-        return self._position
+        return self._strat_pos
 
     def get_date_range(self):
         '''Return ticker identifier '''
@@ -276,9 +276,9 @@ class Topomap():
         for step in range(1, n_time_steps):
             sign = d_frame.loc[d_frame.index[step], 'SIGN']
             prev_position = positions[step - 1]
-            if self._position == 'long':
+            if self._strat_pos == 'long':
                 pos_act = handle_long(prev_position, sign)
-            elif self._position == 'short':
+            elif self._strat_pos == 'short':
                 pos_act = handle_short(prev_position, sign)
             else:
                 raise ValueError('build_positions: long or short positions only')
@@ -296,7 +296,7 @@ class Topomap():
         for hold strategy
         *** MUST INCORPORATE FEES at start/end ***
         '''
-        if self._position == 'long':
+        if self._strat_pos == 'long':
             d_frame.loc[:, 'RET'] = 1.0 + d_frame.Close.pct_change()
         else: # short
             d_frame.loc[:, 'RET'] = 1.0 - d_frame.Close.pct_change()
@@ -371,7 +371,7 @@ class Topomap():
         Return the persist filename for the ema map without extension
         '''
         dates   = util.dates_to_strings(self._date_range, '%Y-%m-%d')
-        suffix  = f'{dates[0]}_{dates[1]}_{self._position}_ema_map'
+        suffix  = f'{dates[0]}_{dates[1]}_{self._strat_pos}_ema_map'
         suffix = f'{self._name}_{suffix}'
         return suffix
 
@@ -496,7 +496,7 @@ class Topomap():
             msg = 'save_best_emas: date_range should be set via set_date_range'
             raise ValueError(msg)
         start, end = util.dates_to_strings(self._date_range, '%Y-%m-%d')
-        suffix = f'{self._name}_{start}_{end}_{self._position}_results'
+        suffix = f'{self._name}_{start}_{end}_{self._strat_pos}_results'
 
         data_dir = os.path.join(dft.DATA_DIR, self._name)
         os.makedirs(data_dir, exist_ok = True)
@@ -565,7 +565,7 @@ class Topomap():
         axis = trplt.build_title(axis        = axis,
                                  ticker      = symbol,
                                  ticker_name = ticker_object.get_name(),
-                                 position    = self._position,
+                                 position    = self._strat_pos,
                                  dates       = title_range,
                                  ema         = max_ema,
                                  hold        = self._hold,
@@ -577,7 +577,7 @@ class Topomap():
         plt.grid(b=None, which='major', axis='both', color=dft.GRID_COLOR)
         plot_dir = os.path.join(dft.PLOT_DIR, self._name)
         trplt.save_figure(plot_dir,
-                          f'{symbol}_{name_range[0]}_{name_range[1]}_contours_{self._position}',
+                          f'{symbol}_{name_range[0]}_{name_range[1]}_contours_{self._strat_pos}',
                           extension='png')
         plt.show()
 
@@ -649,7 +649,7 @@ class Topomap():
                                  ticker      = symbol,
                                  ticker_name = ticker_object.get_name(),
                                  dates       = title_range,
-                                 position    = self._position,
+                                 position    = self._strat_pos,
                                  ema         = max_ema,
                                  hold        = self._hold,
                                  span        = max_span,
@@ -659,7 +659,7 @@ class Topomap():
 
         plot_dir = os.path.join(dft.PLOT_DIR, self._name)
         trplt.save_figure(plot_dir,
-                          f'{symbol}_{name_range[0]}_{name_range[1]}_3D_{self._position}',
+                          f'{symbol}_{name_range[0]}_{name_range[1]}_3D_{self._strat_pos}',
                           extension='png')
         plt.show()
 
@@ -750,7 +750,7 @@ class Topomap():
         axis = trplt.build_title(axis = axis,
                                  ticker = symbol,
                                  ticker_name = ticker_object.get_name(),
-                                 position = self._position,
+                                 position = self._strat_pos,
                                  dates = util.dates_to_strings(self._date_range, fmt = '%d-%b-%Y'),
                                  ema = min_max[1],
                                  hold = self._hold,
@@ -760,7 +760,7 @@ class Topomap():
                                  )
 
         dates    = util.dates_to_strings(self._date_range, fmt = '%Y-%m-%d')
-        filename = f'{symbol}_{dates[0]}_{dates[1]}_{target}s_{self._position}'
+        filename = f'{symbol}_{dates[0]}_{dates[1]}_{target}s_{self._strat_pos}'
         plot_dir = os.path.join(dft.PLOT_DIR, self._name)
         trplt.save_figure(plot_dir, filename)
 

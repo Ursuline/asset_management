@@ -259,7 +259,7 @@ class Ticker():
         trplt.build_title(axis        = axis,
                           ticker      = self._symbol,
                           ticker_name = self._name,
-                          position    = topomap.get_position(),
+                          position    = topomap.get_strategic_position(),
                           dates       = title_dates,
                           span        = span,
                           buffer      = buffer,

@@ -18,46 +18,6 @@ import ticker as tkr
 
 
 ### I/O ###
-# def load_security_oo(dirname, ticker, period, dates, refresh=False):
-#     '''
-#     Load data from file else upload from Yahoo finance
-#     dirname -> directory where pkl data is saved
-#     ticker -> Yahoo Finance ticker symbol
-#     period -> download period
-#     refresh -> True : download data from Yahoo / False use pickle data if it exists
-#     '''
-#     dirname = os.path.join(dirname, ticker)
-#     data_filename = ticker + '_' + period
-#     data_pathname = os.path.join(dirname, data_filename + '.pkl')
-#     ticker_filename = ticker + '_name'
-#     ticker_pathname = os.path.join(dirname, ticker_filename + '.pkl')
-
-#     if os.path.exists(ticker_pathname) and (not refresh):
-#         print(f'Loading saved Yahoo data from {data_pathname}')
-#         data        = pd.read_pickle(data_pathname)
-#         pickle_file = open(ticker_pathname,'rb')
-#         ticker_obj  = pickle.load(pickle_file)
-#         pickle_file.close()
-#     else:
-#         print('Downloading data from Yahoo Finance')
-#         security  = sec.Security(ticker, period)
-#         data      = security.get_market_data()
-#         data.set_index('Date', inplace=True)
-#         ticker_obj = tkr.Ticker(symbol   = ticker,
-#                                 security = security,
-#                                 dates    = dates,
-#                                 )
-#         os.makedirs(dirname, exist_ok = True)
-#         data.to_pickle(data_pathname) #store locally
-
-#         # write ticker object to file ** MERGE WITH DATA
-#         pickle_file = open(ticker_pathname,'wb')
-#         pickle.dump(ticker_obj, pickle_file)
-#         pickle_file.close()
-#     print(f'\n{ticker_obj.get_name()} Yahoo data loaded')
-#     return ticker_obj
-
-
 def load_security(dirname, ticker, period, dates, refresh=False):
     '''
     Load data from file else upload from Yahoo finance
