@@ -1,0 +1,8 @@
+[MESSAGE CONTROL]
+
+disable=line-too-long, 
+	too-many-arguments,
+	too-many-public-methods,
+	too-many-instance-attributes,
+	too-many-local-variables
+ 

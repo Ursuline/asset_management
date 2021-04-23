@@ -59,13 +59,15 @@ if __name__ == '__main__':
         TICKERS[:] = (value for value in TICKERS if value not in REMOVE)
     # remove duplicates
     TICKERS  = set(TICKERS)
-    tra.describe_run(TICKERS,
-                     DATE_RANGE,
-                     dft.SPAN_DIC,
-                     dft.BUFFER_DIC,
-                     POSITIONS,
-                     dft.FEE_PCT,
+
+    tra.describe_run(tickers     = TICKERS,
+                     date_range  = DATE_RANGE,
+                     span_dic    = dft.SPAN_DIC,
+                     buffer_dic  = dft.BUFFER_DIC,
+                     strat_posns = POSITIONS,
+                     fee_pct     = dft.FEE_PCT,
                      )
+
     for strat_pos in POSITIONS:
         print(f'Strategic position: {strat_pos}')
         for i, ticker in enumerate(TICKERS):

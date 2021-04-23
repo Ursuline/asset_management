@@ -212,9 +212,11 @@ class Recommendation():
 
     # Setters
     def set_name(self):
+        '''Sets the ticker name as recommendation name'''
         self._name = self._ticker.get_name()
 
     def set_symbol(self):
+        '''Sets the ticker symbol as recommendation symbol'''
         self._symbol = self._ticker.get_symbol()
 
 

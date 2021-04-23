@@ -88,9 +88,9 @@ def build_3D_axes_labels(axis):
     return axis
 
 
-def plot_maxima(emas, spans, buffers, hold, axis, n_maxima):
+def plot_maxima(emas, spans, buffers, axis, n_maxima):
     '''
-    Called by plot_buffer_span_contours()
+    Called by contour_plot()
     Plots points corresponding to n_maxima largest EMA
     '''
     _emas = emas.copy() # b/c algorithm destroys top n_maxima EMA values
@@ -205,7 +205,7 @@ def plot_arrows(axis, data, actions, colors):
                   )
 
 
-def plot_stats(summary_stats, axis, colors):
+def plot_stats(summary_stats, axis):
     '''
     Place a text box with signal statistics
     '''

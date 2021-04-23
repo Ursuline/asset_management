@@ -266,7 +266,8 @@ def get_date_range(security, start_date, end_date):
 
 
 def date_to_string(date, fmt):
-    return(date.strftime(fmt))
+    '''Convert date time date to string with specified format'''
+    return date.strftime(fmt)
 
 
 def dates_to_strings(date_range, fmt='%d-%b-%Y'):
@@ -281,6 +282,7 @@ def dates_to_strings(date_range, fmt='%d-%b-%Y'):
     return [date_to_string(date_range[0], fmt), date_to_string(date_range[1], fmt)]
 
 def print_running_time(ticker, start_tm, save_tm):
+    '''Called by trading_driver for leap time'''
     msg  = f'{ticker} running time: '
     msg += f'{convert_seconds(time.time()-save_tm)} | '
     msg += 'elapsed time: '

@@ -16,20 +16,19 @@ import pandas as pd
 import security as sec
 import ticker as tkr
 
-#pylint: disable=line-too-long, C0301
-
 def describe_run(tickers, date_range, span_dic, buffer_dic, strat_posns, fee_pct):
     '''print run description'''
     span_range   = span_dic['max'] - span_dic['min'] + 1
     buffer_range = buffer_dic['number']
     dims         = span_range * buffer_range
-    print(f'Date range: {date_range[0]} to {date_range[1]}')
-    print(f'Span range: {span_dic["min"]:.0f} - {span_dic["max"]:.0f} days')
-    print(f'Buffer range: {buffer_dic["min"]:.2%} - {buffer_dic["max"]:.2%} / {buffer_dic["number"]} samples')
-    print(f"Broker's fee: {fee_pct:.2%}")
-    print(f'Running {len(tickers)} tickers: {dims:.0f} runs/ticker')
-    print(f'Strategic position(s): {strat_posns}')
-    print()
+    msg  = f'Date range: {date_range[0]} to {date_range[1]}\n'
+    msg += f'Span range: {span_dic["min"]:.0f} - {span_dic["max"]:.0f} days\n'
+    msg += f'Buffer range: {buffer_dic["min"]:.2%} - {buffer_dic["max"]:.2%} '
+    msg += '/ {buffer_dic["number"]} samples\n'
+    msg += f"Broker's fee: {fee_pct:.2%}\n"
+    msg += f'Running {len(tickers)} ticker(s): {dims:.0f} runs/ticker\n'
+    msg += f'Strategic position(s): {strat_posns}\n'
+    print(msg)
 
 
 ### I/O ###

@@ -375,32 +375,6 @@ class Topomap():
         suffix = f'{self._name}_{suffix}'
         return suffix
 
-
-    # def load_ema_map(self, data_dir):
-    #     '''
-    #     Reads raw EMA data from csv file, reshape and  and returns as a dataframe
-    #     '''
-    #     pathname = os.path.join(data_dir,
-    #                             self.get_ema_map_filename() + '.csv')
-
-    #     ema_map = pd.read_csv(pathname, sep=';', index_col=0)
-
-    #     spans   = ema_map['span'].to_numpy()
-    #     buffers = ema_map['buffer'].to_numpy()
-    #     emas    = ema_map['ema'].to_numpy()
-    #     hold    = ema_map['hold'].to_numpy()
-
-    #     # reshape the arrays
-    #     spans   = np.unique(spans)
-    #     buffers = np.unique(buffers)
-    #     emas    = np.reshape(emas, (spans.shape[0], buffers.shape[0]))
-
-    #     self._spans   = spans
-    #     self._buffers = buffers
-    #     self._emas    = emas
-    #     self.set_hold(hold)
-
-
     def load_ema_map_new(self, ticker, security, refresh, verbose=False):
         '''
         Reads raw EMA data from csv file, reshape and  and returns as a dataframe
@@ -556,7 +530,7 @@ class Topomap():
         max_ema, max_span, max_buff = trplt.plot_maxima(self._emas,
                                                         self._spans,
                                                         self._buffers,
-                                                        self._hold,
+                                                        #self._hold,
                                                         axis,
                                                         n_maxima,)
 

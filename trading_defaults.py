@@ -58,7 +58,7 @@ BUFFER_DIC = dict({'min': MIN_BUFF,
                    'default': DEFAULT_BUFFER,
                    })
 
-INIT_WEALTH    = 100.0
+INIT_WEALTH   = 100.0
 
 N_MAXIMA_SAVE = 20 # number of maxima to save to file
 

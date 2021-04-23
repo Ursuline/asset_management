@@ -253,7 +253,7 @@ class Ticker():
             axis = trplt.plot_stats(summary_stats,
                                     axis,
                                     #dfr.loc[display_dates[0]:display_dates[1], :],
-                                    colors = dft.get_color_scheme(),
+                                    #colors = dft.get_color_scheme(),
                                     )
 
         trplt.build_title(axis        = axis,
