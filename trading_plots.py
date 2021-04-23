@@ -73,7 +73,7 @@ def build_title(axis, ticker, ticker_name, position, dates, ema, hold, span, buf
     return axis
 
 
-def build_3D_axes_labels(axis):
+def build_3d_axes_labels(axis):
     '''
     Axes and labels for contour & 3D plots
     '''
@@ -212,8 +212,8 @@ def plot_stats(summary_stats, axis):
     xy_pos = (.95, .0075)
 
     text  = 'Daily returns:\n'
-    text += f'$\mu$={summary_stats["mean"]-1:.2%}\n'
-    text += f'$\sigma$={summary_stats["std"]:.3g}\n'
+    text += rf'$\mu$={summary_stats["mean"]-1:.2%}\n'
+    text += rf'$\sigma$={summary_stats["std"]:.3g}\n'
     text += f'Skewness={summary_stats["skewness"]:.2g}\n'
     text += f'Kurtosis={summary_stats["kurtosis"]:.2g}\n'
     text += f'Gaussian: {summary_stats["jb"]["gaussian"]}\n'
@@ -269,7 +269,7 @@ def build_range_plot(ticker_object, topomap, dfr, fixed, hold, min_max, n_best, 
     save_figure(plot_dir, filename)
 
 
-def plot_span_range(ticker_object, topomap, security, buffer, n_best, fee_pct, extension='png'):
+def plot_span_range(ticker_object, topomap, security, buffer, n_best, fee_pct):
     '''
     Plots all possible spans for a given buffer size
     the range of span values is defined in defaults file
@@ -307,7 +307,7 @@ def plot_span_range(ticker_object, topomap, security, buffer, n_best, fee_pct, e
                      )
 
 
-def plot_buffer_range(ticker_object, topomap, security, span, n_best, fee_pct, extension='png'):
+def plot_buffer_range(ticker_object, topomap, security, span, n_best, fee_pct):
     '''
     Plots all possible buffers for a given rolling window span
     the range of buffer values is defined in defaults file

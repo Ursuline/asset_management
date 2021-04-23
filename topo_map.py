@@ -524,7 +524,7 @@ class Topomap():
                      )
         plt.colorbar(label='EMA return')
 
-        axis = trplt.build_3D_axes_labels(axis)
+        axis = trplt.build_3d_axes_labels(axis)
 
         # Plot maxima points
         max_ema, max_span, max_buff = trplt.plot_maxima(self._emas,
@@ -614,7 +614,7 @@ class Topomap():
                                  linewidth = 1)
         fig.colorbar(surf, shrink=.5, aspect=25, label = 'EMA return')
 
-        axis = trplt.build_3D_axes_labels(axis)
+        axis = trplt.build_3d_axes_labels(axis)
         #axis.set_zlabel(r'Return', rotation=60)
         axis = remove_axes_grids(axis)
         symbol = ticker_object.get_symbol()
