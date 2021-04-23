@@ -79,7 +79,6 @@ if __name__ == '__main__':
                                                period  = dft.DEFAULT_PERIOD,
                                                dates   = DATE_RANGE,
                                                )
-
                 security = ticker_obj.get_close()
 
                 # Convert dates to datetime
@@ -109,9 +108,9 @@ if __name__ == '__main__':
                 topomap.surface_plot(ticker_object = ticker_obj,
                                      date_range = date_range,
                                      colors = dft.SURFACE_COLOR_SCHEME,
-                                     azim   = dft.PERSPECTIVE[0],
-                                     elev   = dft.PERSPECTIVE[1],
-                                     rdist  = dft.PERSPECTIVE[2],
+                                     azim   = dft.PERSPECTIVE['azimuth'],
+                                     elev   = dft.PERSPECTIVE['elevation'],
+                                     rdist  = dft.PERSPECTIVE['distance'],
                                      )
 
                 # Plot time series with default parameters from best EMA

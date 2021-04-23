@@ -106,17 +106,25 @@ SURFACE_COLOR_SCHEME  = SURFACE_COLOR_SCHEMES[12]
 MIN_AZIMUTH   = 0
 MAX_AZIMUTH   = 360
 DELTA_AZIMUTH = 1
+DEFAULT_AZIMUTH = 315
 
 MIN_ELEVATION   = 5
 MAX_ELEVATION   = 90
 DELTA_ELEVATION = 1
+DEFAULT_ELEVATION = 35
 
 MIN_DISTANCE   = 5
 MAX_DISTANCE   = 20
 DELTA_DISTANCE = 1
+DEFAULT_DISTANCE = 10
 
 # default azimuth, elevation, distance
-PERSPECTIVE = [315, 35, 10]
+#PERSPECTIVE = [315, 35, 10]
+PERSPECTIVE = dict({'azimuth':DEFAULT_AZIMUTH,
+                    'elevation': DEFAULT_ELEVATION,
+                    'distance': DEFAULT_DISTANCE
+                    }
+                   )
 
 def get_spans():
     '''returns max & min rolling window spans '''
