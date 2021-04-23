@@ -222,12 +222,12 @@ class Recommendation():
 
     def _build_recommendation(self, topomap):
         '''
-        Builds a recommendation for the target_date
+        Builds a recommendation for the target_date to be emailed
         '''
         security = self._ticker.get_close()
         strategy = topomap.build_strategy(security, self._span, self._buffer)
 
-        # Update the date by shifting dft.LAG days
+        # Update the date by shifting dft.LAG days (REVIEW)
         data_index  = strategy.index.get_loc(self._date) # row number
         target_date = strategy.iloc[data_index].name
         rec = strategy.loc[target_date, ["ACTION", "POSITION"]]

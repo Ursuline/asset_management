@@ -23,6 +23,7 @@ import ticker as tck
 REMOVE  = ['UL', 'FP.PA', 'ORA.PA', 'KC4.F', 'BNP.PA', 'KER.PA', 'SMC.PA']
 REMOVE += ['FB', 'HO.PA', 'LHN.SW', 'SQ', 'BIDU', 'ARKQ', 'KORI.PA']
 REMOVE += ['TRI.PA', 'HEXA.PA', 'CA.PA', 'ATO.PA']
+FILTER  = True # Remove securities from REMOVE
 
 # SWITCHES
 # Notifications defaults
@@ -32,7 +33,6 @@ NOTIFY = True # item-per-item notificattion
 
 REFRESH_YAHOO = False # Download fresh Yahoo data
 REFRESH_EMA   = False # Recompute ema map
-FILTER  = True # Remove securities from REMOVE
 
 POSITIONS = ['long', 'short']
 

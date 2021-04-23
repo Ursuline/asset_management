@@ -1,8 +1,13 @@
-[MESSAGE CONTROL]
+[MASTER]
+# Use multiple processes to speed up Pylint. Specifying 0 will auto-detect the
+# number of processors available to use.
+jobs=0
+
+[MESSAGES CONTROL]
 
 disable=line-too-long, 
 	too-many-arguments,
 	too-many-public-methods,
 	too-many-instance-attributes,
-	too-many-local-variables
+	too-many-local-variables, R0914
  

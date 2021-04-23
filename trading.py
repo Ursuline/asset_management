@@ -24,7 +24,7 @@ def describe_run(tickers, date_range, span_dic, buffer_dic, strat_posns, fee_pct
     msg  = f'Date range: {date_range[0]} to {date_range[1]}\n'
     msg += f'Span range: {span_dic["min"]:.0f} - {span_dic["max"]:.0f} days\n'
     msg += f'Buffer range: {buffer_dic["min"]:.2%} - {buffer_dic["max"]:.2%} '
-    msg += '/ {buffer_dic["number"]} samples\n'
+    msg += f'/ {buffer_dic["number"]} samples\n'
     msg += f"Broker's fee: {fee_pct:.2%}\n"
     msg += f'Running {len(tickers)} ticker(s): {dims:.0f} runs/ticker\n'
     msg += f'Strategic position(s): {strat_posns}\n'

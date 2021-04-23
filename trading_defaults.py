@@ -119,7 +119,6 @@ DELTA_DISTANCE = 1
 DEFAULT_DISTANCE = 10
 
 # default azimuth, elevation, distance
-#PERSPECTIVE = [315, 35, 10]
 PERSPECTIVE = dict({'azimuth':DEFAULT_AZIMUTH,
                     'elevation': DEFAULT_ELEVATION,
                     'distance': DEFAULT_DISTANCE
@@ -128,11 +127,11 @@ PERSPECTIVE = dict({'azimuth':DEFAULT_AZIMUTH,
 
 def get_spans():
     '''returns max & min rolling window spans '''
-    return [MIN_SPAN, MAX_SPAN]
+    return SPAN_DIC
 
 def get_buffers():
     '''returns max, min buffers and increment '''
-    return [MIN_BUFF, MAX_BUFF, N_BUFFERS]
+    return BUFFER_DIC
 
 def get_actions():
     '''returns actions '''
