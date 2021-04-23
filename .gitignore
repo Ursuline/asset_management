@@ -15,3 +15,4 @@ asset_management.shapesdoc/
 comparison_io.py
 comparison_plots.py
 figurewidget-app.ipynb
+.pylintrc
