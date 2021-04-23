@@ -31,13 +31,14 @@ SCREEN = True
 EMAIL  = True
 NOTIFY = True # item-per-item notificattion
 
-REFRESH_YAHOO = False # Download fresh Yahoo data
-REFRESH_EMA   = False # Recompute ema map
+REFRESH_YAHOO = True # Download fresh Yahoo data
+REFRESH_EMA   = True # Recompute ema map
 
 POSITIONS = ['long', 'short']
 
 TICKERS = ptf.OBSERVE
 TICKERS = ['BTC-USD']
+TICKERS = ptf.CRYPTO
 
 START_DATE = '2018-01-02'
 END_DATE   = '2021-04-19'
@@ -68,10 +69,11 @@ if __name__ == '__main__':
                      fee_pct     = dft.FEE_PCT,
                      )
 
-    for strat_pos in POSITIONS:
-        print(f'Strategic position: {strat_pos}')
-        for i, ticker in enumerate(TICKERS):
-            print(f'{i+1}/{len(TICKERS)}: {ticker}')
+
+    for i, ticker in enumerate(TICKERS):
+        print(f'{i+1}/{len(TICKERS)}: {ticker}')
+        for strat_pos in POSITIONS:
+            print(f'Strategic position: {strat_pos}')
             try:
                 ticker_obj = tra.load_security(dirname = dft.DATA_DIR,
                                                ticker  = ticker,
