@@ -61,11 +61,8 @@ if __name__ == '__main__':
     TICKERS  = set(TICKERS)
     tra.describe_run(TICKERS,
                      DATE_RANGE,
-                     dft.MIN_SPAN,
-                     dft.MAX_SPAN,
-                     dft.MIN_BUFF,
-                     dft.MAX_BUFF,
-                     dft.N_BUFFERS,
+                     dft.SPAN_DIC,
+                     dft.BUFFER_DIC,
                      POSITIONS,
                      dft.FEE_PCT,
                      )

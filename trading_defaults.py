@@ -42,12 +42,21 @@ LAG = 1 # Don't change this
 MIN_SPAN = 5
 MAX_SPAN = 90
 DEFAULT_SPAN = 20
+SPAN_DIC = dict({'min': MIN_SPAN,
+                 'max': MAX_SPAN,
+                 'default': DEFAULT_SPAN,
+                 })
 
 # Min & max buffer around mean
 MIN_BUFF  = 0.0
 MAX_BUFF  = 0.05
 DEFAULT_BUFFER = .01
 N_BUFFERS = 51
+BUFFER_DIC = dict({'min': MIN_BUFF,
+                   'max': MAX_BUFF,
+                   'number': N_BUFFERS,
+                   'default': DEFAULT_BUFFER,
+                   })
 
 INIT_WEALTH    = 100.0
 
