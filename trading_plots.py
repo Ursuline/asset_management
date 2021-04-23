@@ -205,34 +205,6 @@ def plot_arrows(axis, data, actions, colors):
                   )
 
 
-def plot_stats(summary_stats, axis):
-    '''
-    Place a text box with signal statistics
-    '''
-    xy_pos = (.95, .0075)
-
-    text  = 'Daily returns:\n'
-    text += rf'$\mu$={summary_stats["mean"]-1:.2%}\n'
-    text += rf'$\sigma$={summary_stats["std"]:.3g}\n'
-    text += f'Skewness={summary_stats["skewness"]:.2g}\n'
-    text += f'Kurtosis={summary_stats["kurtosis"]:.2g}\n'
-    text += f'Gaussian: {summary_stats["jb"]["gaussian"]}\n'
-    text += f'({1-summary_stats["jb"]["level"]:.0%} '
-    text += f'p-value={summary_stats["jb"]["gaussian"]:.3g})\n'
-    offsetbox = TextArea(text)
-
-    anb = AnnotationBbox(offsetbox,
-                         xy_pos,
-                         xybox=(-20, 40),
-                         xycoords='axes fraction',
-                         boxcoords="offset points",
-                         frameon = False,
-                         #arrowprops=dict(arrowstyle="->")
-                         )
-    axis.add_artist(anb)
-    return axis
-
-
 ### MAIN PLOT FUNCTIONS
 def build_range_plot(ticker_object, topomap, dfr, fixed, hold, min_max, n_best, target, xlabel, max_fmt):
     '''
