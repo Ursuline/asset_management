@@ -79,10 +79,10 @@ if __name__ == '__main__':
                                                period  = dft.DEFAULT_PERIOD,
                                                dates   = DATE_RANGE,
                                                )
-                security = ticker_obj.get_close()
+                volume = ticker_obj.get_volume()
 
                 # Convert dates to datetime
-                date_range = util.get_date_range(security,
+                date_range = util.get_date_range(ticker_obj.get_close(),
                                                  DATE_RANGE[0],
                                                  DATE_RANGE[1],
                                                  )
@@ -91,11 +91,9 @@ if __name__ == '__main__':
                 topomap = tpm.Topomap(ticker, date_range, strat_pos)
 
                 # # Read EMA map values  from file or compute if not saved
-                topomap.load_ema_map_new(ticker     = ticker,
-                                         security   = security,
-                                         refresh    = REFRESH_EMA,
-                                         )
-
+                topomap.load_ema_map(ticker_object = ticker_obj,
+                                     refresh       = REFRESH_EMA,
+                                     )
 
                 # Build & save best EMA results to file
                 topomap.build_best_emas(dft.N_MAXIMA_SAVE)
@@ -117,14 +115,13 @@ if __name__ == '__main__':
                 best_span, best_buffer, best_ema, hold = topomap.get_global_max()
 
                 # Convert zoom dates to datetime
-                date_zoom = util.get_date_range(security,
+                date_zoom = util.get_date_range(ticker_obj.get_close(),
                                                 ZOOM_RANGE[0],
                                                 ZOOM_RANGE[1],
                                                 )
                 #display flags:
                 display_flags = tck.Ticker.get_default_display_flags()
                 ticker_obj.plot_time_series(display_dates = date_zoom,
-                                            security      = security,
                                             topomap       = topomap,
                                             span          = best_span,
                                             buffer        = best_buffer,

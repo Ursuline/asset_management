@@ -33,6 +33,7 @@ class Ticker():
         flags['ema_buffer'] = False
         flags['sma']        = False
         flags['sma_buffer'] = False
+        flags['volume']     = True
         flags['arrows']     = True
         flags['statistics'] = True
         flags['save']       = True
@@ -95,10 +96,17 @@ class Ticker():
 
     def get_close(self):
         '''Return Close as DataFrame'''
-        security = pd.DataFrame(self.get_market_data()[f'Close_{self._symbol}'])
-        security = security.loc[self._dates[0]:self._dates[1],:] # trim the data
-        security.rename(columns={f'Close_{self._symbol}': "Close"}, inplace=True)
-        return security
+        close = pd.DataFrame(self.get_market_data()[f'Close_{self._symbol}'])
+        close = close.loc[self._dates[0]:self._dates[1],:] # trim the data
+        close.rename(columns={f'Close_{self._symbol}': "Close"}, inplace=True)
+        return close
+
+    def get_volume(self):
+        '''Return Volume as DataFrame'''
+        volume = pd.DataFrame(self.get_market_data()[f'Vol_{self._symbol}'])
+        volume = volume.loc[self._dates[0]:self._dates[1],:] # trim the data
+        volume.rename(columns={f'Vol_{self._symbol}': "Volume"}, inplace=True)
+        return volume
 
 
     def self_describe(self):
@@ -134,7 +142,7 @@ class Ticker():
 
 
     ### PLOTS
-    def plot_time_series(self, display_dates, security, topomap, span, buffer, flags, fee_pct):
+    def plot_time_series(self, display_dates, topomap, span, buffer, flags, fee_pct):
         '''
         Plots security prices with moving average
         span -> rolling window span
@@ -151,7 +159,8 @@ class Ticker():
 
         # Extract time window
         window_start = display_dates[0] - timedelta(days = span + 1)
-        dfr = topomap.build_strategy(security.loc[window_start:display_dates[1], :].copy(),
+        close = self.get_close()
+        dfr = topomap.build_strategy(close.loc[window_start:display_dates[1], :].copy(),
                                      span,
                                      buffer,
                                      )
@@ -160,7 +169,7 @@ class Ticker():
         hold = topomap.get_cumret(dfr, 'hold')  # cumulative returns for hold
         ema  = topomap.get_cumret(dfr, 'ema', fee)  # cumulative returns for EMA
 
-        _, axis = plt.subplots(figsize=(dft.FIG_WIDTH, dft.FIG_HEIGHT))
+        fig, axis = plt.subplots(figsize=(dft.FIG_WIDTH, dft.FIG_HEIGHT))
 
         # Display MY for > 180 days and DMY otherwise
         if timespan > 180:
@@ -174,39 +183,42 @@ class Ticker():
         if flags['close']: # Close
             axis.plot(dfr.loc[display_dates[0]:display_dates[1], :].index,
                       dfr.loc[display_dates[0]:display_dates[1], :].Close,
-                      linewidth=1,
-                      color = dft.COLOR_SCHEME[0],
-                      label='Price',
+                      linewidth = 1,
+                      linestyle = 'solid',
+                      color     = dft.COLOR_SCHEME[0],
+                      label     = 'Close',
                       )
 
         if flags['ema']: # EMA
             axis.plot(dfr.loc[display_dates[0]:display_dates[1], :].index,
                       dfr.loc[display_dates[0]:display_dates[1], :].EMA,
-                      linewidth=1,
-                      color = dft.COLOR_SCHEME[1],
-                      label=f'{span:.0f}-day EMA',
+                      linewidth = 1,
+                      linestyle = 'solid',
+                      color     = dft.COLOR_SCHEME[1],
+                      label     = f'{span:.0f}-day EMA',
                       )
 
         if flags['ema_buffer']: #EMA +/- buffer
             axis.plot(dfr.loc[display_dates[0]:display_dates[1], :].index,
                       dfr.loc[display_dates[0]:display_dates[1], :].EMA_MINUS,
                       linewidth = 1,
-                      linestyle = '--',
-                      color = dft.COLOR_SCHEME[1],
-                      label=f'EMA - {buffer:.2%}',
+                      linestyle = 'dashed',
+                      color     = dft.COLOR_SCHEME[1],
+                      label     = f'EMA - {buffer:.2%}',
                       )
             axis.plot(dfr.loc[display_dates[0]:display_dates[1], :].index,
                       dfr.loc[display_dates[0]:display_dates[1], :].EMA_PLUS,
                       linewidth = 1,
-                      linestyle = '--',
-                      color = dft.COLOR_SCHEME[1],
-                      label=f'EMA + {buffer:.2%}',
+                      linestyle = 'dashed',
+                      color     = dft.COLOR_SCHEME[1],
+                      label     = f'EMA + {buffer:.2%}',
                       )
 
         if flags['sma']: # SMA
             axis.plot(dfr.loc[display_dates[0]:display_dates[1], :].index,
                       dfr.loc[display_dates[0]:display_dates[1], :].SMA,
                       linewidth = 1,
+                      linestyle = 'solid',
                       color     = dft.COLOR_SCHEME[4],
                       label     = f'{span:.0f}-day SMA',
                       )
@@ -215,20 +227,34 @@ class Ticker():
             axis.plot(dfr.loc[display_dates[0]:display_dates[1], :].index,
                       dfr.loc[display_dates[0]:display_dates[1], :].SMA_MINUS,
                       linewidth = 1,
-                      linestyle = '--',
-                      color = dft.COLOR_SCHEME[4],
-                      label=f'SMA - {buffer:.2%}',
+                      linestyle = 'dashed',
+                      color     = dft.COLOR_SCHEME[4],
+                      label     = f'SMA - {buffer:.2%}',
                       )
             axis.plot(dfr.loc[display_dates[0]:display_dates[1], :].index,
                       dfr.loc[display_dates[0]:display_dates[1], :].SMA_PLUS,
                       linewidth = 1,
-                      linestyle = '--',
-                      color = dft.COLOR_SCHEME[4],
-                      label=f'SMA + {buffer:.2%}',
+                      linestyle = 'dashed',
+                      color     = dft.COLOR_SCHEME[4],
+                      label     = f'SMA + {buffer:.2%}',
                       )
 
-        axis.legend(loc='best')
+        if flags['volume']:
+            volume = self.get_volume()
+            ax2 = axis.twinx()  # instantiate a second axes that shares the same x-axis
+            ax2.plot(volume.loc[display_dates[0]:display_dates[1], :].index,
+                     volume.loc[display_dates[0]:display_dates[1], :].Volume,
+                     linewidth = 1,
+                     linestyle = 'dotted',
+                     color     = dft.COLOR_SCHEME[5],
+                     label     = 'Volume',
+                     )
+
+        fig.legend(loc=2)
         axis.set_ylabel(f'Price ({self._currency_symbol})')
+
+
+
 
         buy_sell = None
         if flags['arrows']: # Buy/sell arrows

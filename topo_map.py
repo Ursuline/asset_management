@@ -109,7 +109,7 @@ class Topomap():
         return self._best_emas.iloc[0]
 
 
-    def build_ema_map(self, security, dates):
+    def build_ema_map(self, close, dates):
         '''
         Builds a 2D numpy array of EMAs as a function of span and buffer
         This function iteratively calls build_strategy()
@@ -135,7 +135,7 @@ class Topomap():
         desc = f'Building ema map /{span_par["max"] - span_par["min"] + 1}'
         for i, span in tqdm(enumerate(self._spans), desc = desc, ncols=40):
             for j, buffer in enumerate(self._buffers):
-                data  = self.build_strategy(security.loc[dates[0]:dates[1], :].copy(),
+                data  = self.build_strategy(close.loc[dates[0]:dates[1], :].copy(),
                                              span,
                                              buffer,
                                              )
@@ -374,12 +374,12 @@ class Topomap():
         suffix = f'{self._name}_{suffix}'
         return suffix
 
-    def load_ema_map_new(self, ticker, security, refresh, verbose=False):
+    def load_ema_map(self, ticker_object, refresh, verbose=False):
         '''
         Reads raw EMA data from csv file, reshape and  and returns as a dataframe
         '''
         # Read EMA map values  from file or compute if not saved
-        data_dir = os.path.join(dft.DATA_DIR, ticker)
+        data_dir = os.path.join(dft.DATA_DIR, ticker_object.get_symbol())
         file     = self.get_ema_map_filename() + '.csv'
         map_path = os.path.join(data_dir, file)
         if (os.path.exists(map_path)) & (not refresh):
@@ -408,7 +408,7 @@ class Topomap():
         else: # If not saved, compute it
             if verbose & (not refresh):
                 print(f'No EMA map in {map_path}')
-            self.build_ema_map(security, self._date_range)
+            self.build_ema_map(ticker_object.get_close(), self._date_range)
         # Save ema map to file
         self.save_emas()
 
