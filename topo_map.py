@@ -647,9 +647,9 @@ class Topomap():
         max_fmt = 'percent'
         fixed = span
         buffer_range = dft.get_buffers()
-        buffers = np.linspace(buffer_range[0],
-                              buffer_range[1],
-                              buffer_range[2])
+        buffers = np.linspace(buffer_range['min'],
+                              buffer_range['max'],
+                              buffer_range['number'])
 
         emas, _ = self.build_ema_profile(security,
                                           var_name  = target,
@@ -683,8 +683,8 @@ class Topomap():
         max_fmt = 'integer'
         fixed = buffer
         span_range = dft.get_spans()
-        spans = np.arange(span_range[0],
-                          span_range[1] + 1,
+        spans = np.arange(span_range['min'],
+                          span_range['max'] + 1,
                           )
 
         emas, _ = self.build_ema_profile(security,
