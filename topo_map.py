@@ -16,7 +16,8 @@ import trading_plots as trplt
 import utilities as util
 
 class Topomap():
-    ''' A Topomap encapsulates :
+    ''' A Topomap encapsulates is the 3d representation of the cumulative ema
+    return for all possible combinations of span and buffers
         span, buffer, EMA, hold
     '''
     def __init__(self, ticker_symbol, date_range, strategic_position):
@@ -115,25 +116,25 @@ class Topomap():
         '''
         # define rolling window span range
         span_par = dft.get_spans()
-        spans = np.arange(span_par[0],
-                          span_par[1] + 1,
-                          step = 1
-                         )
+        self._spans = np.arange(span_par['min'],
+                                span_par['max'] + 1,
+                                step = 1
+                                )
 
         # define buffer range
         buff_par = dft.get_buffers()
-        buffers = np.linspace(buff_par[0],
-                              buff_par[1],
-                              buff_par[2],
-                             )
+        self._buffers = np.linspace(buff_par['min'],
+                                    buff_par['max'],
+                                    buff_par['number'],
+                                    )
 
         # Initialize EMA returns
-        emas = np.zeros((spans.shape[0], buffers.shape[0]), dtype=np.float64)
+        emas = np.zeros((self._spans.shape[0], self._buffers.shape[0]), dtype=np.float64)
 
         # Fill EMAS for all span/buffer combinations
-        desc = f'Building ema map /{span_par[1] - span_par[0] + 1}'
-        for i, span in tqdm(enumerate(spans), desc = desc, ncols=40):
-            for j, buffer in enumerate(buffers):
+        desc = f'Building ema map /{span_par["max"] - span_par["min"] + 1}'
+        for i, span in tqdm(enumerate(self._spans), desc = desc, ncols=40):
+            for j, buffer in enumerate(self._buffers):
                 data  = self.build_strategy(security.loc[dates[0]:dates[1], :].copy(),
                                              span,
                                              buffer,
@@ -145,8 +146,6 @@ class Topomap():
                 if i == 0 and j == 0:
                     hold = self.get_cumret(data, 'hold')
 
-        self._spans   = spans
-        self._buffers = buffers
         self._emas    = emas
         self.set_hold(hold)
 
