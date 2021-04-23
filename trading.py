@@ -16,6 +16,18 @@ import security as sec
 
 import ticker as tkr
 
+def describe_run(tickers, date_range, min_span, max_span, min_buff, max_buff, n_buffers, strat_posns, fee_pct):
+    '''print run description'''
+    span_range   = max_span - min_span + 1
+    buffer_range = n_buffers
+    dims         = span_range * buffer_range
+    print(f'Date range: {date_range[0]} to {date_range[1]}')
+    print(f'Span range: {min_span:.0f} - {max_span:.0f} days')
+    print(f'Buffer range: {min_buff:.2%} - {max_buff:.2%} / {n_buffers} samples')
+    print(f"Broker's fee: {fee_pct:.2%}")
+    print(f'Running {len(tickers)} tickers: {dims:.0f} runs/ticker')
+    print(f'Strategic position(s): {strat_posns}')
+    print()
 
 ### I/O ###
 def load_security(dirname, ticker, period, dates, refresh=False):

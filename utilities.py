@@ -7,6 +7,7 @@ All-purpose use utilities
 
 @author: charles mégnin
 """
+import time
 from datetime import datetime
 import pprint
 import math
@@ -281,3 +282,9 @@ def dates_to_strings(date_range, fmt='%d-%b-%Y'):
     # end_string   = end.strftime(fmt)
     return [date_to_string(date_range[0], fmt), date_to_string(date_range[1], fmt)]
 
+def print_running_time(ticker, start_tm, save_tm):
+    msg  = f'{ticker} running time: '
+    msg += f'{convert_seconds(time.time()-save_tm)} | '
+    msg += 'elapsed time: '
+    msg += f'{convert_seconds(time.time()-start_tm)}\n'
+    print(msg)

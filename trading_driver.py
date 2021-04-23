@@ -17,9 +17,7 @@ import trading_portfolio as ptf
 import utilities as util
 import topo_map as tpm
 import recommender as rec
-#import trading_plots as trp
 import ticker as tck
-
 
 # Skip these securities
 REMOVE  = ['UL', 'FP.PA', 'ORA.PA', 'KC4.F', 'BNP.PA', 'KER.PA', 'SMC.PA']
@@ -49,18 +47,15 @@ END_DATE   = dft.YESTERDAY
 DATE_RANGE = [START_DATE, END_DATE]
 ZOOM_RANGE = [START_DATE, END_DATE]
 
-def describe_run(tickers):
-    '''print run description'''
-    span_range   = dft.MAX_SPAN - dft.MIN_SPAN + 1
-    buffer_range = dft.N_BUFFERS
-    dims         = span_range * buffer_range
-    print(f'Date range: {DATE_RANGE[0]} to {DATE_RANGE[1]}')
-    print(f'Span range: {dft.MIN_SPAN:.0f} - {dft.MAX_SPAN:.0f} days')
-    print(f'Buffer range: {dft.MIN_BUFF:.2%} - {dft.MAX_BUFF:.2%} / {dft.N_BUFFERS} samples')
-    print(f"Broker's fee: {dft.FEE_PCT:.2%}")
-    print(f'Running {len(tickers)} tickers: {dims:.0f} runs/ticker')
-    print(f'Strategic position(s): {POSITIONS}')
-    print()
+   # span_range   = dft.MAX_SPAN - dft.MIN_SPAN + 1
+   #  buffer_range = dft.N_BUFFERS
+   #  dims         = span_range * buffer_range
+   #  print(f'Date range: {DATE_RANGE[0]} to {DATE_RANGE[1]}')
+   #  print(f'Span range: {dft.MIN_SPAN:.0f} - {dft.MAX_SPAN:.0f} days')
+   #  print(f'Buffer range: {dft.MIN_BUFF:.2%} - {dft.MAX_BUFF:.2%} / {dft.N_BUFFERS} samples')
+   #  print(f"Broker's fee: {dft.FEE_PCT:.2%}")
+   #  print(f'Running {len(tickers)} tickers: {dims:.0f} runs/ticker')
+   #  print(f'Strategic position(s): {POSITIONS}')
 
 if __name__ == '__main__':
     start_tm = time.time() # total_time
@@ -74,7 +69,16 @@ if __name__ == '__main__':
         TICKERS[:] = (value for value in TICKERS if value not in REMOVE)
     # remove duplicates
     TICKERS  = set(TICKERS)
-    describe_run(TICKERS)
+    tra.describe_run(TICKERS,
+                     DATE_RANGE,
+                     dft.MIN_SPAN,
+                     dft.MAX_SPAN,
+                     dft.MIN_BUFF,
+                     dft.MAX_BUFF,
+                     dft.N_BUFFERS,
+                     POSITIONS,
+                     dft.FEE_PCT,
+                     )
     for strat_pos in POSITIONS:
         print(f'Strategic position: {strat_pos}')
         for i, ticker in enumerate(TICKERS):
@@ -142,7 +146,6 @@ if __name__ == '__main__':
 
                 # Determine the action to take for the given END_DATE
                 # instantiate recommendation
-                # Merge the next 2 commands
                 rcm = rec.Recommendation(ticker_object = ticker_obj,
                                          topomap       = topomap,
                                          target_date   = date_range[1],
@@ -150,19 +153,10 @@ if __name__ == '__main__':
                                          buffer        = best_buffer,
                                          stratpos      = strat_pos,
                                          )
-                # build recommendation
-                # rcm.build_recommendation(ticker_object = ticker_obj,
-                #                          topomap       = topomap,
-                #                          )
                 rcm.print_recommendation(notify = NOTIFY)
-                # add recommendation to recommender object
                 recommender.add_recommendation(rcm)
 
-                msg  = f'{ticker} running time: '
-                msg += f'{util.convert_seconds(time.time()-save_tm)} | '
-                msg += 'elapsed time: '
-                msg += f'{util.convert_seconds(time.time()-start_tm)}\n'
-                print(msg)
+                util.print_running_time(ticker, start_tm, save_tm)
                 save_tm = time.time() # save intermediate time
             except Exception as ex:
                 print(f'Could not process {ticker}: Exception={ex}')
@@ -172,3 +166,5 @@ if __name__ == '__main__':
                        email_nc  = False,
                        )
     print(f"Total elapsed time: {util.convert_seconds(time.time()-start_tm)}")
+
+
