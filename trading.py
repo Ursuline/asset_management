@@ -15,6 +15,7 @@ import pandas as pd
 import security as sec
 
 import ticker as tkr
+import utilities as util
 
 def describe_run(tickers, date_range, min_span, max_span, min_buff, max_buff, n_buffers, strat_posns, fee_pct):
     '''print run description'''
@@ -28,6 +29,7 @@ def describe_run(tickers, date_range, min_span, max_span, min_buff, max_buff, n_
     print(f'Running {len(tickers)} tickers: {dims:.0f} runs/ticker')
     print(f'Strategic position(s): {strat_posns}')
     print()
+
 
 ### I/O ###
 def load_security(dirname, ticker, period, dates, refresh=False):
@@ -60,7 +62,7 @@ def load_security(dirname, ticker, period, dates, refresh=False):
         pickle_file = open(ticker_pathname,'wb')
         pickle.dump(ticker_obj, pickle_file)
         pickle_file.close()
-    print(f'{ticker_obj.get_name()} Yahoo data loaded\n')
+    print(f'{ticker_obj.get_name()} Yahoo data loaded')
     return ticker_obj
 
 

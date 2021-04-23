@@ -105,7 +105,7 @@ class Ticker():
         print(self.__dict__)
 
 
-    def get_plot_filename(self, display_dates, with_extension, extension):
+    def get_plot_filename(self, display_dates, strat_pos, with_extension, extension):
         '''
         Returns time series plot filename with extension
         accepts input date in string or datetime format
@@ -117,18 +117,18 @@ class Ticker():
                 file_dates.append(date)
             else:
                 file_dates.append(util.date_to_string(date, '%Y-%m-%d'))
-        filename   = f'{self._symbol}_{file_dates[0]}_{file_dates[1]}_tmseries'
+        filename   = f'{self._symbol}_{file_dates[0]}_{file_dates[1]}_{strat_pos}_tmseries'
         if with_extension:
             filename    += f'.{extension}'
         return filename
 
 
-    def get_plot_pathname(self, display_dates, with_extension=True, extension='png'):
+    def get_plot_pathname(self, display_dates, strat_pos, with_extension=True, extension='png'):
         '''
         Returns time series plot full path
         '''
-        plot_dir   = os.path.join(dft.PLOT_DIR, self._symbol)
-        filename = self.get_plot_filename(display_dates, with_extension, extension)
+        plot_dir = os.path.join(dft.PLOT_DIR, self._symbol)
+        filename = self.get_plot_filename(display_dates, strat_pos, with_extension, extension)
         return os.path.join(plot_dir, filename)
 
 
@@ -272,6 +272,7 @@ class Ticker():
             plot_dir = os.path.join(dft.PLOT_DIR, self._symbol)
             self.save_figure(directory = plot_dir,
                              pathname  = self.get_plot_pathname(file_dates,
+                                                                topomap.get_strategic_position(),
                                                                 with_extension=True,
                                                                 extension='png',
                                                                 ),

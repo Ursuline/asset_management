@@ -25,7 +25,6 @@ REMOVE += ['FB', 'HO.PA', 'LHN.SW', 'SQ', 'BIDU', 'ARKQ', 'KORI.PA']
 REMOVE += ['TRI.PA', 'HEXA.PA', 'CA.PA', 'ATO.PA']
 
 # SWITCHES
-
 # Notifications defaults
 SCREEN = True
 EMAIL  = True
@@ -38,24 +37,15 @@ FILTER  = True # Remove securities from REMOVE
 POSITIONS = ['long', 'short']
 
 TICKERS = ptf.OBSERVE
-TICKERS = ['DOGE-USD']
+TICKERS = ['BTC-USD']
 
 START_DATE = '2018-01-02'
 END_DATE   = '2021-04-19'
-END_DATE   = dft.YESTERDAY
+END_DATE   = dft.TODAY
 
 DATE_RANGE = [START_DATE, END_DATE]
 ZOOM_RANGE = [START_DATE, END_DATE]
 
-   # span_range   = dft.MAX_SPAN - dft.MIN_SPAN + 1
-   #  buffer_range = dft.N_BUFFERS
-   #  dims         = span_range * buffer_range
-   #  print(f'Date range: {DATE_RANGE[0]} to {DATE_RANGE[1]}')
-   #  print(f'Span range: {dft.MIN_SPAN:.0f} - {dft.MAX_SPAN:.0f} days')
-   #  print(f'Buffer range: {dft.MIN_BUFF:.2%} - {dft.MAX_BUFF:.2%} / {dft.N_BUFFERS} samples')
-   #  print(f"Broker's fee: {dft.FEE_PCT:.2%}")
-   #  print(f'Running {len(tickers)} tickers: {dims:.0f} runs/ticker')
-   #  print(f'Strategic position(s): {POSITIONS}')
 
 if __name__ == '__main__':
     start_tm = time.time() # total_time
@@ -166,5 +156,3 @@ if __name__ == '__main__':
                        email_nc  = False,
                        )
     print(f"Total elapsed time: {util.convert_seconds(time.time()-start_tm)}")
-
-

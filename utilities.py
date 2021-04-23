@@ -16,9 +16,7 @@ import scipy.stats
 from dateutil.relativedelta import relativedelta
 import moments
 
-
 MAX_YEARS = 20 # number of years corresponding to 'max'
-
 
 def display_stats(data, feature):
     '''
