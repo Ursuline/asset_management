@@ -58,7 +58,7 @@ K_WOOD     = ['ARKF', 'ARKG', 'ARKK', 'ARKQ', 'ARKW']
 FUTURES     = ['SB=F', 'GC=F', 'CL=F']
 
 
-ADRIEN     = ['ATO.PA', 'BN.PA', 'BON.PA', 'CA.PA', 'GLE.PA', 'HEXA.PA']
+ADRIEN     = ['BN.PA', 'BON.PA', 'CA.PA', 'GLE.PA', 'HEXA.PA']
 ADRIEN    += ['SPIE.PA', 'TRI.PA']
 
 JACQUELINE  = ['BIG.PA', 'ATO.PA', 'BN.PA', 'BON.PA', 'CA.PA', 'FP.PA', 'KORI.PA']

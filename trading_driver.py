@@ -31,18 +31,18 @@ SCREEN = True
 EMAIL  = True
 NOTIFY = True # item-per-item notificattion
 
-REFRESH_YAHOO = True # Download fresh Yahoo data
-REFRESH_EMA   = True # Recompute ema map
+REFRESH_YAHOO = False # Download fresh Yahoo data
+REFRESH_EMA   = False # Recompute ema map
 
-POSITIONS = ['long', 'short']
+POSITIONS = ['long']
 
 TICKERS = ptf.OBSERVE
 TICKERS = ['BTC-USD']
-TICKERS = ptf.CRYPTO
+#TICKERS = ptf.CRYPTO
 
 START_DATE = '2018-01-02'
-END_DATE   = '2021-04-19'
-END_DATE   = dft.TODAY
+END_DATE   = '2021-04-23'
+#END_DATE   = dft.TODAY
 
 DATE_RANGE = [START_DATE, END_DATE]
 ZOOM_RANGE = [START_DATE, END_DATE]
@@ -68,7 +68,6 @@ if __name__ == '__main__':
                      strat_posns = POSITIONS,
                      fee_pct     = dft.FEE_PCT,
                      )
-
 
     for i, ticker in enumerate(TICKERS):
         print(f'{i+1}/{len(TICKERS)}: {ticker}')
@@ -127,7 +126,7 @@ if __name__ == '__main__':
                                             topomap       = topomap,
                                             span          = best_span,
                                             buffer        = best_buffer,
-                                            flags         = display_flags,
+                                            display_flags = display_flags,
                                             fee_pct       = dft.FEE_PCT,
                                             )
 

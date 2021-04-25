@@ -35,7 +35,7 @@ class Ticker():
         flags['sma_buffer'] = False
         flags['volume']     = True
         flags['arrows']     = True
-        flags['statistics'] = True
+        flags['statistics'] = False
         flags['save']       = True
         return flags
 
@@ -101,12 +101,30 @@ class Ticker():
         close.rename(columns={f'Close_{self._symbol}': "Close"}, inplace=True)
         return close
 
+
+    def get_return(self):
+        '''Return % return from Close column'''
+        close = self.get_close()
+        return close.pct_change()
+
+
     def get_volume(self):
         '''Return Volume as DataFrame'''
         volume = pd.DataFrame(self.get_market_data()[f'Vol_{self._symbol}'])
         volume = volume.loc[self._dates[0]:self._dates[1],:] # trim the data
         volume.rename(columns={f'Vol_{self._symbol}': "Volume"}, inplace=True)
         return volume
+
+
+    def get_volume_context(self):
+        '''
+        return DataFrame combining Return and Volume
+        '''
+        volume = self.get_volume()
+        ret  = self.get_return()
+        cx = pd.DataFrame(pd.merge(ret, volume, left_index=True, right_index=True))
+        cx.columns = ['RET', 'Volume']
+        return cx
 
 
     def self_describe(self):
@@ -142,7 +160,7 @@ class Ticker():
 
 
     ### PLOTS
-    def plot_time_series(self, display_dates, topomap, span, buffer, flags, fee_pct):
+    def plot_time_series(self, display_dates, topomap, span, buffer, display_flags, fee_pct):
         '''
         Plots security prices with moving average
         span -> rolling window span
@@ -180,7 +198,7 @@ class Ticker():
         axis.grid(b=None, which='both', axis='both',
                   color=dft.GRID_COLOR, linestyle='-', linewidth=1)
 
-        if flags['close']: # Close
+        if display_flags['close']: # Close
             axis.plot(dfr.loc[display_dates[0]:display_dates[1], :].index,
                       dfr.loc[display_dates[0]:display_dates[1], :].Close,
                       linewidth = 1,
@@ -189,7 +207,7 @@ class Ticker():
                       label     = 'Close',
                       )
 
-        if flags['ema']: # EMA
+        if display_flags['ema']: # EMA
             axis.plot(dfr.loc[display_dates[0]:display_dates[1], :].index,
                       dfr.loc[display_dates[0]:display_dates[1], :].EMA,
                       linewidth = 1,
@@ -198,7 +216,7 @@ class Ticker():
                       label     = f'{span:.0f}-day EMA',
                       )
 
-        if flags['ema_buffer']: #EMA +/- buffer
+        if display_flags['ema_buffer']: #EMA +/- buffer
             axis.plot(dfr.loc[display_dates[0]:display_dates[1], :].index,
                       dfr.loc[display_dates[0]:display_dates[1], :].EMA_MINUS,
                       linewidth = 1,
@@ -214,7 +232,7 @@ class Ticker():
                       label     = f'EMA + {buffer:.2%}',
                       )
 
-        if flags['sma']: # SMA
+        if display_flags['sma']: # SMA
             axis.plot(dfr.loc[display_dates[0]:display_dates[1], :].index,
                       dfr.loc[display_dates[0]:display_dates[1], :].SMA,
                       linewidth = 1,
@@ -223,7 +241,7 @@ class Ticker():
                       label     = f'{span:.0f}-day SMA',
                       )
 
-        if flags['sma_buffer']: #SMA +/- buffer
+        if display_flags['sma_buffer']: #SMA +/- buffer
             axis.plot(dfr.loc[display_dates[0]:display_dates[1], :].index,
                       dfr.loc[display_dates[0]:display_dates[1], :].SMA_MINUS,
                       linewidth = 1,
@@ -239,25 +257,35 @@ class Ticker():
                       label     = f'SMA + {buffer:.2%}',
                       )
 
-        if flags['volume']:
-            volume = self.get_volume()
-            ax2 = axis.twinx()  # instantiate a second axes that shares the same x-axis
-            ax2.plot(volume.loc[display_dates[0]:display_dates[1], :].index,
-                     volume.loc[display_dates[0]:display_dates[1], :].Volume,
-                     linewidth = 1,
-                     linestyle = 'dotted',
-                     color     = dft.COLOR_SCHEME[5],
-                     label     = 'Volume',
-                     )
+        if display_flags['volume']:
+            ax2 = axis.twinx()  # instantiate a 2nd axis that shares the same x-axis
+            vol_cx = self.get_volume_context()
+            vol_cx = vol_cx.loc[display_dates[0]:display_dates[1], :]
+
+            data = pd.DataFrame(vol_cx.query('RET >= 0')['Volume'])
+            ax2.bar(data.index,
+                    data.Volume,
+                    color = 'green',
+                    alpha = .5,
+                    label = 'Volume+',
+                    )
+
+            data = pd.DataFrame(vol_cx.query('RET < 0')['Volume'])
+            ax2.bar(data.index,
+                    data.Volume,
+                    color = 'red',
+                    alpha = .5,
+                    label = 'Volume-',
+                    )
+
+
 
         fig.legend(loc=2)
         axis.set_ylabel(f'Price ({self._currency_symbol})')
 
 
-
-
         buy_sell = None
-        if flags['arrows']: # Buy/sell arrows
+        if display_flags['arrows']: # Buy/sell arrows
 
             actions  = dft.get_actions()
             filtered = dfr[(dfr.ACTION == actions[0]) | (dfr.ACTION == actions[1])]
@@ -273,7 +301,7 @@ class Ticker():
                               dft.get_color_scheme(),
                               )
 
-        if flags['statistics']: # Statistics
+        if display_flags['statistics']: # Statistics
             summary_stats = util.get_summary_stats(dfr.loc[display_dates[0]:display_dates[1], :],
                                                    dft.STATS_LEVEL,
                                                    'RET')
@@ -293,7 +321,7 @@ class Ticker():
                           buy_sell    = buy_sell,
                           )
 
-        if flags['save']: # Save plot to file
+        if display_flags['save']: # Save plot to file
             plot_dir = os.path.join(dft.PLOT_DIR, self._symbol)
             self.save_figure(directory = plot_dir,
                              pathname  = self.get_plot_pathname(file_dates,

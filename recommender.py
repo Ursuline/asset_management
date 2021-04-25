@@ -252,7 +252,7 @@ class Recommendation():
             msg  = f'{self._name} ({self._symbol}) '
             msg += f'{date}: '
             msg += f'{self._action} | position: {self._position} | '
-            msg += f'span={self._span} days buffer={self._buffer:.2%}'
+            msg += f'span={self._span:.0f} days buffer={self._buffer:.2%}'
             if (self._action in ['buy', 'sell']) & enhanced:
                 msg = '-----> ' + msg + ' <-----'
             print(msg)
