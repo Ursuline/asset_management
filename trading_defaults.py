@@ -92,6 +92,7 @@ N_MAXIMA_DISPLAY = 10 # number of maxima to display on contour plot
 # markers & their legends
 ANNOTATE_COLOR = 'black'
 MARKER_COLOR   = 'black'
+X_HAIR_COLOR   = 'white'
 
 # 3-D plots
 SURFACE_COLOR_SCHEMES  = ['viridis', 'cividis', 'plasma', 'inferno', 'magma']
