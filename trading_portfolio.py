@@ -13,13 +13,13 @@ AUTOMOBILE = ['VWAGY', 'BMW.DE', 'DAI.DE', 'STLA.PA', 'POM.PA']
 
 CHEM       = ['AI.PA', 'SIKA.SW']
 
-COMM       = ['ROKU', 'ZM', 'BIDU', 'NFLX', 'ORA.PA', 'XIL.PA']
+COMM       = ['ROKU', 'ZM', 'BIDU', 'NFLX', 'ORA.PA', 'XIL.PA', 'MMT.PA']
 
-CONSUMER   = ['NKE', 'MDM.PA', 'ITX.MC', 'RETAIL', 'AMZN']
+CONSUMER   = ['NKE', 'MDM.PA', 'ITX.MC', 'RETAIL', 'AMZN', 'SK3.IR']
 
 DEFENSE    = ['NOC' ,'HO.PA', 'BA', 'PLTR', 'RTX', 'LMT']
 
-FINANCIAL  = ['AMUN.PA', 'BNP.PA', 'GLE.PA', 'CS.PA']
+FINANCIAL  = ['AMUN.PA', 'BNP.PA', 'GLE.PA', 'CS.PA', 'DB1.DE']
 
 FNB        = ['RI.PA', 'ABI.BR', 'BN.PA', 'BON.PA', 'K', 'HEIA.AS', 'DGE.PA']
 FNB       += ['CPR.MI']
@@ -27,7 +27,7 @@ FNB       += ['CPR.MI']
 HEALTHCARE = ['TDOC', 'BLC.PA', 'PHA.PA', 'KORI.PA', 'ORP.PA', 'NOVN.SW', 'BOI.PA']
 
 INDUSTRIAL  = ['SU.PA', 'G1A.DE', 'STF.PA', 'RXL.PA', 'VCT.PA', 'EN.PA', 'VIE.PA']
-INDUSTRIAL += ['AIR.PA']
+INDUSTRIAL += ['AIR.PA', 'KNEBV.HE']
 
 LUXURY     = ['MC.PA', 'RMS.PA', 'OR.PA']
 
@@ -36,7 +36,7 @@ MATERIALS  = ['MLM', 'LHN.SW']
 NRJ        = ['FP.PA', 'EDPR.LS', 'NEOEN.PA', 'ABIO.PA']
 
 TECH       = ['AAPL', 'TSLA', 'AMZN', 'MSFT', 'SPOT', 'SQ', 'SHOP', 'GOOGL']
-TECH      += ['NVDA', 'HIPAY.PA', 'ATO.PA', 'BIG.PA', 'SOP.PA']
+TECH      += ['NVDA', 'HIPAY.PA', 'ATO.PA', 'BIG.PA', 'SOP.PA', 'INTC']
 
 
 INDICES    = ['^GSPC', '^DJI', '^IXIC', '^FCHI', '^N225', '^HSI', '^DJSH']
@@ -46,7 +46,7 @@ SWISS      = ['LHN.SW', 'SIKA.SW']
 
 FRENCH     = ['ELIS.PA', 'KER.PA', 'SMCP.PA', 'BEN.PA']
 
-CRYPTO     = ['BTC-USD', 'ETH-USD', 'DOGE-USD']
+CRYPTO     = ['BTC-USD', 'ETH-USD', 'DOGE-USD', 'SOL1-EUR']
 
 CSR        = ['MSFT', 'DIS', 'GOOGL', 'BMW.DE', 'DAI.DE', 'SNE', 'INTC']
 CSR       += ['VWAGY', 'AAPL', 'NSRGY', 'LEGO', 'CAJ', 'K', 'JNJ']
@@ -56,6 +56,9 @@ GAFAM       = ['GOOGL', 'AAPL', 'FB', 'AMZN', 'MSFT']
 K_WOOD     = ['ARKF', 'ARKG', 'ARKK', 'ARKQ', 'ARKW']
 
 FUTURES     = ['SB=F', 'GC=F', 'CL=F']
+
+LAZARD      = ['0P00000HIV.F', '0P0000ZEEX.F', '0P0000TG4X.F', '0P00000PYK.F']
+LAZARD     += ['0P0000WH77.F', '0P00001A9I.F']
 
 
 ADRIEN     = ['BN.PA', 'BON.PA', 'CA.PA', 'GLE.PA', 'HEXA.PA']
@@ -70,10 +73,12 @@ JP         += ['FP.PA', 'KORI.PA', 'ORA.PA', 'SAN.PA', 'SPIE.PA', 'XIL.PA']
 PEA_MC      = ['BIG.PA', 'FP.PA', 'HO.PA', 'MEDCL.PA', 'NK.PA', 'ORA.PA']
 PEA_MC     += ['SAN.PA', 'UFF.PA']
 
-PEA         = ['UL', 'FP.PA', 'SW.PA', 'GLE.PA', 'SAN.PA', 'SGO.PA', 'RI.PA']
-PEA        += ['ORA.PA' ,'MKGAF', 'MMT.SG', 'MC.PA', 'LR.PA', 'KC4.F']
-PEA        += ['HEIA.AS', 'G1A.DE', 'EL.PA', 'CA.PA', 'BVI.PA', 'BNP.PA']
-PEA        += ['CS.PA', 'AI.PA']
+PEA         = ['AI.PA', 'CS.PA', 'BNP.PA', 'BVI.PA', 'CA.PA', 'DB1.DE', 'EL.PA']
+PEA        += ['G1A.DE', 'HEIA.AS', 'KNEBV.HE', 'LR.PA', 'MC.PA', 'MMT.PA']
+PEA        += ['MKGAF', 'ORA.PA', 'RI.PA', 'SGO.PA', 'SAN.PA', 'SK3.IR']
+PEA        += ['GLE.PA', 'FP.PA', '0P00000JPU.F']
+PEA        += ['0P00000HIV.F', '0P0000ZEEX.F', '0P0000TG4X.F', '0P00000PYK.F']
+PEA        += ['0P0000WH77.F', '0P00001A9I.F']
 
 SAXO_CY     = ['ABI.BR', 'AI.PA', 'ALLDL.PA', 'BLC.PA', 'EDPR.LS', 'KORI.PA']
 SAXO_CY    += ['ORP.PA', 'PHA.PA', 'SOP.PA', 'STLA.PA', 'WLN.PA']

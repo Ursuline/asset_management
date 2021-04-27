@@ -101,12 +101,11 @@ class Ticker():
         close.rename(columns={f'Close_{self._symbol}': "Close"}, inplace=True)
         return close
 
-
     def get_return(self):
         '''Return % return from Close column'''
         close = self.get_close()
+        close.columns = ['RET']
         return close.pct_change()
-
 
     def get_volume(self):
         '''Return Volume as DataFrame'''
@@ -115,13 +114,12 @@ class Ticker():
         volume.rename(columns={f'Vol_{self._symbol}': "Volume"}, inplace=True)
         return volume
 
-
     def get_volume_context(self):
         '''
         return DataFrame combining Return and Volume
         '''
         volume = self.get_volume()
-        ret  = self.get_return()
+        ret    = self.get_return()
         cx = pd.DataFrame(pd.merge(ret, volume, left_index=True, right_index=True))
         cx.columns = ['RET', 'Volume']
         return cx
@@ -277,8 +275,6 @@ class Ticker():
                     alpha = .5,
                     label = 'Volume-',
                     )
-
-
 
         fig.legend(loc=2)
         axis.set_ylabel(f'Price ({self._currency_symbol})')

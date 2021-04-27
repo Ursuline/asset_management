@@ -11,6 +11,7 @@ Routines for trading
 """
 import os
 import pickle
+import json
 import pandas as pd
 
 import security as sec
@@ -40,15 +41,22 @@ def load_security(dirname, ticker, period, dates, refresh=False):
     period -> download period
     refresh -> True : download data from Yahoo / False use pickle data if it exists
     '''
+    protocol = 'pkl' #json or pkl (json pending)
     dirname = os.path.join(dirname, ticker)
     ticker_filename = ticker + f'_{dates[0]}-{dates[1]}_raw'
-    ticker_pathname = os.path.join(dirname, ticker_filename + '.pkl')
+    ticker_pathname = os.path.join(dirname, ticker_filename + f'.{protocol}')
 
     if os.path.exists(ticker_pathname) and (not refresh):
         #print(f'Loading saved Yahoo data from {ticker_pathname}')
-        pickle_file = open(ticker_pathname,'rb')
-        ticker_obj  = pickle.load(pickle_file)
-        pickle_file.close()
+        saved_file = open(ticker_pathname, 'rb')
+        if protocol == 'pkl':
+            ticker_obj  = pickle.load(saved_file)
+        elif protocol == 'json':
+            json.load(saved_file)
+        else:
+            msg = f'load_security format {protocol} should be pkl or json'
+            raise IOError(msg)
+        saved_file.close()
     else:
         #print('Downloading data from Yahoo Finance')
         security  = sec.Security(ticker, period)
@@ -59,9 +67,12 @@ def load_security(dirname, ticker, period, dates, refresh=False):
 
         # write ticker object to file
         os.makedirs(dirname, exist_ok = True)
-        pickle_file = open(ticker_pathname,'wb')
-        pickle.dump(ticker_obj, pickle_file)
-        pickle_file.close()
+        saved_file = open(ticker_pathname, 'wb')
+        if protocol == 'pkl':
+            pickle.dump(ticker_obj, saved_file)
+        elif protocol == 'json':
+            json.dump(ticker_obj, saved_file)
+        saved_file.close()
     #print(f'{ticker_obj.get_name()} Yahoo data loaded')
     return ticker_obj
 

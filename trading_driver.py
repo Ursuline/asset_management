@@ -23,7 +23,7 @@ import ticker as tck
 REMOVE  = ['UL', 'FP.PA', 'ORA.PA', 'KC4.F', 'BNP.PA', 'KER.PA', 'SMC.PA']
 REMOVE += ['FB', 'HO.PA', 'LHN.SW', 'SQ', 'BIDU', 'ARKQ', 'KORI.PA']
 REMOVE += ['TRI.PA', 'HEXA.PA', 'CA.PA', 'ATO.PA']
-FILTER  = True # Remove securities from REMOVE
+FILTER  = False # Remove securities from REMOVE
 
 # SWITCHES
 # Notifications defaults
@@ -32,17 +32,17 @@ EMAIL  = True
 NOTIFY = True # item-per-item notificattion
 
 REFRESH_YAHOO = False # Download fresh Yahoo data
-REFRESH_EMA   = False # Recompute ema map
+REFRESH_EMA   = False  # Recompute ema map
 
-POSITIONS = ['long']
+POSITIONS = ['long', 'short']
 
-TICKERS = ptf.OBSERVE
-TICKERS = ['BTC-USD']
-#TICKERS = ptf.CRYPTO
+#TICKERS = ptf.PEA
+#TICKERS = ['INTC']
+TICKERS = ptf.CRYPTO
 
 START_DATE = '2018-01-02'
 END_DATE   = '2021-04-23'
-#END_DATE   = dft.TODAY
+END_DATE   = dft.TODAY
 
 DATE_RANGE = [START_DATE, END_DATE]
 ZOOM_RANGE = [START_DATE, END_DATE]

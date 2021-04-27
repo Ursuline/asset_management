@@ -7,6 +7,9 @@ Created on Sun Apr 11 14:33:03 2021
 """
 import smtplib
 import ssl
+from email.mime.multipart import MIMEMultipart
+from email.mime.text import MIMEText
+from email.mime.application import MIMEApplication
 
 import trading_defaults as dft
 import utilities as util
@@ -115,6 +118,45 @@ class Recommender():
             print(line)
 
 
+    def _email_recommendations_new(self, email_nc: bool):
+        message = MIMEMultipart('mixed')
+        message['From'] = 'Contact <{sender}>'.format(sender = pvt.SENDER_EMAIL)
+        message['To'] = 'ursulines@me.com'
+        message['CC'] = 'the_darkroom@me.com'
+        message['Subject'] = 'Trade recommendation'
+        msg_content = '<h4>Hi There,<br> This is a testing message.</h4>\n'
+        body = MIMEText(msg_content, 'html')
+        message.attach(body)
+
+        n_tickers = 0
+        if len(self._long_recommendations) > 0:
+            body += 'Strategic position: long\n'
+            for rcm in self._long_recommendations:
+                attachmentPath = rcm.get_ticker_object.get_plot_pathname()
+                try:
+                    with open(attachmentPath, "rb") as attachment:
+                        p = MIMEApplication(attachment.read(),_subtype="png")
+                        p.add_header(f'Content-Disposition', 'attachment; filename= {attachmentPath.split("\\")[-1]}')
+                        message.attach(p)
+                except Exception as e:
+                    print(str(e))
+
+                name = rcm.get_name()
+                symb = rcm.get_symbol()
+                if email_nc or not (email_nc or rcm.get_action() == 'n/c'):
+                    body += f'{name} ({symb})\n{rcm.get_body()}\n'
+                    n_tickers += 1
+
+
+        # attachmentPath = ticker_object.get_plot_pathname()
+        # try:
+        #     with open(attachmentPath, "rb") as attachment:
+        #         p = MIMEApplication(attachment.read(),_subtype="pdf")
+        #         p.add_header(f'Content-Disposition', 'attachment; filename= {attachmentPath.split("\\")[-1]}')
+        #         message.attach(p)
+        # except Exception as e:
+        #     print(str(e))
+
     def _email_recommendations(self, email_nc: bool):
         '''Email all recommendations'''
         body = ''
@@ -205,6 +247,10 @@ class Recommendation():
     def get_strategic_position(self):
         '''Get the strategic position '''
         return self._stratpos
+
+    def get_ticker_object(self):
+        ''''Return the ticker object'''
+        return self._ticker
 
     def self_describe(self):
         '''Display all variables in class'''
