@@ -16,7 +16,8 @@ from bokeh.plotting import figure, output_file, save
 from bokeh.models import ColumnDataSource, Title, BooleanFilter, CDSView, Scatter
 from bokeh.models import HoverTool, ResetTool, CrosshairTool
 from bokeh.models import WheelZoomTool, ZoomInTool, ZoomOutTool, WheelPanTool
-from bokeh.models.glyphs import Text
+#from bokeh.models.glyphs import Text
+from bokeh.io import output_notebook
 from bokeh.layouts import gridplot
 from bokeh.io import show, curdoc
 
@@ -117,7 +118,7 @@ class TimeSeriesPlot():
         self._show()
 
 
-    def _build_title(self):
+    def _build_title(self, plot):
         ''' Build plot title '''
         dates         = self._display_dates
         ticker_name   = self._ticker_obj.get_name()
@@ -128,16 +129,21 @@ class TimeSeriesPlot():
         if self._buy_sell is not None:
             title += f' | {self._buy_sell[0]} buys {self._buy_sell[1]} sells'
 
-        return title
+        plot.add_layout(Title(text=title, text_font_size="16pt", align="center"), 'above')
+        plot.title.align = 'center'
+
+        return plot
 
 
-    def _build_subtitle(self):
+    def _build_subtitle(self, plot):
         ''' Build plot subtitle '''
         title  = f'EMA max payoff={self._ema:.2%} (hold={self._hold:.2%}) | '
         title += f'{self._span:.0f}-day mean | '
         title += f'opt buffer={self._buffer:.2%}'
 
-        return title
+        plot.add_layout(Title(text=title, text_font_style="italic", align="center"), 'above')
+
+        return plot
 
 
     def _build_lower_window(self, source, upper_window):
@@ -200,101 +206,125 @@ class TimeSeriesPlot():
         source=ColumnDataSource(self._strategy)
 
         if self._display_flags['close']:
-            plot.line(source=source,
-                      x='Date',
-                      y='Close',
-                      legend_label="Close",
-                      line_width=1,
-                      line_color=dft.COLOR_SCHEME[1]
-                     )
+            plot = self._display_price(plot, source, 'close')
             plot = self.customize_legend(plot)
 
         if self._display_flags['ema']:
-            plot.line(source=source,
-                      x='Date',
-                      y='EMA',
-                      legend_label="EMA",
-                      line_width=1,
-                      line_color=dft.COLOR_SCHEME[2]
-                     )
+            plot = self._display_price(plot, source, 'ema')
 
         if self._display_flags['ema_buffer']:
-            label  = u'EMA \u00b1 '
-            label += f'{self._buffer:.2%}'
-            plot.line(source=source,
-                      x='Date',
-                      y='EMA_PLUS',
-                      legend_label=label,
-                      line_width=1,
-                      line_dash="2 4",
-                      line_color=dft.COLOR_SCHEME[2]
-                     )
-            plot.line(source=source,
-                      x='Date',
-                      y='EMA_MINUS',
-                      line_width=1,
-                      line_dash="2 4",
-                      line_color=dft.COLOR_SCHEME[2]
-                     )
+            plot = self._display_price(plot, source, 'ema_buffer')
 
         if self._display_flags['sma']:
-            plot.line(source=source,
-                      x='Date',
-                      y='SMA',
-                      legend_label="SMA",
-                      line_width=1,
-                      line_color=dft.COLOR_SCHEME[3]
-                     )
+            plot = self._display_price(plot, source, 'sma')
 
         if self._display_flags['sma_buffer']:
-            label  = u'SMA \u00b1 '
-            label += f'{self._buffer:.2%}'
-            plot.line(source=source,
-                      x='Date',
-                      y='SMA_PLUS',
-                      legend_label=label,
-                      line_width=1,
-                      line_dash="2 4",
-                      line_color=dft.COLOR_SCHEME[3]
-                     )
-            plot.line(source=source,
-                      x='Date',
-                      y='SMA_MINUS',
-                      line_width=1,
-                      line_dash="2 4",
-                      line_color=dft.COLOR_SCHEME[3]
-                     )
+            plot = self._display_price(plot, source, 'sma_buffer')
         #text = self._statistics_box()
 
         if self._display_flags['arrows']:
-            actions  = dft.get_actions()
-            # Plot buys
-            booleans = [True if act == 'buy' else False for act in self._strategy['ACTION']]
-            view = CDSView(source=source, filters=[BooleanFilter(booleans)])
-            glyph = Scatter(x="Date", y="Close", size=10, fill_color="lime", marker="inverted_triangle")
-            plot.add_glyph(source, glyph, view=view)
+            plot = self._display_arrows(plot, source)
 
-            # Plot sells
-            booleans = [True if act == 'sell' else False for act in self._strategy['ACTION']]
-            view = CDSView(source=source, filters=[BooleanFilter(booleans)])
-            glyph = Scatter(x="Date", y="Close", size=10, fill_color="tomato", marker="triangle")
-            plot.add_glyph(source, glyph, view=view)
-
-            n_buys   = self._strategy.loc[self._display_dates[0]:self._display_dates[1],
-                                          'ACTION'].str.count(actions[0]).sum()
-            n_sells  = self._strategy.loc[self._display_dates[0]:self._display_dates[1],
-                                          'ACTION'].str.count(actions[1]).sum()
-            self._buy_sell = [n_buys, n_sells]
-
-        title    = self._build_title()
-        subtitle = self._build_subtitle()
-        plot.add_layout(Title(text=subtitle, text_font_style="italic", align="center"), 'above')
-        plot.add_layout(Title(text=title, text_font_size="16pt", align="center"), 'above')
-        plot.title.align = 'center'
+        # Build title & subtitle
+        plot = self._build_subtitle(plot)
+        plot = self._build_title(plot)
 
         plot = self._add_tools(plot, 'top')
 
         return plot
+
+
+    def _display_arrows(self, plot, source):
+        '''Adds buy/sell arrows to plot'''
+        actions  = dft.get_actions()
+        # Plot buys
+        booleans = [True if act == 'buy' else False for act in self._strategy['ACTION']]
+        view = CDSView(source=source, filters=[BooleanFilter(booleans)])
+        glyph = Scatter(x="Date", y="Close", size=10, fill_color="lime", marker="inverted_triangle")
+        plot.add_glyph(source, glyph, view=view)
+
+        # Plot sells
+        booleans = [True if act == 'sell' else False for act in self._strategy['ACTION']]
+        view = CDSView(source=source, filters=[BooleanFilter(booleans)])
+        glyph = Scatter(x="Date", y="Close", size=10, fill_color="tomato", marker="triangle")
+        plot.add_glyph(source, glyph, view=view)
+
+        # Compute the number of buy/sell movements
+        n_buys   = self._strategy.loc[self._display_dates[0]:self._display_dates[1],
+                                      'ACTION'].str.count(actions[0]).sum()
+        n_sells  = self._strategy.loc[self._display_dates[0]:self._display_dates[1],
+                                      'ACTION'].str.count(actions[1]).sum()
+        self._buy_sell = [n_buys, n_sells]
+
+        return plot
+
+    def _display_price(self, plot, source, axis:str):
+        '''
+        Adds moving average and their buffers to plot
+        '''
+        line_dash = "0" # solid line by default
+
+        if axis.lower() == 'close':
+            y_axis       = 'Close'
+            legend_label = 'Close'
+            line_color   = dft.COLOR_SCHEME[1]
+
+        elif axis.lower() == 'ema':
+            y_axis       = 'EMA'
+            legend_label = 'EMA'
+            line_color   = dft.COLOR_SCHEME[2]
+
+        elif axis.lower() == 'ema_buffer':
+            label  = u'EMA \u00b1 '
+            label += f'{self._buffer:.2%}'
+            y_axis       = 'EMA_PLUS'
+            legend_label = label
+            line_dash="2 4"
+            line_color   = dft.COLOR_SCHEME[2]
+
+        elif axis.lower() == 'sma':
+            y_axis       = 'SMA'
+            legend_label = 'SMA'
+            line_color   = dft.COLOR_SCHEME[3]
+
+        elif axis.lower() == 'sma_buffer':
+            label  = u'SMA \u00b1 '
+            label += f'{self._buffer:.2%}'
+            y_axis       = 'SMA_PLUS'
+            legend_label = label
+            line_dash="2 4"
+            line_color   = dft.COLOR_SCHEME[3]
+        else:
+            msg = f'TimeSeriesPlot._display_price: unknown axis value {axis}'
+            raise ValueError(msg)
+
+        plot.line(source=source,
+                  x='Date',
+                  y=y_axis,
+                  legend_label=legend_label,
+                  line_width=1,
+                  line_color=line_color,
+                  line_dash=line_dash,
+                 )
+
+        # Add lower buffer
+        if axis.lower() == 'ema_buffer':
+            y_axis       = 'EMA_MINUS'
+            line_color   = dft.COLOR_SCHEME[2]
+
+        elif axis.lower() == 'sma_buffer':
+            y_axis       = 'SMA_MINUS'
+            line_color   = dft.COLOR_SCHEME[3]
+
+        plot.line(source=source,
+                  x='Date',
+                  y=y_axis,
+                  line_width=1,
+                  line_dash="2 4",
+                  line_color=line_color,
+                 )
+        return plot
+
 
     @staticmethod
     def customize_legend(plot, legend_title=None):
@@ -372,7 +402,6 @@ class TimeSeriesPlot():
 
     def _show(self):
         '''Screen display'''
-        from bokeh.io import output_notebook
         output_notebook()
         show(self._plot)
 
