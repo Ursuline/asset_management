@@ -11,18 +11,20 @@ trading_driver.py
 """
 import sys
 import time
+import pandas as pd
 import trading as tra
 import trading_defaults as dft
 import trading_portfolio as ptf
 import utilities as util
 import topo_map as tpm
 import recommender as rec
-import ticker as tck
+#import ticker as tck
+import time_series_plot as tsp
 
 # Skip these securities
 REMOVE  = ['UL', 'FP.PA', 'ORA.PA', 'KC4.F', 'BNP.PA', 'KER.PA', 'SMC.PA']
 REMOVE += ['FB', 'HO.PA', 'LHN.SW', 'SQ', 'BIDU', 'ARKQ', 'KORI.PA']
-REMOVE += ['TRI.PA', 'HEXA.PA', 'CA.PA', 'ATO.PA']
+REMOVE += ['TRI.PA', 'HEXA.PA', 'CA.PA', 'ATO.PA', 'SNE']
 FILTER  = True # Remove securities from REMOVE
 
 # SWITCHES
@@ -41,7 +43,7 @@ TICKERS = ptf.OBSERVE
 #TICKERS = ptf.CRYPTO
 
 START_DATE = '2018-01-02'
-END_DATE   = '2021-04-23'
+#END_DATE   = '2021-04-23'
 END_DATE   = dft.TODAY
 
 DATE_RANGE = [START_DATE, END_DATE]
@@ -121,14 +123,28 @@ if __name__ == '__main__':
                                                 ZOOM_RANGE[1],
                                                 )
                 #display flags:
-                display_flags = tck.Ticker.get_default_display_flags()
-                ticker_obj.plot_time_series(display_dates = date_zoom,
-                                            topomap       = topomap,
-                                            span          = best_span,
-                                            buffer        = best_buffer,
-                                            display_flags = display_flags,
-                                            fee_pct       = dft.FEE_PCT,
-                                            )
+                display_flags = tsp.TimeSeriesPlot.get_default_display_flags()
+                # ticker_obj.plot_time_series(display_dates = date_zoom,
+                #                             topomap       = topomap,
+                #                             span          = best_span,
+                #                             buffer        = best_buffer,
+                #                             display_flags = display_flags,
+                #                             fee_pct       = dft.FEE_PCT,
+                #                             )
+                plot = tsp.TimeSeriesPlot(ticker_object = ticker_obj,
+                          topomap       = topomap,
+                          strat_pos     = strat_pos,
+                          disp_dates    = date_range,
+                          span          = best_span,
+                          buffer        = best_buffer,
+                          disp_flags    = display_flags,)
+                close  = ticker_obj.get_close()
+                volume = ticker_obj.get_volume()
+                ret    = ticker_obj.get_return()
+                data   = pd.DataFrame(pd.merge(close, volume, left_index=True, right_index=True))
+                data   = pd.DataFrame(pd.merge(data, ret, left_index=True, right_index=True))
+                plot.build_plot(data, notebook=False)
+
 
                 # Determine the action to take for the given END_DATE
                 # instantiate recommendation

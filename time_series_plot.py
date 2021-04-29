@@ -16,7 +16,7 @@ from bokeh.plotting import figure, output_file, save
 from bokeh.models import ColumnDataSource, Title, BooleanFilter, CDSView, Scatter
 from bokeh.models import HoverTool, ResetTool, CrosshairTool
 from bokeh.models import WheelZoomTool, ZoomInTool, ZoomOutTool, WheelPanTool
-#from bokeh.models.glyphs import Text
+from bokeh.models import NumeralTickFormatter
 from bokeh.io import output_notebook
 from bokeh.layouts import gridplot
 from bokeh.io import show, curdoc
@@ -37,8 +37,8 @@ class TimeSeriesPlot():
         flags = {}
         flags['close']      = True
         flags['ema']        = True
-        flags['ema_buffer'] = False
-        flags['sma']        = False
+        flags['ema_buffer'] = True
+        flags['sma']        = True
         flags['sma_buffer'] = False
         flags['arrows']     = True
         flags['statistics'] = False
@@ -96,7 +96,7 @@ class TimeSeriesPlot():
         self._ema  = self._topomap.get_cumret(self._strategy, 'ema', self._fee)  # cumulative returns for EMA
 
 
-    def build_plot(self, dataframe: pd.DataFrame):
+    def build_plot(self, dataframe: pd.DataFrame, notebook=False):
         '''Plotting call'''
         source     = ColumnDataSource(dataframe)
         plot_upper = self._build_upper_window(source = source)
@@ -114,8 +114,11 @@ class TimeSeriesPlot():
         self._plot = gridplot(children = [plot_upper, plot_lower],
                               ncols    = 1,
                               )
-
-        self._show()
+        self._show(notebook)
+        symbol = self._ticker_obj.get_symbol()
+        directory = f'plots/{symbol}/'
+        pathname = directory + f'{symbol}_{self._display_dates[0].date()}-{self._display_dates[1].date()}_{self._strat_pos}_tmseries.html'
+        self.save(directory, pathname)
 
 
     def _build_title(self, plot):
@@ -124,24 +127,31 @@ class TimeSeriesPlot():
         ticker_name   = self._ticker_obj.get_name()
         ticker_symbol = self._ticker_obj.get_symbol()
 
-        title  = f'{ticker_name} ({ticker_symbol}) | {self._strat_pos.capitalize()} position | '
+        title  = f'{ticker_name} ({ticker_symbol}) | '
         title += f'{dates[0].strftime("%d %b %Y")} - {dates[1].strftime("%d %b %Y")}'
         if self._buy_sell is not None:
             title += f' | {self._buy_sell[0]} buys {self._buy_sell[1]} sells'
 
-        plot.add_layout(Title(text=title, text_font_size="16pt", align="center"), 'above')
-        plot.title.align = 'center'
+        plot.add_layout(Title(text=title,
+                              text_font_style="bold",
+                              text_font_size="16pt",
+                              align="center"),
+                        'above')
 
         return plot
 
 
     def _build_subtitle(self, plot):
         ''' Build plot subtitle '''
-        title  = f'EMA max payoff={self._ema:.2%} (hold={self._hold:.2%}) | '
+        title  = f'{self._strat_pos.capitalize()} position | '
+        title += f'EMA max payoff={self._ema:.2%} (hold={self._hold:.2%}) | '
         title += f'{self._span:.0f}-day mean | '
         title += f'opt buffer={self._buffer:.2%}'
 
-        plot.add_layout(Title(text=title, text_font_style="italic", align="center"), 'above')
+        plot.add_layout(Title(text=title,
+                              text_font_style="normal",
+                              align="center"),
+                        'above')
 
         return plot
 
@@ -175,7 +185,10 @@ class TimeSeriesPlot():
                   fill_color = 'tomato',
                   line_color = 'tomato')
 
-        plot = self.customize_legend(plot,'')
+        plot = self._customize_legend(plot,'')
+        # format axes ticks
+        plot.yaxis[0].formatter = NumeralTickFormatter(format="0a")
+
         plot.ygrid.band_fill_color="grey"
         plot.ygrid.band_fill_alpha = 0.1
         plot = self._add_tools(plot, 'bottom')
@@ -206,20 +219,20 @@ class TimeSeriesPlot():
         source=ColumnDataSource(self._strategy)
 
         if self._display_flags['close']:
-            plot = self._display_price(plot, source, 'close')
-            plot = self.customize_legend(plot)
+            plot = self._display_value(plot, source, 'close')
+            plot = self._customize_legend(plot)
 
         if self._display_flags['ema']:
-            plot = self._display_price(plot, source, 'ema')
+            plot = self._display_value(plot, source, 'ema')
 
         if self._display_flags['ema_buffer']:
-            plot = self._display_price(plot, source, 'ema_buffer')
+            plot = self._display_value(plot, source, 'ema_buffer')
 
         if self._display_flags['sma']:
-            plot = self._display_price(plot, source, 'sma')
+            plot = self._display_value(plot, source, 'sma')
 
         if self._display_flags['sma_buffer']:
-            plot = self._display_price(plot, source, 'sma_buffer')
+            plot = self._display_value(plot, source, 'sma_buffer')
         #text = self._statistics_box()
 
         if self._display_flags['arrows']:
@@ -258,7 +271,7 @@ class TimeSeriesPlot():
 
         return plot
 
-    def _display_price(self, plot, source, axis:str):
+    def _display_value(self, plot, source, axis:str):
         '''
         Adds moving average and their buffers to plot
         '''
@@ -295,7 +308,7 @@ class TimeSeriesPlot():
             line_dash="2 4"
             line_color   = dft.COLOR_SCHEME[3]
         else:
-            msg = f'TimeSeriesPlot._display_price: unknown axis value {axis}'
+            msg = f'TimeSeriesPlot._display_value: unknown axis value {axis}'
             raise ValueError(msg)
 
         plot.line(source=source,
@@ -327,7 +340,7 @@ class TimeSeriesPlot():
 
 
     @staticmethod
-    def customize_legend(plot, legend_title=None):
+    def _customize_legend(plot, legend_title=None):
         '''customize legend appearance'''
 
         if legend_title is not None:
@@ -400,14 +413,18 @@ class TimeSeriesPlot():
 
         return plot
 
-    def _show(self):
+
+    def _show(self, notebook):
         '''Screen display'''
-        output_notebook()
+        if notebook:
+            output_notebook()
         show(self._plot)
+
 
     def save(self, directory, pathname):
         '''Save to html'''
         os.makedirs(directory, exist_ok = True)
+        print(f'saving to {directory} as {pathname}')
         try:
             output_file(pathname)
             save(self._plot)
