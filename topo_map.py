@@ -149,6 +149,7 @@ class Topomap():
         self._emas    = emas
         self.set_hold(hold)
 
+
     @staticmethod
     def build_moving_average(dataframe, span, buffer, mean_type):
         '''

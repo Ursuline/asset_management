@@ -102,7 +102,7 @@ class Ticker():
         return close
 
     def get_return(self):
-        '''Return % return from Close column'''
+        '''Return % from Close column'''
         close = self.get_close()
         close.columns = ['RET']
         return close.pct_change()
