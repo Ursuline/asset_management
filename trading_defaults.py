@@ -65,6 +65,18 @@ N_MAXIMA_SAVE = 20 # number of maxima to save to file
 FEE_PCT        = .004  # broker's fee
 
 #### PLOT DEFAULTS ####
+# Bokeh Time series
+PLOT_WIDTH   = 1500
+PLOT_HDIM_TOP = 600
+PLOT_HDIM_BOT = 250
+BK_THEMES = ['dark_minimal', 'light_minimal', 'night_sky', 'contrast', 'caliber']
+
+def get_x_hair_color(theme):
+    if theme in [BK_THEMES[1], BK_THEMES[4]]:
+        return 'black'
+    return 'white'
+
+
 DPI = 360
 plt.rcParams['font.family'] = 'sans-serif'
 plt.rcParams['font.sans-serif'] = 'STIXGeneral'
@@ -92,7 +104,7 @@ N_MAXIMA_DISPLAY = 10 # number of maxima to display on contour plot
 # markers & their legends
 ANNOTATE_COLOR = 'black'
 MARKER_COLOR   = 'black'
-X_HAIR_COLOR   = 'white'
+
 
 # 3-D plots
 SURFACE_COLOR_SCHEMES  = ['viridis', 'cividis', 'plasma', 'inferno', 'magma']

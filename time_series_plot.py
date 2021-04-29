@@ -26,10 +26,8 @@ import utilities as util
 
 class TimeSeriesPlot():
     '''Bokeh time series plot'''
-    W_PLOT   = 1500
-    H_PLOT_P = 600
-    H_PLOT_V = 250
-    curdoc().theme = 'dark_minimal'
+
+    curdoc().theme = dft.BK_THEMES[0]
 
     @classmethod
     def get_default_display_flags(cls):
@@ -106,7 +104,9 @@ class TimeSeriesPlot():
 
         # Link the CrossHairTools together
         crosshair = CrosshairTool(dimensions = "both",
-                                  line_color = dft.X_HAIR_COLOR,
+                                  line_color = dft.get_x_hair_color(curdoc().theme),
+                                  line_width = 1,
+                                  line_alpha = .5,
                                   )
         plot_upper.add_tools(crosshair)
         plot_lower.add_tools(crosshair)
@@ -158,8 +158,8 @@ class TimeSeriesPlot():
 
     def _build_lower_window(self, source, upper_window):
         plot = figure(x_axis_type      = "datetime",
-                      plot_width       = self.W_PLOT,
-                      plot_height      = self.H_PLOT_V,
+                      plot_width       = dft.PLOT_WIDTH,
+                      plot_height      = dft.PLOT_HDIM_BOT,
                       y_axis_label     ='Volume',
                       x_range          = upper_window.x_range,
                       output_backend   = "webgl",
@@ -201,8 +201,8 @@ class TimeSeriesPlot():
         '''
         y_label = f'Price ({self._ticker_obj.get_currency_symbol()})'
         plot = figure(x_axis_type      = "datetime",
-                      plot_width       = self.W_PLOT,
-                      plot_height      = self.H_PLOT_P,
+                      plot_width       = dft.PLOT_WIDTH,
+                      plot_height      = dft.PLOT_HDIM_TOP,
                       y_axis_label     = y_label,
                       toolbar_location = 'right',
                       toolbar_sticky   = False,
