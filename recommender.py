@@ -241,7 +241,7 @@ class Recommendation():
 
         body  = f'recommendation: {self._action} | '
         body += f'position: {self._position} '
-        body += f'(span={self._span} days / buffer={self._buffer:.2%})'
+        body += f'(span={self._span:.0f} days / buffer={self._buffer:.2%})'
         self._body = body
 
 
