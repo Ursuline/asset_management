@@ -33,6 +33,7 @@ class Topomap():
         self._strat_pos  = strategic_position.lower()
         self._fee        = dft.FEE_PCT
         self._init_wealth = dft.INIT_WEALTH
+        self._strategy   = None
         self._spans      = None
         self._buffers    = None
         self._emas       = None
@@ -215,6 +216,8 @@ class Topomap():
         # compute returns from the EMA strategy
         d_frame = self.build_ema(d_frame)
 
+        self._strategy = d_frame # for debugging
+
         # remove junk
         d_frame = self.cleanup_strategy(d_frame)
 
@@ -228,58 +231,101 @@ class Topomap():
         below buffer: -1 / within buffer: 0 / above buffer: 1
         '''
         d_frame.loc[:, 'SIGN'] = np.where(d_frame.Close - d_frame.EMA*(1 + buffer) > 0,
-                                          1, np.where(d_frame.Close - d_frame.EMA*(1 - buffer) < 0,
+                                          1,
+                                          np.where(d_frame.Close - d_frame.EMA*(1 - buffer) < 0,
                                                       -1, 0)
                                           )
-        # shift by lag days -> buy/sell action follows close date 1 is next day#
-        d_frame.loc[:, 'SIGN'] = d_frame['SIGN'].shift(dft.LAG)
         d_frame.loc[d_frame.index[0], 'SIGN'] = 0.0  # set first value to 0
         return d_frame
 
 
     def build_positions(self, d_frame):
         '''
-        Builds desired positions for the EMA strategy
+        Builds desired positions & actions for long/short EMA strategies
         POSITION -> cash, long, short
         ACTION -> buy, sell, n/c (no change)
         '''
-        def handle_long(prev_position, sign):
+        def handle_long(prev_pos:str, prev_sign:str, sign:int):
             '''handler for long trading position'''
-            if prev_position == 'cash':  # if previous position was cash
-                if sign in [0, -1]: # in or below buffer
-                    return ['cash', 'n/c']
-                return ['long', 'buy']
-            if prev_position == 'long':  # previous position: long
-                if sign in [0, 1]: # in or above buffer
-                    return ['long', 'n/c']
-                return ['cash', 'sell']
-            return None
+            # Build the action
+            if sign in (0, prev_sign):
+                action = 'n/c'
+            elif sign == 1: # previous sign is -1 or 0
+                if prev_pos == 'cash':
+                    action = 'buy'
+                elif prev_pos == 'long':
+                    action = 'n/c'
+                else:
+                    action = None
+            else: #sign == -1:
+                if prev_pos == 'cash':
+                    action = 'n/c'
+                elif prev_pos == 'long':
+                    action = 'sell'
+                else:
+                    action = None
 
-        def handle_short(prev_position, sign):
-            '''handler for short trading position'''
-            if prev_position == 'cash':  # if previous position was cash
-                if sign in [0, 1]: # in or above buffer
-                    return ['cash', 'n/c']
-                return ['short', 'sell']
-            if prev_position == 'short':  # previous position: short
-                if sign in [0, -1]: # in or below buffer
-                    return ['short', 'n/c']
-                return ['cash', 'buy']
-            return None
+            # build the position
+            if action == 'buy':
+                position = 'long'
+            elif action == 'sell':
+                position = 'cash'
+            elif action == 'n/c':
+                position = prev_pos
+            else:
+                msg = f'TopoMap.handle_long position={position} action={action}'
+                raise ValueError(msg)
+            return [position, action]
+
+        def handle_short(prev_pos:str, prev_sign:str, sign:int):
+            '''handler for long trading position'''
+            # Build the action
+            if sign in (0, prev_sign):
+                action = 'n/c'
+            elif sign == 1: # previous sign is -1 or 0
+                if prev_pos == 'cash':
+                    action = 'n/c'
+                elif prev_pos == 'short':
+                    action = 'buy'
+                else:
+                    action = None
+            else: #sign == -1:
+                if prev_pos == 'cash':
+                    action = 'sell'
+                elif prev_pos == 'short':
+                    action = 'n/c'
+                else:
+                    action = None
+
+            # build the position
+            if action == 'buy':
+                position = 'cash'
+            elif action == 'sell':
+                position = 'short'
+            elif action == 'n/c':
+                position = prev_pos
+            else:
+                msg = f'TopoMap.handle_short position={position} action={action}'
+                raise ValueError(msg)
+            return [position, action]
+
 
         n_time_steps       = d_frame.shape[0]
         positions, actions = ([] for i in range(2))
 
+        # Set initial value
         positions.append(dft.POSITIONS[2])
         actions.append(dft.ACTIONS[2])
 
         for step in range(1, n_time_steps):
-            sign = d_frame.loc[d_frame.index[step], 'SIGN']
+            print(step)
+            sign      = d_frame.loc[d_frame.index[step], 'SIGN']
+            prev_sign = d_frame.loc[d_frame.index[step - 1], 'SIGN']
             prev_position = positions[step - 1]
             if self._strat_pos == 'long':
-                pos_act = handle_long(prev_position, sign)
+                pos_act = handle_long(prev_position, prev_sign, sign)
             elif self._strat_pos == 'short':
-                pos_act = handle_short(prev_position, sign)
+                pos_act = handle_short(prev_position, prev_sign, sign)
             else:
                 raise ValueError('build_positions: long or short positions only')
             positions.append(pos_act[0])
@@ -287,6 +333,26 @@ class Topomap():
 
         d_frame.insert(loc=len(d_frame.columns), column='POSITION', value=positions)
         d_frame.insert(loc=len(d_frame.columns), column='ACTION', value=actions)
+        return d_frame
+
+
+    def build_ema(self, d_frame):
+        '''
+        Computes returns, cumulative returns and 'wealth' from initial_wealth
+        for EMA strategy
+        *** INCORPORATE FEES ***
+        '''
+        # return: cash=no change. Return only accumulates after LAG days
+        d_frame.loc[:, 'RET_EMA'] = np.where(d_frame.POSITION.shift(dft.LAG) == 'cash',
+                                             1.0,
+                                             d_frame.RET,
+                                             )
+        # Compute cumulative returns aka 'Wealth'
+        d_frame.loc[:, 'CUMRET_EMA'] = d_frame.RET_EMA.cumprod(axis   = None,
+                                                               skipna = True) * self._init_wealth
+        # Set initial value to init_wealth
+        d_frame.loc[d_frame.index[0], 'CUMRET_EMA'] = self._init_wealth
+
         return d_frame
 
 
@@ -303,26 +369,6 @@ class Topomap():
         d_frame.loc[d_frame.index[0], 'RET'] = 1.0  # set first value to 1.0
         d_frame.loc[:, 'CUMRET_HOLD'] = self._init_wealth * d_frame.RET.cumprod(axis   = None,
                                                                                 skipna = True)
-        return d_frame
-
-
-    def build_ema(self, d_frame):
-        '''
-        Computes returns, cumulative returns and 'wealth' from initial_wealth
-        for EMA strategy
-        *** INCORPORATE FEES ***
-        '''
-        # return: cash=no change
-        d_frame.loc[:, 'RET_EMA'] = np.where(d_frame.POSITION == 'cash',
-                                             1.0,
-                                             d_frame.RET,
-                                             )
-        # Compute cumulative returns aka 'Wealth'
-        d_frame.loc[:, 'CUMRET_EMA'] = d_frame.RET_EMA.cumprod(axis   = None,
-                                                               skipna = True) * self._init_wealth
-        # Set initial value to init_wealth
-        d_frame.loc[d_frame.index[0], 'CUMRET_EMA'] = self._init_wealth
-
         return d_frame
 
     @staticmethod
