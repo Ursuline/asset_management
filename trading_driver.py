@@ -18,7 +18,6 @@ import trading_portfolio as ptf
 import utilities as util
 import topo_map as tpm
 import recommender as rec
-#import ticker as tck
 import time_series_plot as tsp
 
 # Skip these securities
@@ -38,12 +37,10 @@ REFRESH_EMA   = False  # Recompute ema map
 
 POSITIONS = ['long', 'short']
 
-
 START_DATE = '2018-01-02'
 END_DATE   = '2021-04-23'
 TICKERS = ptf.OBSERVE
-#TICKERS = ['BTC-USD']
-#TICKERS = ptf.CRYPTO
+#TICKERS = ['ARKK']
 
 START_DATE = '2018-01-02'
 #END_DATE   = '2021-04-23'
@@ -127,13 +124,7 @@ if __name__ == '__main__':
                                                 )
                 #display flags:
                 display_flags = tsp.TimeSeriesPlot.get_default_display_flags()
-                # ticker_obj.plot_time_series(display_dates = date_zoom,
-                #                             topomap       = topomap,
-                #                             span          = best_span,
-                #                             buffer        = best_buffer,
-                #                             display_flags = display_flags,
-                #                             fee_pct       = dft.FEE_PCT,
-                #                             )
+
                 plot = tsp.TimeSeriesPlot(ticker_object = ticker_obj,
                           topomap       = topomap,
                           strat_pos     = strat_pos,
@@ -141,13 +132,13 @@ if __name__ == '__main__':
                           span          = best_span,
                           buffer        = best_buffer,
                           disp_flags    = display_flags,)
+                # Clean up bdelow:
                 close  = ticker_obj.get_close()
                 volume = ticker_obj.get_volume()
                 ret    = ticker_obj.get_return()
                 data   = pd.DataFrame(pd.merge(close, volume, left_index=True, right_index=True))
                 data   = pd.DataFrame(pd.merge(data, ret, left_index=True, right_index=True))
                 plot.build_plot(data, notebook=False)
-
 
                 # Determine the action to take for the given END_DATE
                 # instantiate recommendation

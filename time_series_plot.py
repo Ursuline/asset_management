@@ -26,7 +26,6 @@ import utilities as util
 
 class TimeSeriesPlot():
     '''Bokeh time series plot'''
-
     curdoc().theme = dft.BK_THEMES[0]
 
     @classmethod
@@ -55,6 +54,7 @@ class TimeSeriesPlot():
         self._strategy      = None
         self._plot          = None
         self._buy_sell      = None
+        self._pathname      = None
         self._display_flags = disp_flags
         self.update()
 
@@ -94,12 +94,12 @@ class TimeSeriesPlot():
         self._ema  = self._topomap.get_cumret(self._strategy, 'ema', self._fee)  # cumulative returns for EMA
 
 
-    def build_plot(self, dataframe: pd.DataFrame, notebook=False):
+    def build_plot(self, dataframe: pd.DataFrame, notebook:bool):
         '''Plotting call'''
         source     = ColumnDataSource(dataframe)
-        plot_upper = self._build_upper_window(source = source)
-        plot_lower = self._build_lower_window(source = source,
-                                              upper_window = plot_upper,
+        upper_pane = self._build_upper_pane(source = source)
+        lower_pane = self._build_lower_pane(source = source,
+                                              upper_pane = upper_pane,
                                               )
 
         # Link the CrossHairTools together
@@ -108,17 +108,45 @@ class TimeSeriesPlot():
                                   line_width = 1,
                                   line_alpha = .5,
                                   )
-        plot_upper.add_tools(crosshair)
-        plot_lower.add_tools(crosshair)
+        upper_pane.add_tools(crosshair)
+        lower_pane.add_tools(crosshair)
 
-        self._plot = gridplot(children = [plot_upper, plot_lower],
+        self._plot = gridplot(children = [upper_pane, lower_pane],
                               ncols    = 1,
                               )
         self._show(notebook)
+
+        #self._build_pathname()
+        # symbol = self._ticker_obj.get_symbol()
+        # directory = f'plots/{symbol}/'
+        # pathname = directory + f'{symbol}_{self._display_dates[0].date()}-{self._display_dates[1].date()}_{self._strat_pos}_tmseries.html'
+        #self.save_html()
+
+
+    def _build_pathname(self):
+        '''Build html file path name'''
+
+        directory = self._get_directory()
+
+        filename  = f'{self._ticker_obj.get_symbol()}_'
+        filename += f'{self._display_dates[0].date()}-{self._display_dates[1].date()}_'
+        filename += f'{self._strat_pos}_'
+        filename += 'tmseries.html'
+
+        self._pathname = os.path.join(directory, filename)
+
+
+    def get_pathname(self):
+        '''Getter for html file path name'''
+        return self._pathname
+
+
+    def _get_directory(self):
+        '''Getter for html file directory'''
         symbol = self._ticker_obj.get_symbol()
-        directory = f'plots/{symbol}/'
-        pathname = directory + f'{symbol}_{self._display_dates[0].date()}-{self._display_dates[1].date()}_{self._strat_pos}_tmseries.html'
-        self.save(directory, pathname)
+        directory = os.path.join(dft.PLOT_DIR, symbol)
+        return directory
+
 
 
     def _build_title(self, plot):
@@ -156,18 +184,18 @@ class TimeSeriesPlot():
         return plot
 
 
-    def _build_lower_window(self, source, upper_window):
-        plot = figure(x_axis_type      = "datetime",
+    def _build_lower_pane(self, source, upper_pane):
+        pane = figure(x_axis_type      = "datetime",
                       plot_width       = dft.PLOT_WIDTH,
                       plot_height      = dft.PLOT_HDIM_BOT,
                       y_axis_label     ='Volume',
-                      x_range          = upper_window.x_range,
+                      x_range          = upper_pane.x_range,
                       output_backend   = "webgl",
                      )
 
         booleans = [True if ret >= 0 else False for ret in source.data['RET']]
         view = CDSView(source=source, filters=[BooleanFilter(booleans)])
-        plot.vbar(x='Date',
+        pane.vbar(x='Date',
                   top='Volume',
                   source=source,
                   view = view,
@@ -177,7 +205,7 @@ class TimeSeriesPlot():
 
         booleans = [True if ret < 0 else False for ret in source.data['RET']]
         view = CDSView(source=source, filters=[BooleanFilter(booleans)])
-        plot.vbar(x='Date',
+        pane.vbar(x='Date',
                   top='Volume',
                   source=source,
                   view = view,
@@ -185,22 +213,22 @@ class TimeSeriesPlot():
                   fill_color = 'tomato',
                   line_color = 'tomato')
 
-        plot = self._customize_legend(plot,'')
+        pane = self._customize_legend(pane,'')
         # format axes ticks
-        plot.yaxis[0].formatter = NumeralTickFormatter(format="0a")
+        pane.yaxis[0].formatter = NumeralTickFormatter(format="0a")
 
-        plot.ygrid.band_fill_color="grey"
-        plot.ygrid.band_fill_alpha = 0.1
-        plot = self._add_tools(plot, 'bottom')
-        return plot
+        pane.ygrid.band_fill_color="grey"
+        pane.ygrid.band_fill_alpha = 0.1
+        pane = self._add_tools(pane, 'bottom')
+        return pane
 
 
-    def _build_upper_window(self, source):
+    def _build_upper_pane(self, source):
         '''Plots stock price ema etc
         source is a ColumnDataSource object
         '''
         y_label = f'Price ({self._ticker_obj.get_currency_symbol()})'
-        plot = figure(x_axis_type      = "datetime",
+        pane = figure(x_axis_type      = "datetime",
                       plot_width       = dft.PLOT_WIDTH,
                       plot_height      = dft.PLOT_HDIM_TOP,
                       y_axis_label     = y_label,
@@ -210,41 +238,41 @@ class TimeSeriesPlot():
                      )
 
         # configure so that Bokeh chooses what (if any) scroll tool is active
-        plot.toolbar.active_scroll = "auto"
-        plot.toolbar.autohide = True
+        pane.toolbar.active_scroll = "auto"
+        pane.toolbar.autohide = True
 
-        plot.ygrid.band_fill_color="grey"
-        plot.ygrid.band_fill_alpha = 0.1
+        pane.ygrid.band_fill_color="grey"
+        pane.ygrid.band_fill_alpha = 0.1
 
         source=ColumnDataSource(self._strategy)
 
         if self._display_flags['close']:
-            plot = self._display_value(plot, source, 'close')
-            plot = self._customize_legend(plot)
+            pane = self._display_value(pane, source, 'close')
+            pane = self._customize_legend(pane)
 
         if self._display_flags['ema']:
-            plot = self._display_value(plot, source, 'ema')
+            pane = self._display_value(pane, source, 'ema')
 
         if self._display_flags['ema_buffer']:
-            plot = self._display_value(plot, source, 'ema_buffer')
+            pane = self._display_value(pane, source, 'ema_buffer')
 
         if self._display_flags['sma']:
-            plot = self._display_value(plot, source, 'sma')
+            pane = self._display_value(pane, source, 'sma')
 
         if self._display_flags['sma_buffer']:
-            plot = self._display_value(plot, source, 'sma_buffer')
-        #text = self._statistics_box()
+            pane = self._display_value(pane, source, 'sma_buffer')
+        #text = self._build_statistics_box()
 
         if self._display_flags['arrows']:
-            plot = self._display_arrows(plot, source)
+            pane = self._display_arrows(pane, source)
 
         # Build title & subtitle
-        plot = self._build_subtitle(plot)
-        plot = self._build_title(plot)
+        pane = self._build_subtitle(pane)
+        pane = self._build_title(pane)
 
-        plot = self._add_tools(plot, 'top')
+        pane = self._add_tools(pane, 'top')
 
-        return plot
+        return pane
 
 
     def _display_arrows(self, plot, source):
@@ -270,6 +298,7 @@ class TimeSeriesPlot():
         self._buy_sell = [n_buys, n_sells]
 
         return plot
+
 
     def _display_value(self, plot, source, axis:str):
         '''
@@ -359,7 +388,7 @@ class TimeSeriesPlot():
         return plot
 
 
-    def _statistics_box(self):
+    def _build_statistics_box(self):
         '''
         Place a text box with signal statistics
         '''
@@ -410,7 +439,6 @@ class TimeSeriesPlot():
                                      #mode       = 'vline',
                                      ),
                           )
-
         return plot
 
 
@@ -418,19 +446,30 @@ class TimeSeriesPlot():
         '''Screen display'''
         if notebook:
             output_notebook()
+        else:
+            self._build_pathname()
+            output_file(self._pathname)
         show(self._plot)
 
 
-    def save(self, directory, pathname):
-        '''Save to html'''
-        os.makedirs(directory, exist_ok = True)
-        print(f'saving to {directory} as {pathname}')
-        try:
-            output_file(pathname)
-            save(self._plot)
-        except TypeError as ex:
-            print(f'Could not save to {pathname}: {ex}')
-        except:
-            print(f'Error type {sys.exc_info()[0]}')
-        else:
-            pass
+    # def save_html(self, directory=None, pathname=None):
+    #     '''Save plot to html'''
+    #     if directory is None:
+    #         directory = self._get_directory()
+    #     os.makedirs(directory, exist_ok = True)
+
+    #     if pathname is not None:
+    #         self._pathname = pathname
+    #         os.makedirs(directory, exist_ok = True)
+    #     else:
+    #         self._build_pathname()
+
+    #     try:
+    #         output_file(pathname)
+    #         save(self._plot)
+    #     except TypeError as ex:
+    #         print(f'Could not save to {pathname}: {ex}')
+    #     except:
+    #         print(f'Error type {sys.exc_info()[0]}')
+    #     else:
+    #         pass
