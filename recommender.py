@@ -7,13 +7,17 @@ Created on Sun Apr 11 14:33:03 2021
 """
 import smtplib
 import ssl
+import mimetypes
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 from email.mime.application import MIMEApplication
+from email.mime.base import MIMEBase
+from email import encoders
 
 import trading_defaults as dft
 import utilities as util
 import private as pvt # recipient names, smtp sender name/pwd
+import time_series_plot as tsp
 
 class Recommender():
     '''
@@ -27,10 +31,11 @@ class Recommender():
         '''
         self._long_recommendations  = [] # list of long recommendations
         self._short_recommendations = [] # list of short recommendations
+        self._n_long_recs  = 0 # of long recommendations
+        self._n_short_recs = 0 # of short recommendations
         self._screen = screen
         self._email  = email
         self._sms    = sms
-
 
     def set_screen(self, screen: bool):
         '''Switch output to screen'''
@@ -44,42 +49,15 @@ class Recommender():
         '''Add a recommendation to the list of recommendations'''
         if recommendation.get_strategic_position() == 'long':
             self._long_recommendations.append(recommendation)
+            self._n_long_recs += 1
         elif recommendation.get_strategic_position() == 'short':
             self._short_recommendations.append(recommendation)
+            self._n_short_recs += 1
         else:
             msg  = 'Recommender.add_recommendation: '
             msg += f'position {recommendation.get_strategic_position()} '
             msg += 'should be long or short.'
             raise ValueError(msg)
-
-
-    # def notify_SMS(self):
-
-    #     # enter all the details
-    #     # get app_key and app_secret by registering
-    #     # a app on sinchSMS
-    #     number = 'your_mobile_number'
-    #     app_key = 'your_app_key'
-    #     app_secret = 'your_app_secret'
-
-    #     # enter the message to be sent
-    #     message = 'Hello Message!!!'
-
-    #     client = SinchSMS(app_key, app_secret)
-    #     print("Sending '%s' to %s" % (message, number))
-
-    #     response = client.send_message(number, message)
-    #     message_id = response['messageId']
-    #     response = client.check_status(message_id)
-
-    #     # keep trying unless the status retured is Successful
-    #     while response['status'] != 'Successful':
-    #         print(response['status'])
-    #         time.sleep(1)
-    #         response = client.check_status(message_id)
-
-    #     print(response['status'])
-
 
 
     def notify(self, screen_nc: bool, email_nc: bool):
@@ -105,12 +83,12 @@ class Recommender():
 
         if nrecs >0: # if there are recommendations
             print(line)
-            if len(self._long_recommendations) > 0:
+            if self._n_long_recs > 0:
                 print('Long strategic position recommendations:')
                 for rec in self._long_recommendations:
                     if screen_nc or not (screen_nc or rec.get_action() == 'n/c'):
                         rec.print_recommendation(notify=True, enhanced = True)
-            if len(self._short_recommendations) > 0:
+            if self._n_short_recs > 0:
                 print('Short strategic position recommendations:')
                 for rec in self._short_recommendations:
                     if screen_nc or not (screen_nc or rec.get_action() == 'n/c'):
@@ -118,46 +96,75 @@ class Recommender():
             print(line)
 
 
-    def _email_recommendations_new(self, email_nc: bool):
-        message = MIMEMultipart('mixed')
-        message['From'] = 'Contact <{sender}>'.format(sender = pvt.SENDER_EMAIL)
-        message['To'] = 'ursulines@me.com'
-        message['CC'] = 'the_darkroom@me.com'
-        message['Subject'] = 'Trade recommendation'
-        msg_content = '<h4>Hi There,<br> This is a testing message.</h4>\n'
-        body = MIMEText(msg_content, 'html')
-        message.attach(body)
-
-        n_tickers = 0
-        if len(self._long_recommendations) > 0:
-            body += 'Strategic position: long\n'
-            for rcm in self._long_recommendations:
-                attachmentPath = rcm.get_ticker_object.get_plot_pathname()
-                try:
-                    with open(attachmentPath, "rb") as attachment:
-                        p = MIMEApplication(attachment.read(),_subtype="png")
-                        p.add_header(f'Content-Disposition', 'attachment; filename= {attachmentPath.split("\\")[-1]}')
-                        message.attach(p)
-                except Exception as e:
-                    print(str(e))
-
-                name = rcm.get_name()
-                symb = rcm.get_symbol()
-                if email_nc or not (email_nc or rcm.get_action() == 'n/c'):
-                    body += f'{name} ({symb})\n{rcm.get_body()}\n'
-                    n_tickers += 1
-
-
-        # attachmentPath = ticker_object.get_plot_pathname()
-        # try:
-        #     with open(attachmentPath, "rb") as attachment:
-        #         p = MIMEApplication(attachment.read(),_subtype="pdf")
-        #         p.add_header(f'Content-Disposition', 'attachment; filename= {attachmentPath.split("\\")[-1]}')
-        #         message.attach(p)
-        # except Exception as e:
-        #     print(str(e))
-
     def _email_recommendations(self, email_nc: bool):
+        '''Email all recommendations'''
+        n_tickers = self._n_long_recs + self._n_short_recs
+
+        def add_atttachment(file):
+            '''Add atachment to body'''
+            ctype, encoding = mimetypes.guess_type(file)
+            if ctype is None or encoding is not None:
+                ctype = "application/octet-stream"
+            maintype, subtype = ctype.split("/", 1)
+
+            fp = open(file, "rb")
+            attachment = MIMEBase(maintype, subtype)
+            attachment.set_payload(fp.read())
+            fp.close()
+            encoders.encode_base64(attachment)
+            attachment.add_header("Content-Disposition", "attachment", filename=file)
+            return attachment
+
+        def build_preamble():
+            body = ''
+            if self._n_long_recs > 0:
+                body += 'Strategic position: long\n'
+                for rcm in self._long_recommendations:
+                    name = rcm.get_name()
+                    symb = rcm.get_symbol()
+                    if email_nc or not (email_nc or rcm.get_action() == 'n/c'):
+                        body += f'{name} ({symb})\n{rcm.get_body()}\n'
+                body += '\n'
+
+            if self._n_short_recs > 0:
+                body += 'Strategic position: short\n'
+                for rcm in self._short_recommendations:
+                    name = rcm.get_name()
+                    symb = rcm.get_symbol()
+                    if email_nc or not (email_nc or rcm.get_action() == 'n/c'):
+                        body += f'{name} ({symb})\n{rcm.get_body()}\n'
+            return body
+
+        if n_tickers != 0: # send email if there is something to send
+            msg = MIMEMultipart()
+            msg["From"] = pvt.SENDER_EMAIL
+            msg["To"]   = ",".join(pvt.RECIPIENT_EMAILS)
+            msg["Subject"] = 'Subject: Trade recommendation'
+            msg.preamble   = 'WTF is a preamble?'
+            body = MIMEText(build_preamble())
+            msg.attach(body)
+
+            for rcm in self._long_recommendations:
+                fileToSend = rcm.get_time_series_plot().get_pathname()
+                msg.attach(add_atttachment(fileToSend))
+            for rcm in self._short_recommendations:
+                fileToSend = rcm.get_time_series_plot().get_pathname()
+                msg.attach(add_atttachment(fileToSend))
+
+            # Create a secure SSL context
+            context = ssl.create_default_context()
+
+            with smtplib.SMTP_SSL(dft.SMTP_SERVER, dft.SSL_PORT, context=context) as server:
+                server.login(pvt.SENDER_EMAIL, pvt.PASSWORD)
+                for recipient_email in pvt.RECIPIENT_EMAILS:
+                    server.sendmail(dft.SMTP_SERVER, recipient_email, msg.as_string())
+            print('email sent to list')
+            server.close()
+        else:
+            print('no actions required - no email sent')
+
+
+    def _email_recommendations_old(self, email_nc: bool):
         '''Email all recommendations'''
         body = ''
         n_tickers = 0
@@ -207,12 +214,13 @@ class Recommendation():
     NB: position is the recommended position for the security
         stratpos is the long/short position strategy for the security
     '''
-    def __init__(self, ticker_object, topomap, target_date, span, buffer, stratpos):
+    def __init__(self, ticker_object, topomap, target_date, span, buffer, stratpos, ts_plot):
         self._ticker   = ticker_object
         self._date     = target_date
         self._stratpos = stratpos
         self._span     = span
         self._buffer   = buffer
+        self._ts_plot  = ts_plot
         self._name     = None
         self._symbol   = None
         self._action   = None
@@ -251,6 +259,10 @@ class Recommendation():
     def get_ticker_object(self):
         ''''Return the ticker object'''
         return self._ticker
+
+    def get_time_series_plot(self):
+        '''Return time series plot'''
+        return self._ts_plot
 
     def self_describe(self):
         '''Display all variables in class'''
@@ -294,9 +306,9 @@ class Recommendation():
     def print_recommendation(self, notify: bool, enhanced = True):
         '''Print recommendation to screen'''
         if notify:
-            date = util.date_to_string(self._date, '%d %B %Y')
-            msg  = f'{self._name} ({self._symbol}) '
-            msg += f'{date}: '
+            date = util.date_to_string(self._date, '%d %b %Y')
+            msg = f'{date}: '
+            msg += f'{self._name} ({self._symbol}) '
             msg += f'{self._action} | position: {self._position} | '
             msg += f'span={self._span:.0f} days buffer={self._buffer:.2%}'
             if (self._action in ['buy', 'sell']) & enhanced:
