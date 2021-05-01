@@ -16,3 +16,4 @@ comparison_io.py
 comparison_plots.py
 figurewidget-app.ipynb
 .pylintrc
+simulation.xlsx
