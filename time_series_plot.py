@@ -46,6 +46,7 @@ class TimeSeriesPlot():
         self._topomap       = topomap
         self._strat_pos     = strat_pos
         self._display_dates = disp_dates
+        self._trading_days  = None
         self._span          = span
         self._buffer        = buffer
         self._fee           = None
@@ -73,6 +74,8 @@ class TimeSeriesPlot():
         # Merge with Volume
         self._strategy = pd.DataFrame(pd.merge(self._strategy, volume, left_index=True, right_index=True))
 
+        self._trading_days = volume.shape[0]
+
         if disp_flags is not None:
             self._display_flags = disp_flags
 
@@ -94,7 +97,7 @@ class TimeSeriesPlot():
         self._ema  = self._topomap.get_cumret(self._strategy, 'ema', self._fee)  # cumulative returns for EMA
 
 
-    def build_plot(self, dataframe: pd.DataFrame, notebook:bool):
+    def build_plot(self, dataframe: pd.DataFrame, notebook:bool, display:bool):
         '''Plotting call'''
         source     = ColumnDataSource(dataframe)
         upper_pane = self._build_upper_pane(source = source)
@@ -114,7 +117,7 @@ class TimeSeriesPlot():
         self._plot = gridplot(children = [upper_pane, lower_pane],
                               ncols    = 1,
                               )
-        self._show(notebook)
+        self._show(notebook, display)
 
 
     def _build_pathname(self):
@@ -152,7 +155,7 @@ class TimeSeriesPlot():
         title  = f'{ticker_name} ({ticker_symbol}) | '
         title += f'{dates[0].strftime("%d %b %Y")} - {dates[1].strftime("%d %b %Y")}'
         if self._buy_sell is not None:
-            title += f' | {self._buy_sell[0]} buys {self._buy_sell[1]} sells'
+            title += f' | {self._buy_sell[0]} buys {self._buy_sell[1]} sells '
 
         plot.add_layout(Title(text=title,
                               text_font_style="bold",
@@ -169,6 +172,9 @@ class TimeSeriesPlot():
         title += f'EMA max payoff={self._ema:.2%} (hold={self._hold:.2%}) | '
         title += f'{self._span:.0f}-day mean | '
         title += f'opt buffer={self._buffer:.2%}'
+        if self._buy_sell is not None:
+            turnover = self._trading_days / (self._buy_sell[0] + self._buy_sell[1])
+            title += f'| tx turnover: {turnover:.0f} days'
 
         plot.add_layout(Title(text=title,
                               text_font_style="normal",
