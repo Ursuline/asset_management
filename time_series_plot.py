@@ -116,12 +116,6 @@ class TimeSeriesPlot():
                               )
         self._show(notebook)
 
-        #self._build_pathname()
-        # symbol = self._ticker_obj.get_symbol()
-        # directory = f'plots/{symbol}/'
-        # pathname = directory + f'{symbol}_{self._display_dates[0].date()}-{self._display_dates[1].date()}_{self._strat_pos}_tmseries.html'
-        #self.save_html()
-
 
     def _build_pathname(self):
         '''Build html file path name'''
@@ -442,14 +436,17 @@ class TimeSeriesPlot():
         return plot
 
 
-    def _show(self, notebook):
+    def _show(self, notebook:bool, display:bool):
         '''Screen display'''
         if notebook:
             output_notebook()
         else:
             self._build_pathname()
             output_file(self._pathname)
-        show(self._plot)
+        if display: # save and display
+            show(self._plot)
+        else: # save only
+            save(self._plot)
 
 
     # def save_html(self, directory=None, pathname=None):

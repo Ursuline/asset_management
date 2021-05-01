@@ -49,6 +49,7 @@ END_DATE   = dft.TODAY
 DATE_RANGE = [START_DATE, END_DATE]
 ZOOM_RANGE = [START_DATE, END_DATE]
 
+DISPLAY = True # output to screen
 
 if __name__ == '__main__':
     start_tm = time.time() # total_time
@@ -138,7 +139,7 @@ if __name__ == '__main__':
                 ret    = ticker_obj.get_return()
                 data   = pd.DataFrame(pd.merge(close, volume, left_index=True, right_index=True))
                 data   = pd.DataFrame(pd.merge(data, ret, left_index=True, right_index=True))
-                plot.build_plot(data, notebook=False)
+                plot.build_plot(data, notebook=False, display=DISPLAY)
 
                 # Determine the action to take for the given END_DATE
                 # instantiate recommendation
