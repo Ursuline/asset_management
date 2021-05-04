@@ -7,7 +7,9 @@ Created on Sun Apr 11 14:33:03 2021
 """
 import smtplib
 import ssl
+import os
 import mimetypes
+from email.message import EmailMessage
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 from email.mime.application import MIMEApplication
@@ -17,7 +19,6 @@ from email import encoders
 import trading_defaults as dft
 import utilities as util
 import private as pvt # recipient names, smtp sender name/pwd
-import time_series_plot as tsp
 
 class Recommender():
     '''
@@ -33,6 +34,7 @@ class Recommender():
         self._short_recommendations = [] # list of short recommendations
         self._n_long_recs  = 0 # of long recommendations
         self._n_short_recs = 0 # of short recommendations
+        self._n_actions    = 0
         self._screen = screen
         self._email  = email
         self._sms    = sms
@@ -98,24 +100,12 @@ class Recommender():
 
     def _email_recommendations(self, email_nc: bool):
         '''Email all recommendations'''
-        n_tickers = self._n_long_recs + self._n_short_recs
 
-        def add_atttachment(file):
-            '''Add atachment to body'''
-            ctype, encoding = mimetypes.guess_type(file)
-            if ctype is None or encoding is not None:
-                ctype = "application/octet-stream"
-            maintype, subtype = ctype.split("/", 1)
-
-            fp = open(file, "rb")
-            attachment = MIMEBase(maintype, subtype)
-            attachment.set_payload(fp.read())
-            fp.close()
-            encoders.encode_base64(attachment)
-            attachment.add_header("Content-Disposition", "attachment", filename=file)
-            return attachment
-
-        def build_preamble():
+        def _build_body(email_nc):
+            '''
+            Generates the recommendation as the body of the email
+            Computes the number of buy/sell recommendations self._n_actions
+            '''
             body = ''
             if self._n_long_recs > 0:
                 body += 'Strategic position: long\n'
@@ -124,6 +114,7 @@ class Recommender():
                     symb = rcm.get_symbol()
                     if email_nc or not (email_nc or rcm.get_action() == 'n/c'):
                         body += f'{name} ({symb})\n{rcm.get_body()}\n'
+                        self._n_actions += 1
                 body += '\n'
 
             if self._n_short_recs > 0:
@@ -133,33 +124,58 @@ class Recommender():
                     symb = rcm.get_symbol()
                     if email_nc or not (email_nc or rcm.get_action() == 'n/c'):
                         body += f'{name} ({symb})\n{rcm.get_body()}\n'
+                        self._n_actions += 1
             return body
 
-        if n_tickers != 0: # send email if there is something to send
-            msg = MIMEMultipart()
-            msg["From"] = pvt.SENDER_EMAIL
-            msg["To"]   = ",".join(pvt.RECIPIENT_EMAILS)
-            msg["Subject"] = 'Subject: Trade recommendation'
-            msg.preamble   = 'WTF is a preamble?'
-            body = MIMEText(build_preamble())
-            msg.attach(body)
+        def add_attachment(msg, rcm):
+            '''Adds a file to the body of the message '''
+            attachment_path = rcm.get_time_series_plot().get_pathname()
+            print(f'attaching {attachment_path}')
 
-            for rcm in self._long_recommendations:
-                fileToSend = rcm.get_time_series_plot().get_pathname()
-                msg.attach(add_atttachment(fileToSend))
-            for rcm in self._short_recommendations:
-                fileToSend = rcm.get_time_series_plot().get_pathname()
-                msg.attach(add_atttachment(fileToSend))
+            mime_type, _ = mimetypes.guess_type(attachment_path)
+            mime_type, mime_subtype = mime_type.split('/', 1)
+            with open(attachment_path, 'rb') as ap:
+                msg.add_attachment(ap.read(),
+                                   maintype = mime_type,
+                                   subtype  = mime_subtype,
+                                   filename = os.path.basename(attachment_path),
+                                   )
+            ap.close()
 
-            # Create a secure SSL context
-            context = ssl.create_default_context()
+        def add_attachments(msg, email_nc):
+            '''
+            Adds all attachments to body
+            source: https://varunver.wordpress.com/2017/08/10/python-smtplib-send-email-with-attachments/
+            '''
+            if self._n_long_recs > 0:
+                for rcm in self._long_recommendations:
+                    if email_nc or not (email_nc or rcm.get_action() == 'n/c'):
+                        add_attachment(msg, rcm)
 
-            with smtplib.SMTP_SSL(dft.SMTP_SERVER, dft.SSL_PORT, context=context) as server:
-                server.login(pvt.SENDER_EMAIL, pvt.PASSWORD)
-                for recipient_email in pvt.RECIPIENT_EMAILS:
-                    server.sendmail(dft.SMTP_SERVER, recipient_email, msg.as_string())
-            print('email sent to list')
-            server.close()
+            if self._n_short_recs > 0:
+                for rcm in self._short_recommendations:
+                    if email_nc or not (email_nc or rcm.get_action() == 'n/c'):
+                        add_attachment(msg, rcm)
+
+        body = _build_body(email_nc)
+        if self._n_actions != 0: # send email if there is something to send
+            message = EmailMessage()
+            message["From"] = pvt.SENDER_EMAIL
+            message["To"]   = ",".join(pvt.RECIPIENT_EMAILS)
+            message["Subject"] = 'Subject: Trade recommendation'
+
+            message.set_content(body)
+
+            # add html plot files to email body
+            add_attachments(message, email_nc)
+
+            mail_server = smtplib.SMTP_SSL(dft.SMTP_SERVER, dft.SSL_PORT)
+            mail_server.login(pvt.SENDER_EMAIL, pvt.PASSWORD)
+            for recipient_email in pvt.RECIPIENT_EMAILS:
+                mail_server.send_message(message, pvt.SENDER_EMAIL, recipient_email)
+
+            mail_server.quit()
+            print('recommendation email sent')
         else:
             print('no actions required - no email sent')
 
@@ -285,7 +301,7 @@ class Recommendation():
         security = self._ticker.get_close()
         strategy = topomap.build_strategy(security, self._span, self._buffer)
 
-        # Update the date by shifting dft.LAG days (REVIEW)
+
         data_index  = strategy.index.get_loc(self._date) # row number
         target_date = strategy.iloc[data_index].name
         rec = strategy.loc[target_date, ["ACTION", "POSITION"]]
