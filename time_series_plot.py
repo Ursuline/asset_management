@@ -9,7 +9,6 @@ Bokeh time series plot
 @author: charly
 """
 import os
-import sys
 from datetime import timedelta
 import pandas as pd
 from bokeh.plotting import figure, output_file, save
@@ -169,12 +168,12 @@ class TimeSeriesPlot():
     def _build_subtitle(self, plot):
         ''' Build plot subtitle '''
         title  = f'{self._strat_pos.capitalize()} position | '
-        title += f'EMA max payoff={self._ema:.2%} (hold={self._hold:.2%}) | '
+        title += f'EMA max payoff={self._ema:.1%} (hold={self._hold:.1%}) | '
         title += f'{self._span:.0f}-day mean | '
         title += f'opt buffer={self._buffer:.2%}'
         if self._buy_sell is not None:
             turnover = self._trading_days / (self._buy_sell[0] + self._buy_sell[1])
-            title += f'| tx turnover: {turnover:.0f} days'
+            title += f' | tx turnover: {turnover:.0f} days'
 
         plot.add_layout(Title(text=title,
                               text_font_style="normal",
@@ -454,25 +453,3 @@ class TimeSeriesPlot():
         else: # save only
             save(self._plot)
 
-
-    # def save_html(self, directory=None, pathname=None):
-    #     '''Save plot to html'''
-    #     if directory is None:
-    #         directory = self._get_directory()
-    #     os.makedirs(directory, exist_ok = True)
-
-    #     if pathname is not None:
-    #         self._pathname = pathname
-    #         os.makedirs(directory, exist_ok = True)
-    #     else:
-    #         self._build_pathname()
-
-    #     try:
-    #         output_file(pathname)
-    #         save(self._plot)
-    #     except TypeError as ex:
-    #         print(f'Could not save to {pathname}: {ex}')
-    #     except:
-    #         print(f'Error type {sys.exc_info()[0]}')
-    #     else:
-    #         pass
