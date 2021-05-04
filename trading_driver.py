@@ -24,32 +24,33 @@ import time_series_plot as tsp
 REMOVE  = ['UL', 'FP.PA', 'ORA.PA', 'KC4.F', 'BNP.PA', 'KER.PA', 'SMC.PA']
 REMOVE += ['FB', 'HO.PA', 'LHN.SW', 'SQ', 'BIDU', 'ARKQ', 'KORI.PA']
 REMOVE += ['TRI.PA', 'HEXA.PA', 'CA.PA', 'ATO.PA', 'SNE']
-FILTER  = True # Remove securities from REMOVE
+FILTER  = True # Remove securities from REMOVE list
 
-# SWITCHES
+# RECOMMENDER SWITCHES
 # Notifications defaults
 SCREEN = True
 EMAIL  = True
-NOTIFY = True # item-per-item notificattion
+NOTIFY = True # item-per-item notification
 
-REFRESH_YAHOO = False # Download fresh Yahoo data
-REFRESH_EMA   = False  # Recompute ema map
+# display time series in browser
+DISPLAY = True
+
+REFRESH_YAHOO = True # Download fresh Yahoo data
+REFRESH_EMA   = True  # Recompute ema map
 
 POSITIONS = ['long', 'short']
 
 START_DATE = '2018-01-02'
-END_DATE   = '2021-04-23'
-TICKERS = ptf.OBSERVE
-#TICKERS = ['ARKK']
 
-START_DATE = '2018-01-02'
-#END_DATE   = '2021-04-23'
+TICKERS = ptf.OBSERVE
+#TICKERS = ['POM.PA']
+
+#END_DATE   = '2021-04-30'
 END_DATE   = dft.TODAY
 
 DATE_RANGE = [START_DATE, END_DATE]
 ZOOM_RANGE = [START_DATE, END_DATE]
 
-DISPLAY = True # output to screen
 
 if __name__ == '__main__':
     start_tm = time.time() # total_time
@@ -127,18 +128,17 @@ if __name__ == '__main__':
                 display_flags = tsp.TimeSeriesPlot.get_default_display_flags()
 
                 plot = tsp.TimeSeriesPlot(ticker_object = ticker_obj,
-                          topomap       = topomap,
-                          strat_pos     = strat_pos,
-                          disp_dates    = date_range,
-                          span          = best_span,
-                          buffer        = best_buffer,
-                          disp_flags    = display_flags,)
-                # Clean up bdelow:
-                close  = ticker_obj.get_close()
-                volume = ticker_obj.get_volume()
-                ret    = ticker_obj.get_return()
-                data   = pd.DataFrame(pd.merge(close, volume, left_index=True, right_index=True))
-                data   = pd.DataFrame(pd.merge(data, ret, left_index=True, right_index=True))
+                                          topomap       = topomap,
+                                          strat_pos     = strat_pos,
+                                          disp_dates    = date_range,
+                                          span          = best_span,
+                                          buffer        = best_buffer,
+                                          disp_flags    = display_flags,)
+
+                data   = pd.DataFrame(pd.merge(ticker_obj.get_close(), ticker_obj.get_volume(),
+                                               left_index=True, right_index=True))
+                data   = pd.DataFrame(pd.merge(data, ticker_obj.get_return(),
+                                               left_index=True, right_index=True))
                 plot.build_plot(data, notebook=False, display=DISPLAY)
 
                 # Determine the action to take for the given END_DATE
@@ -149,6 +149,7 @@ if __name__ == '__main__':
                                          span          = best_span,
                                          buffer        = best_buffer,
                                          stratpos      = strat_pos,
+                                         ts_plot       = plot,
                                          )
                 rcm.print_recommendation(notify = NOTIFY)
                 recommender.add_recommendation(rcm)

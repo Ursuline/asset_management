@@ -46,7 +46,7 @@ SWISS      = ['LHN.SW', 'SIKA.SW']
 
 FRENCH     = ['ELIS.PA', 'KER.PA', 'SMCP.PA', 'BEN.PA']
 
-CRYPTO     = ['BTC-USD', 'ETH-USD', 'DOGE-USD', 'SOL1-EUR']
+CRYPTO     = ['BTC-USD', 'ETH-USD', 'DOGE-USD', 'SOL1-USD']
 
 CSR        = ['MSFT', 'DIS', 'GOOGL', 'BMW.DE', 'DAI.DE', 'SNE', 'INTC']
 CSR       += ['VWAGY', 'AAPL', 'NSRGY', 'LEGO', 'CAJ', 'K', 'JNJ']
