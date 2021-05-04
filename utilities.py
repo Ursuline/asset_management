@@ -243,11 +243,11 @@ def reset_dates(security, date_range):
     end_dt   = date_range[1]
     # Check if data downloaded otherwise start with earliest date
     if secu_start > date_range[0]:
-        print(f'start date reset from {date_range[0]} to {secu_start}')
+        print(f'start date reset from {date_range[0].date()} to {secu_start.date()}')
         start_dt = secu_start
     if secu_end < date_range[1]:
         end_dt = secu_end
-        print(f'end date reset from {date_range[1]} to {secu_end}')
+        print(f'end date reset from {date_range[1].date()} to {secu_end.date()}')
     if start_dt > end_dt:
         raise ValueError('reset_dates: start date {start_dt} later than end date {end_dt}')
     return [start_dt, end_dt]
