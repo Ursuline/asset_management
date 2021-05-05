@@ -25,7 +25,7 @@ NOTIFY = True # item-per-item notification
 # display time series in browser
 DISPLAY = True
 
-CLOUD = False # Cloud or local run
+REMOTE = False # Cloud or local run
 
 REFRESH_YAHOO = True # Download fresh Yahoo data
 REFRESH_EMA   = True  # Recompute ema map
