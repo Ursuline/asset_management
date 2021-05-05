@@ -28,8 +28,10 @@ ZOOM_RANGE = par.ZOOM_RANGE
 POSITIONS  = par.POSITIONS
 DISPLAY    = par.DISPLAY
 NOTIFY     = par.NOTIFY
+REMOTE     = par.REMOTE
 REFRESH_YAHOO = par.REFRESH_YAHOO
 REFRESH_EMA   = par.REFRESH_EMA
+
 
 if __name__ == '__main__':
     start_tm = time.time() # total_time
