@@ -1,6 +1,8 @@
 private.py
 data/
 plots/
+data_2/
+plots_2/
 __pycache__/
 .ipynb_checkpoints/
 meta/
