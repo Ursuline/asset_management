@@ -22,6 +22,7 @@ from bokeh.io import show, curdoc
 
 import trading_defaults as dft
 import utilities as util
+import parameters as par
 
 class TimeSeriesPlot():
     '''Bokeh time series plot'''
@@ -448,7 +449,7 @@ class TimeSeriesPlot():
         else:
             self._build_pathname()
             output_file(self._pathname)
-        if display: # save and display
+        if display and not par.REMOTE: # save and display
             show(self._plot)
         else: # save only
             save(self._plot)

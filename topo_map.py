@@ -14,6 +14,7 @@ from tqdm import tqdm
 import trading_defaults as dft
 import trading_plots as trplt
 import utilities as util
+import parameters as par
 
 class Topomap():
     ''' A Topomap encapsulates is the 3d representation of the cumulative ema
@@ -598,7 +599,8 @@ class Topomap():
         trplt.save_figure(plot_dir,
                           f'{symbol}_{name_range[0]}_{name_range[1]}_contours_{self._strat_pos}',
                           extension='png')
-        plt.show()
+        if not par.REMOTE:
+            plt.show()
 
 
     def surface_plot(self, ticker_object, date_range, colors, azim=None, elev=None, rdist=10):
@@ -680,7 +682,8 @@ class Topomap():
         trplt.save_figure(plot_dir,
                           f'{symbol}_{name_range[0]}_{name_range[1]}_3D_{self._strat_pos}',
                           extension='png')
-        plt.show()
+        if not par.REMOTE:
+            plt.show()
 
 
     def plot_buffer_range(self, ticker_object, security, span, n_best):
