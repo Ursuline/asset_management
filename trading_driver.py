@@ -14,49 +14,28 @@ import time
 import pandas as pd
 import trading as tra
 import trading_defaults as dft
-import trading_portfolio as ptf
 import utilities as util
 import topo_map as tpm
 import recommender as rec
 import time_series_plot as tsp
+import parameters as par
 
-# Skip these securities
-REMOVE  = ['UL', 'FP.PA', 'ORA.PA', 'KC4.F', 'BNP.PA', 'KER.PA', 'SMC.PA']
-REMOVE += ['FB', 'HO.PA', 'LHN.SW', 'SQ', 'BIDU', 'ARKQ', 'KORI.PA']
-REMOVE += ['TRI.PA', 'HEXA.PA', 'CA.PA', 'ATO.PA', 'SNE']
-FILTER  = True # Remove securities from REMOVE list
-
-# RECOMMENDER SWITCHES
-# Notifications defaults
-SCREEN = True
-EMAIL  = True
-NOTIFY = True # item-per-item notification
-
-# display time series in browser
-DISPLAY = True
-
-REFRESH_YAHOO = True # Download fresh Yahoo data
-REFRESH_EMA   = True  # Recompute ema map
-
-POSITIONS = ['long', 'short']
-
-START_DATE = '2018-01-02'
-
-TICKERS = ptf.CRYPTO
-#TICKERS = ['POM.PA']
-
-END_DATE   = '2021-05-04'
-END_DATE   = dft.TODAY
-
-DATE_RANGE = [START_DATE, END_DATE]
-ZOOM_RANGE = [START_DATE, END_DATE]
-
+FILTER     = par.FILTER
+TICKERS    = par.TICKERS
+REMOVE     = par.REMOVE
+DATE_RANGE = par.DATE_RANGE
+ZOOM_RANGE = par.ZOOM_RANGE
+POSITIONS  = par.POSITIONS
+DISPLAY    = par.DISPLAY
+NOTIFY     = par.NOTIFY
+REFRESH_YAHOO = par.REFRESH_YAHOO
+REFRESH_EMA   = par.REFRESH_EMA
 
 if __name__ == '__main__':
     start_tm = time.time() # total_time
     save_tm  = time.time() # intermediate time
-    recommender = rec.Recommender(screen = SCREEN,
-                                  email  = EMAIL,
+    recommender = rec.Recommender(screen = par.SCREEN,
+                                  email  = par.EMAIL,
                                   )
 
     # Remove unwanted tickers
