@@ -120,7 +120,7 @@ if __name__ == '__main__':
                                                left_index=True, right_index=True))
                 data   = pd.DataFrame(pd.merge(data, ticker_obj.get_return(),
                                                left_index=True, right_index=True))
-                plot.build_plot(data, notebook=False, display=DISPLAY)
+                plot.build_plot(data, notebook=False, display=DISPLAY, remote=REMOTE)
 
                 # Determine the action to take for the given END_DATE
                 # instantiate recommendation
