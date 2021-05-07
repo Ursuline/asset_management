@@ -130,7 +130,6 @@ class Recommender():
         def add_attachment(msg, rcm):
             '''Adds a file to the body of the message '''
             attachment_path = rcm.get_time_series_plot().get_pathname()
-            print(f'attaching {attachment_path}')
 
             mime_type, _ = mimetypes.guess_type(attachment_path)
             mime_type, mime_subtype = mime_type.split('/', 1)

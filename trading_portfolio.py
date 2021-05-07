@@ -36,7 +36,7 @@ MATERIALS  = ['MLM', 'LHN.SW']
 NRJ        = ['FP.PA', 'EDPR.LS', 'NEOEN.PA', 'ABIO.PA']
 
 TECH       = ['AAPL', 'TSLA', 'AMZN', 'MSFT', 'SPOT', 'SQ', 'SHOP', 'GOOGL']
-TECH      += ['NVDA', 'HIPAY.PA', 'ATO.PA', 'BIG.PA', 'SOP.PA', 'INTC']
+TECH      += ['NVDA', 'HIPAY.PA', 'ATO.PA', 'BIG.PA', 'SOP.PA', 'INTC', 'IBM']
 
 
 INDICES    = ['^GSPC', '^DJI', '^IXIC', '^FCHI', '^N225', '^HSI', '^DJSH']
