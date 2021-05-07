@@ -16,7 +16,7 @@ from bokeh.models import ColumnDataSource, Title, BooleanFilter, CDSView, Scatte
 from bokeh.models import HoverTool, ResetTool, CrosshairTool
 from bokeh.models import WheelZoomTool, ZoomInTool, ZoomOutTool, WheelPanTool
 from bokeh.models import NumeralTickFormatter
-from bokeh.io import output_notebook
+from bokeh.io import output_notebook, export_png
 from bokeh.layouts import gridplot
 from bokeh.io import show, curdoc
 
@@ -97,7 +97,7 @@ class TimeSeriesPlot():
         self._ema  = self._topomap.get_cumret(self._strategy, 'ema', self._fee)  # cumulative returns for EMA
 
 
-    def build_plot(self, dataframe: pd.DataFrame, notebook:bool, display:bool):
+    def build_plot(self, dataframe:pd.DataFrame, notebook:bool, display:bool, remote:bool):
         '''Plotting call'''
         source     = ColumnDataSource(dataframe)
         upper_pane = self._build_upper_pane(source = source)
@@ -117,18 +117,18 @@ class TimeSeriesPlot():
         self._plot = gridplot(children = [upper_pane, lower_pane],
                               ncols    = 1,
                               )
-        self._show(notebook, display)
+        self._show(notebook, display, remote)
 
 
-    def _build_pathname(self):
+    def _build_pathname(self, extension):
         '''Build html file path name'''
 
         directory = self._get_directory()
 
         filename  = f'{self._ticker_obj.get_symbol()}_'
         filename += f'{self._display_dates[0].date()}-{self._display_dates[1].date()}_'
-        filename += f'{self._strat_pos}_'
-        filename += 'tmseries.html'
+        filename += f'{self._strat_pos}_tmseries.'
+        filename += f'{extension}'
 
         self._pathname = os.path.join(directory, filename)
 
@@ -442,15 +442,19 @@ class TimeSeriesPlot():
         return plot
 
 
-    def _show(self, notebook:bool, display:bool):
-        '''Screen display'''
+    def _show(self, notebook:bool, display:bool, remote:bool):
+        '''Screen display & save'''
         if notebook:
             output_notebook()
         else:
-            self._build_pathname()
+            self._build_pathname('html')
             output_file(self._pathname)
-        if display and not par.REMOTE: # save and display
+
+        if display and not remote: # save and display
             show(self._plot)
-        else: # save only
+        elif remote: # save to png if remote
+            self._build_pathname('png')
+            export_png(self._plot, filename=self._pathname)
+        else: # save to html if local
             save(self._plot)
 

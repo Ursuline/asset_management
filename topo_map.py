@@ -602,6 +602,41 @@ class Topomap():
         if not par.REMOTE:
             plt.show()
 
+    def surface_plot_plotly(self, ticker_object, date_range, colors, azim=None, elev=None, rdist=10):
+        import plotly.graph_objects as go
+        import plotly.io as pio
+        #import plotly.express as px
+        pio.renderers.default='svg'
+
+
+        def extract_best_ema():
+            idx_max  = self._best_emas['ema'].idxmax()
+            max_ema  = self._best_emas['ema'].max()
+            max_span = self._best_emas.span.iloc[idx_max]
+            max_buff = self._best_emas.buffer.iloc[idx_max]
+            return max_span, max_buff, max_ema
+
+        def re_format_data():
+            temp = []
+            for i, span in enumerate(self._spans):
+                for j, buffer in enumerate(self._buffers):
+                    temp.append([span, buffer, self._emas[i,j]])
+            return pd.DataFrame(temp, columns=['span', 'buffer', 'ema'])
+
+        max_span, max_buff, max_ema = extract_best_ema()
+        temp = re_format_data()
+        print('building 3d plot')
+        fig = go.Figure(data=[go.Surface(z=temp.ema, x=temp.span, y=temp.buffer)])
+        fig.update_layout(title='Surface plot test',
+                          autosize=True,
+                          width=500, height=500,
+                          margin=dict(l=65, r=50, b=65, t=90))
+        print(' 3d plot build')
+        fig.show()
+        print('showing 3d plot')
+
+
+
 
     def surface_plot(self, ticker_object, date_range, colors, azim=None, elev=None, rdist=10):
         '''
@@ -640,11 +675,11 @@ class Topomap():
         # Get start & end dates in title (%d-%b-%Y) and output file (%Y-%m-%d) formats
         title_range = util.dates_to_strings([date_range[0],
                                             date_range[1]],
-                                           '%d-%b-%Y')
+                                            '%d-%b-%Y')
 
         name_range   = util.dates_to_strings([date_range[0],
                                              date_range[1]],
-                                            '%Y-%m-%d')
+                                             '%Y-%m-%d')
         max_span, max_buff, max_ema = extract_best_ema()
         temp = re_format_data()
         # Plot
