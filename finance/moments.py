@@ -15,9 +15,9 @@ from sklearn import linear_model
 import matplotlib.pyplot as plt
 import seaborn as sns
 from tabulate import tabulate
-import security as sec
-import portfolio_io as pio
-import utilities as util
+from finance import security as sec
+from sharpe import portfolio_io as pio
+from finance import utilities as util
 
 
 def linear_regression(data):
