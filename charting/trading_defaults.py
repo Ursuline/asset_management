@@ -21,14 +21,15 @@ SMTP_SERVER = 'smtp.gmail.com'
 
 STATS_LEVEL = .05 # p-value level
 
-DATA_DIR  = 'data'
-PLOT_DIR  = 'plots'
+DATA_DIR  = 'charting/data'
+PLOT_DIR  = 'charting/plots'
 META_DIR  = 'meta'
 
 HUGE       = 1000000
 
-POSITIONS = ['long', 'short', 'cash']
-ACTIONS   = ['buy', 'sell', 'n/c']
+STRATEGIES = ['long', 'short']
+POSITIONS  = ['long', 'short', 'cash']
+ACTIONS    = ['buy', 'sell', 'n/c']
 
 # Time constants
 TODAY     = datetime.strftime(datetime.now(), '%Y-%m-%d')

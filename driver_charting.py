@@ -3,22 +3,22 @@
 """
 Created on Fri Mar 26 14:58:19 2021
 
-trading_driver.py
+driver_charting.py
 
-# Moving average trading main driver
+# main driver for charting
 
 @author: charles mégnin
 """
 import sys
 import time
 import pandas as pd
-import trading as tra
-import trading_defaults as dft
-import utilities as util
-import topo_map as tpm
-import recommender as rec
-import time_series_plot as tsp
-import parameters as par
+from charting import trading as tra
+from charting import trading_defaults as dft
+from charting import topo_map as tpm
+from charting import recommender as rec
+from charting import time_series_plot as tsp
+from charting import parameters as par
+from finance import utilities as util
 
 FILTER     = par.FILTER
 TICKERS    = par.TICKERS
@@ -120,7 +120,7 @@ if __name__ == '__main__':
                                                left_index=True, right_index=True))
                 data   = pd.DataFrame(pd.merge(data, ticker_obj.get_return(),
                                                left_index=True, right_index=True))
-                plot.build_plot(data, notebook=False, display=DISPLAY)
+                plot.build_plot(data, notebook=False, display=DISPLAY, remote=REMOTE)
 
                 # Determine the action to take for the given END_DATE
                 # instantiate recommendation

@@ -15,7 +15,7 @@ CHEM       = ['AI.PA', 'SIKA.SW']
 
 COMM       = ['ROKU', 'ZM', 'BIDU', 'NFLX', 'ORA.PA', 'XIL.PA', 'MMT.PA']
 
-CONSUMER   = ['NKE', 'MDM.PA', 'ITX.MC', 'RETAIL', 'AMZN', 'SK3.IR']
+CONSUMER   = ['NKE', 'MDM.PA', 'ITX.MC', 'RETAIL', 'AMZN', 'SK3.IR', 'EO.PA', 'SMCP.PA']
 
 DEFENSE    = ['NOC' ,'HO.PA', 'BA', 'PLTR', 'RTX', 'LMT']
 
@@ -36,7 +36,7 @@ MATERIALS  = ['MLM', 'LHN.SW']
 NRJ        = ['FP.PA', 'EDPR.LS', 'NEOEN.PA', 'ABIO.PA']
 
 TECH       = ['AAPL', 'TSLA', 'AMZN', 'MSFT', 'SPOT', 'SQ', 'SHOP', 'GOOGL']
-TECH      += ['NVDA', 'HIPAY.PA', 'ATO.PA', 'BIG.PA', 'SOP.PA', 'INTC']
+TECH      += ['NVDA', 'HIPAY.PA', 'ATO.PA', 'BIG.PA', 'SOP.PA', 'INTC', 'IBM']
 
 
 INDICES    = ['^GSPC', '^DJI', '^IXIC', '^FCHI', '^N225', '^HSI', '^DJSH']
@@ -44,7 +44,7 @@ INDICES    = ['^GSPC', '^DJI', '^IXIC', '^FCHI', '^N225', '^HSI', '^DJSH']
 
 SWISS      = ['LHN.SW', 'SIKA.SW']
 
-FRENCH     = ['ELIS.PA', 'KER.PA', 'SMCP.PA', 'BEN.PA']
+FRENCH     = ['ELIS.PA', 'KER.PA', 'BEN.PA']
 
 CRYPTO     = ['BTC-USD', 'ETH-USD', 'DOGE-USD', 'SOL1-USD']
 

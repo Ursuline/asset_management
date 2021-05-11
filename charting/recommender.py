@@ -10,15 +10,15 @@ import ssl
 import os
 import mimetypes
 from email.message import EmailMessage
-from email.mime.multipart import MIMEMultipart
-from email.mime.text import MIMEText
-from email.mime.application import MIMEApplication
-from email.mime.base import MIMEBase
-from email import encoders
+#from email.mime.multipart import MIMEMultipart
+#from email.mime.text import MIMEText
+#from email.mime.application import MIMEApplication
+#from email.mime.base import MIMEBase
+#from email import encoders
 
-import trading_defaults as dft
-import utilities as util
-import private as pvt # recipient names, smtp sender name/pwd
+from charting import trading_defaults as dft
+from charting import private as pvt
+from finance import utilities as util
 
 class Recommender():
     '''
@@ -130,7 +130,6 @@ class Recommender():
         def add_attachment(msg, rcm):
             '''Adds a file to the body of the message '''
             attachment_path = rcm.get_time_series_plot().get_pathname()
-            print(f'attaching {attachment_path}')
 
             mime_type, _ = mimetypes.guess_type(attachment_path)
             mime_type, mime_subtype = mime_type.split('/', 1)

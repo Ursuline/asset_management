@@ -14,7 +14,7 @@ import math
 import pandas as pd
 import scipy.stats
 from dateutil.relativedelta import relativedelta
-import moments
+from finance import moments
 
 MAX_YEARS = 20 # number of years corresponding to 'max'
 

@@ -14,8 +14,8 @@ import pickle
 import json
 import pandas as pd
 
-import security as sec
-import ticker as tkr
+from finance import security as sec
+from charting import ticker as tkr
 
 def describe_run(tickers, date_range, span_dic, buffer_dic, strat_posns, fee_pct):
     '''print run description'''
