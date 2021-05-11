@@ -20,9 +20,10 @@ from bokeh.io import output_notebook, export_png
 from bokeh.layouts import gridplot
 from bokeh.io import show, curdoc
 
-import trading_defaults as dft
-import utilities as util
-import parameters as par
+from charting import trading_defaults as dft
+#from charting import parameters as par
+from finance import utilities as util
+
 
 class TimeSeriesPlot():
     '''Bokeh time series plot'''
@@ -173,8 +174,10 @@ class TimeSeriesPlot():
         title += f'{self._span:.0f}-day mean | '
         title += f'opt buffer={self._buffer:.2%}'
         if self._buy_sell is not None:
-            turnover = self._trading_days / (self._buy_sell[0] + self._buy_sell[1])
-            title += f' | tx turnover: {turnover:.0f} days'
+            denom = self._buy_sell[0] + self._buy_sell[1]
+            if denom > 0:
+                turnover = self._trading_days / denom
+                title += f' | tx turnover: {turnover:.0f} days'
 
         plot.add_layout(Title(text=title,
                               text_font_style="normal",
