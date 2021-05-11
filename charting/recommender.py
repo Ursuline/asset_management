@@ -10,15 +10,15 @@ import ssl
 import os
 import mimetypes
 from email.message import EmailMessage
-from email.mime.multipart import MIMEMultipart
-from email.mime.text import MIMEText
-from email.mime.application import MIMEApplication
-from email.mime.base import MIMEBase
-from email import encoders
+#from email.mime.multipart import MIMEMultipart
+#from email.mime.text import MIMEText
+#from email.mime.application import MIMEApplication
+#from email.mime.base import MIMEBase
+#from email import encoders
 
-import trading_defaults as dft
-import utilities as util
-import private as pvt # recipient names, smtp sender name/pwd
+from charting import trading_defaults as dft
+from charting import private as pvt
+from finance import utilities as util
 
 class Recommender():
     '''
