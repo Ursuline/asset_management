@@ -15,9 +15,9 @@ import pandas as pd
 import matplotlib.pyplot as plt
 from matplotlib.offsetbox import (TextArea, AnnotationBbox)
 
-import trading_defaults as dft
-import trading_plots as trplt
-import utilities as util
+from charting import trading_defaults as dft
+from charting import trading_plots as trplt
+from finance import utilities as util
 
 class Ticker():
     '''
