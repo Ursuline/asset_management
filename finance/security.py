@@ -17,8 +17,8 @@ import traceback
 import datetime as dt
 import pandas as pd
 import yfinance as yf
-import equity as eq
-import utilities as util
+from finance import equity as eq
+from finance import utilities as util
 
 class Security(eq.Equity):
     ''' A Security is an object resulting from Yahoo finance download using yfinance
