@@ -11,10 +11,10 @@ import pandas as pd
 import matplotlib.pyplot as plt
 from tqdm import tqdm
 
-import trading_defaults as dft
-import trading_plots as trplt
-import utilities as util
-import parameters as par
+from charting import trading_defaults as dft
+from charting import trading_plots as trplt
+from charting import parameters as par
+from finance import utilities as util
 
 class Topomap():
     ''' A Topomap encapsulates is the 3d representation of the cumulative ema

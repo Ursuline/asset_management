@@ -15,8 +15,8 @@ import matplotlib.pyplot as plt
 import matplotlib.ticker as mtick
 from matplotlib.offsetbox import (TextArea, AnnotationBbox)
 
-import trading_defaults as dft
-import utilities as util
+from charting import trading_defaults as dft
+from finance import utilities as util
 
 
 ### PLOT SUPPORT FUNCTIONS
