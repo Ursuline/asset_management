@@ -7,8 +7,8 @@ Run parameters
 
 @author: charly
 """
-import trading_portfolio as ptf
-import trading_defaults as dft
+from charting import trading_portfolio as ptf
+from charting import trading_defaults as dft
 
 # Skip these securities
 REMOVE  = ['UL', 'FP.PA', 'ORA.PA', 'KC4.F', 'BNP.PA', 'KER.PA', 'SMC.PA']
@@ -27,7 +27,7 @@ DISPLAY = True
 
 REMOTE = False # Cloud or local run
 
-REFRESH_YAHOO = True # Download fresh Yahoo data
+REFRESH_YAHOO = False # Download fresh Yahoo data
 REFRESH_EMA   = False  # Recompute ema map
 
 POSITIONS = ['long', 'short']
@@ -35,10 +35,10 @@ POSITIONS = ['long', 'short']
 START_DATE = '2018-01-02'
 
 TICKERS = ptf.OBSERVE
-TICKERS = ['IBM']
+TICKERS = ['ETH-USD']
 
 #END_DATE   = '2021-05-04'
-END_DATE   = dft.TODAY
+END_DATE   = dft.YESTERDAY
 
 DATE_RANGE = [START_DATE, END_DATE]
 ZOOM_RANGE = [START_DATE, END_DATE]
