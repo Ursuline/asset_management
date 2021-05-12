@@ -8,12 +8,15 @@ Created on Thu Apr  8 17:13:37 2021
 import os
 import numpy as np
 import pandas as pd
-import matplotlib.pyplot as plt
+#import matplotlib.pyplot as plt
+import plotly
+import plotly.graph_objects as go
+import plotly.io as pio
 from tqdm import tqdm
 
 from charting import trading_defaults as dft
 from charting import trading_plots as trplt
-from charting import parameters as par
+#from charting import parameters as par
 from finance import utilities as util
 
 class Topomap():
@@ -545,180 +548,146 @@ class Topomap():
     ##########################
     ### Plotting functions ###
     ##########################
-    def contour_plot(self, ticker_object, date_range):
+
+    def surface_plot(self, ticker_object, date_range, style, remote):
         '''
-        Contour plot of EMA as a function of rolling-window span & buffer
+        plotly surface and contour plots
+        style = surface or contour
         '''
-        n_contours = dft.N_CONTOURS # number of contours
-        n_maxima   = dft.N_MAXIMA_DISPLAY # number of maximum points to plot
-
-        # Get start & end dates in title (%d-%b-%Y) and output file (%Y-%m-%d) formats
-        title_range = util.dates_to_strings([date_range[0],
-                                            date_range[1]],
-                                           '%d-%b-%Y')
-        name_range  = util.dates_to_strings([date_range[0],
-                                             date_range[1]],
-                                            '%Y-%m-%d')
-
-        # Plot
-        _, axis = plt.subplots(figsize=(dft.FIG_WIDTH, dft.FIG_WIDTH))
-        plt.contourf(self._buffers,
-                     self._spans,
-                     self._emas,
-                     levels = n_contours,
-                     cmap   = dft.CONTOUR_COLOR_SCHEME,
-                     )
-        plt.colorbar(label='EMA return')
-
-        axis = trplt.build_3d_axes_labels(axis)
-
-        # Plot maxima points
-        max_ema, max_span, max_buff = trplt.plot_maxima(self._emas,
-                                                        self._spans,
-                                                        self._buffers,
-                                                        #self._hold,
-                                                        axis,
-                                                        n_maxima,)
-
-        # Build title
-        symbol = ticker_object.get_symbol()
-        axis = trplt.build_title(axis        = axis,
-                                 ticker      = symbol,
-                                 ticker_name = ticker_object.get_name(),
-                                 position    = self._strat_pos,
-                                 dates       = title_range,
-                                 ema         = max_ema,
-                                 hold        = self._hold,
-                                 span        = max_span,
-                                 buffer      = max_buff,
-                                 buy_sell    = None,
-                                 )
-
-        plt.grid(b=None, which='major', axis='both', color=dft.GRID_COLOR)
-        plot_dir = os.path.join(dft.PLOT_DIR, self._name)
-        trplt.save_figure(plot_dir,
-                          f'{symbol}_{name_range[0]}_{name_range[1]}_contours_{self._strat_pos}',
-                          extension='png')
-        if not par.REMOTE:
-            plt.show()
-
-    def surface_plot_plotly(self, ticker_object, date_range, colors, azim=None, elev=None, rdist=10):
-        import plotly.graph_objects as go
-        import plotly.io as pio
-        #import plotly.express as px
-        pio.renderers.default='svg'
-
-
+        if style not in ['contour', 'surface']:
+            msg = f'style {style} should be contour or surface'
+            raise AssertionError(msg)
         def extract_best_ema():
+            '''
+            find highest ema value and corresponding span/buffer
+            in _best_emas dataframe
+            '''
             idx_max  = self._best_emas['ema'].idxmax()
             max_ema  = self._best_emas['ema'].max()
             max_span = self._best_emas.span.iloc[idx_max]
             max_buff = self._best_emas.buffer.iloc[idx_max]
             return max_span, max_buff, max_ema
 
-        def re_format_data():
-            temp = []
-            for i, span in enumerate(self._spans):
-                for j, buffer in enumerate(self._buffers):
-                    temp.append([span, buffer, self._emas[i,j]])
-            return pd.DataFrame(temp, columns=['span', 'buffer', 'ema'])
+        def _build_title(ticker, dates, ema, span, buffer):
+            ''' Build plot title '''
+            hold     = self._hold
+            ticker_name   = ticker.get_name()
+            ticker_symbol = ticker.get_symbol()
+            title  = f'{ticker_name} ({ticker_symbol}) | '
+            title += f'{self._strat_pos.capitalize()} position | '
+            title += f'{dates[0]} - {dates[1]}<br>'
+            title += f'Max payoff={ema:.2%} (hold={hold:.2%}) | '
+            title += f'{span:.0f}-day mean | '
+            title += f'buffer={buffer:.2%}'
+            return title
 
         max_span, max_buff, max_ema = extract_best_ema()
-        temp = re_format_data()
-        print('building 3d plot')
-        fig = go.Figure(data=[go.Surface(z=temp.ema, x=temp.span, y=temp.buffer)])
-        fig.update_layout(title='Surface plot test',
-                          autosize=True,
-                          width=500, height=500,
-                          margin=dict(l=65, r=50, b=65, t=90))
-        print(' 3d plot build')
-        fig.show()
-        print('showing 3d plot')
+        y_values = self._spans
+        x_values = self._buffers
+        z_values = self._emas
 
-
-
-
-    def surface_plot(self, ticker_object, date_range, colors, azim=None, elev=None, rdist=10):
-        '''
-        Surface plot of EMA as a function of rolling-window span & buffer
-        '''
-        def extract_best_ema():
-            idx_max  = self._best_emas['ema'].idxmax()
-            max_ema  = self._best_emas['ema'].max()
-            max_span = self._best_emas.span.iloc[idx_max]
-            max_buff = self._best_emas.buffer.iloc[idx_max]
-            return max_span, max_buff, max_ema
-
-        def re_format_data():
-            temp = []
-            for i, span in enumerate(self._spans):
-                for j, buffer in enumerate(self._buffers):
-                    temp.append([span, buffer, self._emas[i,j]])
-            return pd.DataFrame(temp, columns=['span', 'buffer', 'ema'])
-
-        def remove_axes_grids(axis):
-            # Remove gray panes and axis grid
-            remove_z = False
-            axis.xaxis.pane.fill = False
-            axis.xaxis.pane.set_edgecolor('white')
-            axis.yaxis.pane.fill = False
-            axis.yaxis.pane.set_edgecolor('white')
-            axis.zaxis.pane.fill = False
-            axis.zaxis.pane.set_edgecolor('white')
-            axis.grid(False)
-            # Remove z-axis
-            if remove_z:
-                axis.w_zaxis.line.set_lw(0.)
-                axis.set_zticks([])
-            return axis
-
-        # Get start & end dates in title (%d-%b-%Y) and output file (%Y-%m-%d) formats
         title_range = util.dates_to_strings([date_range[0],
-                                            date_range[1]],
+                                             date_range[1]],
                                             '%d-%b-%Y')
-
         name_range   = util.dates_to_strings([date_range[0],
                                              date_range[1]],
                                              '%Y-%m-%d')
-        max_span, max_buff, max_ema = extract_best_ema()
-        temp = re_format_data()
-        # Plot
-        fig  = plt.figure(figsize=(10, 10))
-        axis = fig.gca(projection='3d')
-        # Set perspective
-        axis.view_init(elev=elev, azim=azim)
-        axis.dist=rdist
+        # Title
+        title = _build_title(ticker = ticker_object,
+                             dates  = title_range,
+                             ema    = max_ema,
+                             span   = max_span,
+                             buffer = max_buff,
+                             )
+        # Axes
+        xaxis_title = 'Buffer'
+        yaxis_title = 'Span (days)'
+        #color bar
+        colorbar_dict = dict(title='Return',
+                             titleside='top',
+                             tickformat='.0%',
+                             separatethousands=True,)
+        # Hover
+        hovertemplate = 'Buffer=%{x:.1%}<br>Span=%{y} days<br>Return=%{z:.1%}<extra></extra>'
+        # Default layout
+        layout = go.Layout(title           = title,
+                           title_font_size = 14,
+                           title_xref = 'paper',
+                           title_x  = 0.5,
+                           xaxis_title = xaxis_title,
+                           yaxis_title = yaxis_title,
+                           autosize = True,
+                           width  = 750,
+                           height = 750,
+                           margin = dict(l=100, r=50, b=100, t=100),
+                           xaxis  = dict(tickformat=".0%"),
+                           )
 
-        surf = axis.plot_trisurf(temp['buffer'],
-                                 temp['span'],
-                                 temp['ema'],
-                                 cmap      = colors,
-                                 linewidth = 1)
-        fig.colorbar(surf, shrink=.5, aspect=25, label = 'EMA return')
+        if style == 'surface':
+            colorscale = dft.SURFACE_COLOR_SCHEME
+            data = [go.Surface(x = x_values,
+                               y = y_values,
+                               z = z_values,
+                               colorscale = colorscale,
+                               colorbar   = colorbar_dict,
+                               hovertemplate = hovertemplate,
+                               )
+                    ]
+            fig = go.Figure(data=data, layout=layout)
 
-        axis = trplt.build_3d_axes_labels(axis)
-        #axis.set_zlabel(r'Return', rotation=60)
-        axis = remove_axes_grids(axis)
-        symbol = ticker_object.get_symbol()
+            fig.update_traces(contours_z=dict(show=True,
+                                              usecolormap=True,
+                                              highlightcolor="limegreen",
+                                              project_z=True))
 
-        axis = trplt.build_title(axis        = axis,
-                                 ticker      = symbol,
-                                 ticker_name = ticker_object.get_name(),
-                                 dates       = title_range,
-                                 position    = self._strat_pos,
-                                 ema         = max_ema,
-                                 hold        = self._hold,
-                                 span        = max_span,
-                                 buffer      = max_buff,
-                                 buy_sell    = None,
-                                 )
+            fig.update_layout(scene = dict(xaxis = dict(nticks=10, tickformat=".0%"),
+                                           yaxis = dict(nticks=10),
+                                           zaxis = dict(nticks=10, tickformat=".0%"),
+                                           xaxis_title = xaxis_title,
+                                           yaxis_title = yaxis_title,
+                                           zaxis_title = 'return')
+                              )
+        else: # contour plot
+            colorscale = dft.SURFACE_COLOR_SCHEME
+            data = [go.Contour(x=x_values,
+                               y=y_values,
+                               z=z_values,
+                               colorscale=colorscale,
+                               colorbar=colorbar_dict,
+                               hovertemplate = hovertemplate,
+                               )
+                    ]
 
-        plot_dir = os.path.join(dft.PLOT_DIR, self._name)
-        trplt.save_figure(plot_dir,
-                          f'{symbol}_{name_range[0]}_{name_range[1]}_3D_{self._strat_pos}',
-                          extension='png')
-        if not par.REMOTE:
-            plt.show()
+            fig = go.Figure(data   = data,
+                            layout = layout,
+                            )
+
+            # Hover
+            fig.update_layout(xaxis=dict(hoverformat='.2%'),
+                              yaxis=dict(hoverformat='.0f'),
+                              )
+
+        if not remote:
+            pio.renderers.default='browser'
+            filename = self.get_plot_filename(ticker_object, name_range, style, 'html')
+            plotly.offline.plot(fig, filename=filename)
+        else:
+            pio.renderers.default='png'
+            filename = self.get_plot_filename(ticker_object, name_range, style, 'png')
+            fig.write_image(filename)
+
+
+    def get_plot_filename(self, ticker, name_range, style, extension):
+            ''' Build file name '''
+            plot_dir = os.path.join(dft.PLOT_DIR, self._name)
+            filename  = f'{ticker.get_symbol()}_'
+            filename += f'{name_range[0]}_{name_range[1]}_'
+            filename += f'{self._strat_pos}'
+            if style == 'surface':
+                filename += '_surface'
+            else:
+                filename += '_contour'
+            return f"{plot_dir}/{filename}.{extension}"
 
 
     def plot_buffer_range(self, ticker_object, security, span, n_best):

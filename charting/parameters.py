@@ -22,20 +22,22 @@ SCREEN = True
 EMAIL  = True
 NOTIFY = True # item-per-item notification
 
-# display time series in browser
-DISPLAY = True
+# html display plots in browser
+DISPLAY_TIME_SERIES  = True
+DISPLAY_SURFACE_PLOT = True
+DISPLAY_CONTOUR_PLOT = True
 
 REMOTE = False # Cloud or local run
 
 REFRESH_YAHOO = False # Download fresh Yahoo data
 REFRESH_EMA   = False  # Recompute ema map
 
-POSITIONS = ['long', 'short']
+POSITIONS = ['long']
 
 START_DATE = '2018-01-02'
 
-TICKERS = ptf.OBSERVE
-TICKERS = ['ETH-USD']
+TICKERS = ptf.K_WOOD
+TICKERS = ['ARKK']
 
 #END_DATE   = '2021-05-04'
 END_DATE   = dft.YESTERDAY

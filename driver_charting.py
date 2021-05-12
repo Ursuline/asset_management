@@ -26,9 +26,9 @@ REMOVE     = par.REMOVE
 DATE_RANGE = par.DATE_RANGE
 ZOOM_RANGE = par.ZOOM_RANGE
 POSITIONS  = par.POSITIONS
-DISPLAY    = par.DISPLAY
 NOTIFY     = par.NOTIFY
 REMOTE     = par.REMOTE
+DISPLAY_TIME_SERIES = par.DISPLAY_TIME_SERIES
 REFRESH_YAHOO = par.REFRESH_YAHOO
 REFRESH_EMA   = par.REFRESH_EMA
 
@@ -86,16 +86,19 @@ if __name__ == '__main__':
 
 
                 # Plot EMA contour map
-                topomap.contour_plot(ticker_obj, date_range)
+                #topomap.contour_plot(ticker_obj, date_range)
+                topomap.surface_plot(ticker_object = ticker_obj,
+                                             date_range = date_range,
+                                             style = 'contour',
+                                             remote = REMOTE,
+                                             )
 
                 # Plot EMA 3D map
                 topomap.surface_plot(ticker_object = ticker_obj,
-                                     date_range = date_range,
-                                     colors = dft.SURFACE_COLOR_SCHEME,
-                                     azim   = dft.PERSPECTIVE['azimuth'],
-                                     elev   = dft.PERSPECTIVE['elevation'],
-                                     rdist  = dft.PERSPECTIVE['distance'],
-                                     )
+                                             date_range = date_range,
+                                             style = 'surface',
+                                             remote = REMOTE,
+                                             )
 
                 # Plot time series with default parameters from best EMA
                 best_span, best_buffer, best_ema, hold = topomap.get_global_max()
@@ -120,7 +123,10 @@ if __name__ == '__main__':
                                                left_index=True, right_index=True))
                 data   = pd.DataFrame(pd.merge(data, ticker_obj.get_return(),
                                                left_index=True, right_index=True))
-                plot.build_plot(data, notebook=False, display=DISPLAY, remote=REMOTE)
+                plot.build_plot(data,
+                                notebook=False,
+                                display=DISPLAY_TIME_SERIES,
+                                remote=REMOTE)
 
                 # Determine the action to take for the given END_DATE
                 # instantiate recommendation
