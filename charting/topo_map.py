@@ -8,7 +8,6 @@ Created on Thu Apr  8 17:13:37 2021
 import os
 import numpy as np
 import pandas as pd
-#import matplotlib.pyplot as plt
 import plotly
 import plotly.graph_objects as go
 import plotly.io as pio
@@ -16,7 +15,6 @@ from tqdm import tqdm
 
 from charting import trading_defaults as dft
 from charting import trading_plots as trplt
-#from charting import parameters as par
 from finance import utilities as util
 
 class Topomap():
@@ -141,9 +139,9 @@ class Topomap():
         for i, span in tqdm(enumerate(self._spans), desc = desc, ncols=40):
             for j, buffer in enumerate(self._buffers):
                 data  = self.build_strategy(close.loc[dates[0]:dates[1], :].copy(),
-                                             span,
-                                             buffer,
-                                             )
+                                            span,
+                                            buffer,
+                                            )
                 emas[i][j] = self.get_cumret(data,
                                              'ema',
                                              self.get_fee(data, dft.get_actions()),
@@ -220,7 +218,7 @@ class Topomap():
         # compute returns from the EMA strategy
         d_frame = self.build_ema(d_frame)
 
-        self._strategy = d_frame # for debugging
+        self._strategy = d_frame
 
         # remove junk
         d_frame = self.cleanup_strategy(d_frame)
@@ -330,7 +328,7 @@ class Topomap():
             elif self._strat_pos == 'short':
                 pos_act = handle_short(prev_position, prev_sign, sign)
             else:
-                raise ValueError('build_positions: long or short positions only')
+                raise ValueError(f'build_positions: "{self._strat_pos}" long or short positions only')
             positions.append(pos_act[0])
             actions.append(pos_act[1])
 
@@ -397,6 +395,13 @@ class Topomap():
         # Mask sells
         fee += (self._fee * data[data.ACTION == actions[1]].CUMRET_EMA.sum())
         return fee
+
+
+    def get_current_strategy(self):
+        '''Returns the current (last row) of the strategy dataframe '''
+        current = self._strategy.iloc[-1]
+        return current
+
 
     @staticmethod
     def get_cumret(data, strategy, fee=0):
@@ -548,7 +553,6 @@ class Topomap():
     ##########################
     ### Plotting functions ###
     ##########################
-
     def surface_plot(self, ticker_object, date_range, style, remote):
         '''
         plotly surface and contour plots
@@ -602,6 +606,7 @@ class Topomap():
         # Axes
         xaxis_title = 'Buffer'
         yaxis_title = 'Span (days)'
+
         #color bar
         colorbar_dict = dict(title='Return',
                              titleside='top',
@@ -609,6 +614,7 @@ class Topomap():
                              separatethousands=True,)
         # Hover
         hovertemplate = 'Buffer=%{x:.1%}<br>Span=%{y} days<br>Return=%{z:.1%}<extra></extra>'
+
         # Default layout
         layout = go.Layout(title           = title,
                            title_font_size = 14,
@@ -635,17 +641,20 @@ class Topomap():
                     ]
             fig = go.Figure(data=data, layout=layout)
 
-            fig.update_traces(contours_z=dict(show=True,
-                                              usecolormap=True,
-                                              highlightcolor="limegreen",
-                                              project_z=True))
+            fig.update_traces(contours_z=dict(show        = True,
+                                              usecolormap = True,
+                                              highlightcolor = "limegreen",
+                                              project_z      = True,
+                                              )
+                              )
 
             fig.update_layout(scene = dict(xaxis = dict(nticks=10, tickformat=".0%"),
                                            yaxis = dict(nticks=10),
                                            zaxis = dict(nticks=10, tickformat=".0%"),
                                            xaxis_title = xaxis_title,
                                            yaxis_title = yaxis_title,
-                                           zaxis_title = 'return')
+                                           zaxis_title = 'return',
+                                           )
                               )
         else: # contour plot
             colorscale = dft.SURFACE_COLOR_SCHEME
@@ -664,8 +673,7 @@ class Topomap():
 
             # Hover
             fig.update_layout(xaxis=dict(hoverformat='.2%'),
-                              yaxis=dict(hoverformat='.0f'),
-                              )
+                              yaxis=dict(hoverformat='.0f'),)
 
         if not remote:
             pio.renderers.default='browser'
