@@ -86,7 +86,6 @@ if __name__ == '__main__':
 
 
                 # Plot EMA contour map
-                #topomap.contour_plot(ticker_obj, date_range)
                 topomap.surface_plot(ticker_object = ticker_obj,
                                              date_range = date_range,
                                              style = 'contour',
@@ -124,9 +123,10 @@ if __name__ == '__main__':
                 data   = pd.DataFrame(pd.merge(data, ticker_obj.get_return(),
                                                left_index=True, right_index=True))
                 plot.build_plot(data,
-                                notebook=False,
-                                display=DISPLAY_TIME_SERIES,
-                                remote=REMOTE)
+                                notebook = False,
+                                display  = DISPLAY_TIME_SERIES,
+                                remote   = REMOTE,
+                                )
 
                 # Determine the action to take for the given END_DATE
                 # instantiate recommendation
