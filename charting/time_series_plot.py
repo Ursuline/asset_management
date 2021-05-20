@@ -21,7 +21,6 @@ from bokeh.layouts import gridplot
 from bokeh.io import show, curdoc
 
 from charting import trading_defaults as dft
-#from charting import parameters as par
 from finance import utilities as util
 
 
@@ -123,14 +122,11 @@ class TimeSeriesPlot():
 
     def _build_pathname(self, extension):
         '''Build html file path name'''
-
         directory = self._get_directory()
-
         filename  = f'{self._ticker_obj.get_symbol()}_'
         filename += f'{self._display_dates[0].date()}-{self._display_dates[1].date()}_'
         filename += f'{self._strat_pos}_tmseries.'
         filename += f'{extension}'
-
         self._pathname = os.path.join(directory, filename)
 
 
@@ -144,7 +140,6 @@ class TimeSeriesPlot():
         symbol = self._ticker_obj.get_symbol()
         directory = os.path.join(dft.PLOT_DIR, symbol)
         return directory
-
 
 
     def _build_title(self, plot):
@@ -183,7 +178,6 @@ class TimeSeriesPlot():
                               text_font_style="normal",
                               align="center"),
                         'above')
-
         return plot
 
 
@@ -460,4 +454,3 @@ class TimeSeriesPlot():
             export_png(self._plot, filename=self._pathname)
         else: # save to html if local
             save(self._plot)
-
