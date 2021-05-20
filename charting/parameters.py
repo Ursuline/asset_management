@@ -32,14 +32,12 @@ REMOTE = False # Cloud or local run
 REFRESH_YAHOO = False # Download fresh Yahoo data
 REFRESH_EMA   = False  # Recompute ema map
 
-POSITIONS = ['long']
+POSITIONS = ['long', 'short']
 
 START_DATE = '2018-01-02'
 
-TICKERS = ptf.K_WOOD
-TICKERS = ['ARKK']
-
-#END_DATE   = '2021-05-04'
+TICKERS = ptf.OBSERVE
+TICKERS = ['STLA.PA']
 END_DATE   = dft.YESTERDAY
 
 DATE_RANGE = [START_DATE, END_DATE]
