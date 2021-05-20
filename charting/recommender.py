@@ -3,18 +3,14 @@
 """
 Created on Sun Apr 11 14:33:03 2021
 
+recommender.py
+
 @author: Charles Mégnin
 """
 import smtplib
-import ssl
 import os
 import mimetypes
 from email.message import EmailMessage
-#from email.mime.multipart import MIMEMultipart
-#from email.mime.text import MIMEText
-#from email.mime.application import MIMEApplication
-#from email.mime.base import MIMEBase
-#from email import encoders
 
 from charting import trading_defaults as dft
 from charting import private as pvt
@@ -24,7 +20,7 @@ class Recommender():
     '''
     Handles the dispatching of trading recommendations
     '''
-    def __init__(self, screen = True, email = True, sms = False):
+    def __init__(self, ptf_file = None, screen = True, email = True, sms = False):
         '''
         Collects recommendations and dispatches to selected notification method
         _screen : print to screen
@@ -35,9 +31,11 @@ class Recommender():
         self._n_long_recs  = 0 # of long recommendations
         self._n_short_recs = 0 # of short recommendations
         self._n_actions    = 0
+        self._ptf_file = os.path.splitext(os.path.basename(ptf_file))[0]
         self._screen = screen
         self._email  = email
         self._sms    = sms
+
 
     def set_screen(self, screen: bool):
         '''Switch output to screen'''
@@ -57,10 +55,9 @@ class Recommender():
             self._n_short_recs += 1
         else:
             msg  = 'Recommender.add_recommendation: '
-            msg += f'position {recommendation.get_strategic_position()} '
+            msg += f'position "{recommendation.get_strategic_position()}" '
             msg += 'should be long or short.'
             raise ValueError(msg)
-
 
     def notify(self, screen_nc: bool, email_nc: bool):
         '''
@@ -99,7 +96,7 @@ class Recommender():
 
 
     def _email_recommendations(self, email_nc: bool):
-        '''Email all recommendations'''
+        '''Email recommendations when action is required'''
 
         def _build_body(email_nc):
             '''
@@ -107,14 +104,17 @@ class Recommender():
             Computes the number of buy/sell recommendations self._n_actions
             '''
             body = ''
+
             if self._n_long_recs > 0:
                 body += 'Strategic position: long\n'
                 for rcm in self._long_recommendations:
                     name = rcm.get_name()
                     symb = rcm.get_symbol()
-                    if email_nc or not (email_nc or rcm.get_action() == 'n/c'):
-                        body += f'{name} ({symb})\n{rcm.get_body()}\n'
-                        self._n_actions += 1
+                    if rcm.get_action() is not None:
+                        if email_nc or not (email_nc or rcm.get_action() == 'n/c'):
+                            date = util.date_to_string(rcm.get_date(), '%d %b %Y')
+                            body += f'{name} ({symb}) {date}:\n{rcm.get_body()}\n'
+                            self._n_actions += 1
                 body += '\n'
 
             if self._n_short_recs > 0:
@@ -122,9 +122,11 @@ class Recommender():
                 for rcm in self._short_recommendations:
                     name = rcm.get_name()
                     symb = rcm.get_symbol()
-                    if email_nc or not (email_nc or rcm.get_action() == 'n/c'):
-                        body += f'{name} ({symb})\n{rcm.get_body()}\n'
-                        self._n_actions += 1
+                    if rcm.get_action() is not None:
+                        if email_nc or not (email_nc or rcm.get_action() == 'n/c'):
+                            date = util.date_to_string(rcm.get_date(), '%d %b %Y')
+                            body += f'{name} ({symb}) {date}:\n{rcm.get_body()}\n'
+                            self._n_actions += 1
             return body
 
         def add_attachment(msg, rcm):
@@ -133,13 +135,13 @@ class Recommender():
 
             mime_type, _ = mimetypes.guess_type(attachment_path)
             mime_type, mime_subtype = mime_type.split('/', 1)
-            with open(attachment_path, 'rb') as ap:
-                msg.add_attachment(ap.read(),
+            with open(attachment_path, 'rb') as atp:
+                msg.add_attachment(atp.read(),
                                    maintype = mime_type,
                                    subtype  = mime_subtype,
                                    filename = os.path.basename(attachment_path),
                                    )
-            ap.close()
+            atp.close()
 
         def add_attachments(msg, email_nc):
             '''
@@ -148,20 +150,25 @@ class Recommender():
             '''
             if self._n_long_recs > 0:
                 for rcm in self._long_recommendations:
-                    if email_nc or not (email_nc or rcm.get_action() == 'n/c'):
-                        add_attachment(msg, rcm)
+                    if rcm.get_action() is not None:
+                        if email_nc or not (email_nc or rcm.get_action() == 'n/c'):
+                            add_attachment(msg, rcm)
 
             if self._n_short_recs > 0:
                 for rcm in self._short_recommendations:
-                    if email_nc or not (email_nc or rcm.get_action() == 'n/c'):
-                        add_attachment(msg, rcm)
+                    if rcm.get_action() is not None:
+                        if email_nc or not (email_nc or rcm.get_action() == 'n/c'):
+                            add_attachment(msg, rcm)
 
         body = _build_body(email_nc)
         if self._n_actions != 0: # send email if there is something to send
             message = EmailMessage()
             message["From"] = pvt.SENDER_EMAIL
             message["To"]   = ",".join(pvt.RECIPIENT_EMAILS)
-            message["Subject"] = 'Subject: Trade recommendation'
+            if self._ptf_file is None:
+                message["Subject"] = 'Subject: Trade recommendation'
+            else:
+                message["Subject"] = f'Subject: Trade recommendation for {self._ptf_file}'
 
             message.set_content(body)
 
@@ -178,64 +185,24 @@ class Recommender():
         else:
             print('no actions required - no email sent')
 
-
-    def _email_recommendations_old(self, email_nc: bool):
-        '''Email all recommendations'''
-        body = ''
-        n_tickers = 0
-
-        if len(self._long_recommendations) > 0:
-            body += 'Strategic position: long\n'
-            for rcm in self._long_recommendations:
-                name = rcm.get_name()
-                symb = rcm.get_symbol()
-                if email_nc or not (email_nc or rcm.get_action() == 'n/c'):
-                    body += f'{name} ({symb})\n{rcm.get_body()}\n'
-                    n_tickers += 1
-            body += '\n'
-
-        if len(self._short_recommendations) > 0:
-            body += 'Strategic position: short\n'
-            for rcm in self._short_recommendations:
-                name = rcm.get_name()
-                symb = rcm.get_symbol()
-                if email_nc or not (email_nc or rcm.get_action() == 'n/c'):
-                    body += f'{name} ({symb})\n{rcm.get_body()}\n'
-                    n_tickers += 1
-
-        if n_tickers != 0:
-            message = 'Subject: Trade recommendation\n\n' + body
-
-            # Create a secure SSL context
-            context = ssl.create_default_context()
-
-            with smtplib.SMTP_SSL(dft.SMTP_SERVER,
-                                  dft.SSL_PORT,
-                                  context=context) as server:
-                server.login(pvt.SENDER_EMAIL,
-                             pvt.PASSWORD)
-                for recipient_email in pvt.RECIPIENT_EMAILS:
-                    server.sendmail(dft.SMTP_SERVER, recipient_email, message)
-            print('email sent to list')
-            server.close()
-        else:
-            print('no actions required - no email sent')
-
-
-class Recommendation():
+####################################
+###### RECOMMENDATION CLASSES ######
+####################################
+class Recommendations():
     '''
     encapsulates the recommendation to buy | sell | n/c
-    captured in the target date row ACTION column of tthe ticker object's data
+    captured in the target date row ACTION column of the ticker object's data
     NB: position is the recommended position for the security
         stratpos is the long/short position strategy for the security
     '''
-    def __init__(self, ticker_object, topomap, target_date, span, buffer, stratpos, ts_plot):
+    def __init__(self, ticker_object, topomap, target_date, span, buffer, strategic_pos, ts_plot):
+        self._strategic_pos = strategic_pos.strip()
         self._ticker   = ticker_object
         self._date     = target_date
-        self._stratpos = stratpos
         self._span     = span
         self._buffer   = buffer
         self._ts_plot  = ts_plot
+        self._ptf_file = None
         self._name     = None
         self._symbol   = None
         self._action   = None
@@ -244,19 +211,22 @@ class Recommendation():
         self._body     = None
         self.set_name()
         self.set_symbol()
-        self._build_recommendation(topomap)
 
     # Getters
     def get_body(self):
-        ''''Return the body of the recommendation'''
+        '''Return the body of the recommendation'''
         return self._body
 
+    def get_date(self):
+        '''Return the date corresponding to the recommendation'''
+        return self._date
+
     def get_name(self):
-        ''''Return the ticker name'''
+        '''Return the ticker name'''
         return self._name
 
     def get_symbol(self):
-        ''''Return the ticker symbol'''
+        '''Return the ticker symbol'''
         return self._symbol
 
     def get_action(self):
@@ -269,7 +239,7 @@ class Recommendation():
 
     def get_strategic_position(self):
         '''Get the strategic position '''
-        return self._stratpos
+        return self._strategic_pos
 
     def get_ticker_object(self):
         ''''Return the ticker object'''
@@ -293,13 +263,103 @@ class Recommendation():
         self._symbol = self._ticker.get_symbol()
 
 
+    def print_recommendation(self, notify: bool, enhanced = True):
+        '''Print recommendation to screen'''
+        if notify:
+            date = util.date_to_string(self._date, '%d %b %Y')
+            msg = f'{date}: '
+            msg += f'{self._name} ({self._symbol}) '
+            msg += f'action:{self._action} | position: {self._position} | '
+            msg += f'span={self._span:.0f} days buffer={self._buffer:.2%}'
+            if (self._action in ['buy', 'sell']) & enhanced:
+                msg = '-----> ' + msg + ' <-----'
+            print(msg)
+
+
+class Recommendation_sync(Recommendations):
+    '''
+    encapsulates the recommendation to buy | sell | n/c
+    captured in the target date row ACTION column of the ticker object's data
+    '''
+    def __init__(self, ticker_object, topomap, holdings, target_date, span, buffer, ts_plot):
+        holdings_strategy = holdings.get_strategy(ticker_object.get_symbol()).strip()
+        super().__init__(ticker_object, topomap, target_date, span, buffer, holdings_strategy, ts_plot)
+        self._holdings = holdings
+        self._build_recommendation(topomap)
+
+
+    def get_action(self):
+        '''Return action'''
+        return self._action
+
+    def _build_recommendation(self, topomap):
+        '''Builds a recommendation for the target_date to be emailed'''
+        recom_strat    = topomap.get_recom_strategy()
+        recom_position = recom_strat.POSITION
+        strategic_pos  = self._strategic_pos
+        symbol         = self._ticker.get_symbol()
+        current_position = self._holdings.get_current_position(symbol,
+                                                               strategic_pos)
+
+        def _make_recommendation(current_pos:str, recom_pos:str):
+            if current_pos == recom_pos:
+                return None
+            if recom_pos == 'long':
+                return 'buy'
+            if recom_pos == 'cash':
+                if current_pos == 'long':
+                    return 'sell'
+                if current_pos == 'short':
+                    return 'buy'
+                return None
+            if recom_pos == 'short':
+                return 'sell'
+            raise IOError(f'{recom_pos} should be long short or cash')
+
+        self._action = _make_recommendation(current_position,
+                                            recom_position,
+                                            )
+
+        subject  = f'Recommendation for {self._name} '
+        subject += f'({self._symbol}) | {self._date}'
+        self._subject = subject
+
+        body  = f'recommendation: {self._action} | '
+        body += f'position current/recommended: {current_position}/{recom_position} '
+        body += f'(span={self._span:.0f} days / buffer={self._buffer:.2%})'
+        self._body = body
+
+    def print_recommendation(self, notify: bool, enhanced = True):
+        '''Print recommendation to screen'''
+        if notify:
+            date = util.date_to_string(self._date, '%d %b %Y')
+            msg = f'{date}: '
+            msg += f'{self._name} ({self._symbol}) '
+            msg += self._body
+            if (self._action in ['buy', 'sell']) & enhanced:
+                msg = '--> ' + msg + ' <--'
+            print(msg)
+
+
+class Recommendation(Recommendations):
+    '''
+    OLDER VERSION
+    encapsulates the recommendation to buy | sell | n/c
+    captured in the target date row ACTION column of tthe ticker object's data
+    NB: position is the recommended position for the security
+        stratpos is the long/short position strategy for the security
+    '''
+    def __init__(self, ticker_object, topomap, target_date, span, buffer, stratpos, ts_plot):
+        super().__init__(ticker_object, topomap, target_date, span, buffer, stratpos, ts_plot)
+        self._build_recommendation(topomap)
+
+
     def _build_recommendation(self, topomap):
         '''
         Builds a recommendation for the target_date to be emailed
         '''
         security = self._ticker.get_close()
         strategy = topomap.build_strategy(security, self._span, self._buffer)
-
 
         data_index  = strategy.index.get_loc(self._date) # row number
         target_date = strategy.iloc[data_index].name
@@ -316,16 +376,3 @@ class Recommendation():
         body += f'position: {self._position} '
         body += f'(span={self._span:.0f} days / buffer={self._buffer:.2%})'
         self._body = body
-
-
-    def print_recommendation(self, notify: bool, enhanced = True):
-        '''Print recommendation to screen'''
-        if notify:
-            date = util.date_to_string(self._date, '%d %b %Y')
-            msg = f'{date}: '
-            msg += f'{self._name} ({self._symbol}) '
-            msg += f'{self._action} | position: {self._position} | '
-            msg += f'span={self._span:.0f} days buffer={self._buffer:.2%}'
-            if (self._action in ['buy', 'sell']) & enhanced:
-                msg = '-----> ' + msg + ' <-----'
-            print(msg)

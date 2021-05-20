@@ -58,7 +58,6 @@ def load_security(dirname, ticker, period, dates, refresh=False):
             raise IOError(msg)
         saved_file.close()
     else:
-        #print('Downloading data from Yahoo Finance')
         security  = sec.Security(ticker, period)
         ticker_obj = tkr.Ticker(symbol   = ticker,
                                 security = security,

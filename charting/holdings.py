@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-Created on Fri May  7 13:07:11 2021
+Created on Fri May 7 13:07:11 2021
 
 Holdings are a collection of securities to which a position
 is associated. That position can be 'long, 'short' or 'cash'
@@ -39,6 +39,8 @@ class Holdings():
             self._securities = self._securities.append(row,
                                                        ignore_index = True,
                                                        )
+            # remove duplicates keeping last entry
+            self._securities.drop_duplicates(subset='Ticker', keep='last', inplace=True)
         else:
             msg  = f'Holdings.add_security: {position} not in {dft.POSITIONS} '
             msg += f'or {strategy} not in {dft.STRATEGIES} '
@@ -48,7 +50,7 @@ class Holdings():
 
     def get_securities(self):
         '''
-        Returns the dictionary of securities & their positions
+        Returns a dataframe of securities & their positions
         '''
         return self._securities
 
@@ -59,11 +61,26 @@ class Holdings():
         expected format: ticker symbol; position
         eg: ARKK;long
         '''
+        def strip_all_columns(df):
+            """
+            Trim beg/end whitespace of each value across all series in dataframe
+            """
+            trim_strings = lambda x: x.strip() if isinstance(x, str) else x
+            return df.applymap(trim_strings)
+
         filepath = os.path.join(self._directory, self._filename)
         try:
-            self._securities = pd.read_csv(filepath)
-            self._securities = pd.DataFrame.drop_duplicates(self._securities)
-            print(f'_load_securities: {len(self._securities)} securities loaded')
+            securities = pd.read_csv(filepath)
+            n_assets = len(securities)
+            # remove duplicates keeping first entry
+            securities.drop_duplicates(subset='Ticker', keep='first', inplace=True)
+            n_deletes = n_assets - len(securities)
+            self._securities = strip_all_columns(securities)
+            if n_deletes != 0:
+                print(f'*** WARNING: removed {n_deletes} position(s)')
+            msg  = f'{len(securities)} securities '
+            msg += f'in portfolio {self._filename}'
+            print(msg)
             print(self._securities)
         except:
             raise IOError(f'Could not load {filepath}')
@@ -85,11 +102,12 @@ class Holdings():
             print(f'***Could not save securities to {filepath}***')
 
 
-    def get_position(self, symbol:str, strategy:str):
+    def get_current_position(self, symbol:str, strategy:str):
         '''Returns the position of a given ticker symbol/strategy pair'''
         try:
             sec = self._securities
-            return sec[(sec.Ticker == symbol) & (sec.Strategy==strategy)].iloc[0].Position
+            pos = sec[(sec.Ticker==symbol) & (sec.Strategy==strategy)].iloc[0].Position.strip()
+            return pos
         except:
             print(f'***Ticker/strategy pair {symbol}/{strategy} not in Holdings***')
             return None
@@ -97,26 +115,10 @@ class Holdings():
 
     def get_strategy(self, symbol:str):
         '''
-        Returns the strategy(ies) for a given ticker symbol
+        Returns the strategy for a given ticker symbol
         '''
         try:
-            return self._securities[self._securities.Ticker == symbol].Strategy
+            return self._securities[self._securities.Ticker == symbol].Strategy.iloc[0]
         except:
             print(f'***Ticker {symbol} not in Holdings***')
             return None
-
-
-    def is_in_sync(self, symbol:str, recommended_position:str, strategy:str):
-        '''
-        Determines if a particular ticker position
-        is in sync with a recommendation / strategy pair
-        '''
-        sec = self._securities
-        if (symbol in sec.Ticker) and (strategy in sec.Strategy):
-            target = sec[(sec.Ticker == symbol) & (sec.Strategy == strategy)].iloc[0].Position
-            if target == recommended_position:
-                return True
-            return False
-        else:
-            print(f'***Ticker/strategy pair {symbol}/{strategy} not in Holdings***')
-            return False
