@@ -9,7 +9,6 @@ sync_tickers.py
 
 @author: charles mégnin
 """
-import os
 import sys
 import time
 import pandas as pd
@@ -18,7 +17,7 @@ from charting import trading_defaults as dft
 from charting import topo_map as tpm
 from charting import recommender as rec
 from charting import time_series_plot as tsp
-from charting import parameters as par
+from charting import parameters_test as par
 from charting import holdings as hld
 from finance import utilities as util
 
@@ -32,25 +31,26 @@ REFRESH_YAHOO = par.REFRESH_YAHOO
 REFRESH_EMA   = par.REFRESH_EMA
 
 PORTFOLIO_DIR = 'charting/data'
-PORTFOLIO_FILES = ['holdings.csv', 'saxo_cycliques.csv']
+PORTFOLIO_FILES = ['saxo_cycliques.csv']
+#PORTFOLIO_FILES = ['test_holdings.csv']
 
 if __name__ == '__main__':
     start_tm = time.time() # total_time
     save_tm  = time.time() # intermediate time
-    recommender = rec.Recommender(screen = par.SCREEN,
+
+    for ptf_file in PORTFOLIO_FILES:
+        holdings = hld.Holdings(PORTFOLIO_DIR, ptf_file)
+        securities = holdings.get_securities()
+        recommender = rec.Recommender(ptf_file = ptf_file,
+                                  screen = par.SCREEN,
                                   email  = par.EMAIL,
                                   )
-    for file in PORTFOLIO_FILES:
-        holdings = hld.Holdings(PORTFOLIO_DIR, file)
-        securities = holdings.get_securities()
-        print(f'Processing {file}')
 
         for i, security in enumerate(securities.Ticker):
-            position  = securities.iloc[i].Position.strip()
-            strat_pos = securities.iloc[i].Strategy.strip()
-            msg  = f'{i+1}/{len(securities)}: {security} | '
-            msg += f'Position: "{position}" | '
-            msg += f'Strategic position: "{strat_pos}"'
+            strategic_pos = securities.iloc[i].Strategy.strip()
+            msg  = f'Security {i+1}/{len(securities)}: {security} | '
+            msg += f'Strategic position: {strategic_pos} | '
+            msg += f'Position: {securities.iloc[i].Position.strip()}'
             print(msg)
             try:
                 ticker_obj = tra.load_security(dirname = dft.DATA_DIR,
@@ -68,9 +68,9 @@ if __name__ == '__main__':
                                                  )
 
                 # Instantiate a Topomap object
-                topomap = tpm.Topomap(security, date_range, strat_pos)
+                topomap = tpm.Topomap(security, date_range, strategic_pos)
 
-                # # Read EMA map values  from file or compute if not saved
+                # Read EMA map values from file or compute if not saved
                 topomap.load_ema_map(ticker_object = ticker_obj,
                                      refresh       = REFRESH_EMA,
                                      )
@@ -106,13 +106,13 @@ if __name__ == '__main__':
                 # Plot time series with default parameters from best EMA
                 plot = tsp.TimeSeriesPlot(ticker_object = ticker_obj,
                                           topomap       = topomap,
-                                          strat_pos     = strat_pos,
+                                          strat_pos     = strategic_pos,
                                           disp_dates    = date_range,
                                           span          = best_span,
                                           buffer        = best_buffer,
                                           disp_flags    = display_flags,)
 
-                #Combine close, volume, and return data
+                #Combine close, volume and return data
                 data   = pd.DataFrame(pd.merge(ticker_obj.get_close(), ticker_obj.get_volume(),
                                                left_index=True, right_index=True))
                 data   = pd.DataFrame(pd.merge(data, ticker_obj.get_return(),
@@ -123,24 +123,16 @@ if __name__ == '__main__':
                                 remote   = REMOTE,
                                 )
 
-                # strat = topomap.get_current_strategy()
-                # in_sync = holdings.is_in_sync(security, strat.POSITION, strat_pos)
-                # print(f'{security} recommended position: {strat.POSITION} actual position {strat_pos}')
-                # if in_sync == False:
-                #     print('<--- --->')
-                # print(f'{security} {strat_pos} in sync: {in_sync}')
-
                 # Determine the action to take for the given END_DATE
                 # instantiate recommendation
                 rcm = rec.Recommendation_sync(ticker_object = ticker_obj,
-                                         topomap       = topomap,
-                                         holdings      = holdings,
-                                         target_date   = date_range[1],
-                                         span          = best_span,
-                                         buffer        = best_buffer,
-                                         stratpos      = strat_pos,
-                                         ts_plot       = plot,
-                                         )
+                                              topomap       = topomap,
+                                              holdings      = holdings,
+                                              target_date   = date_range[1],
+                                              span          = best_span,
+                                              buffer        = best_buffer,
+                                              ts_plot       = plot,
+                                              )
                 rcm.print_recommendation(notify = NOTIFY)
                 recommender.add_recommendation(rcm)
 
