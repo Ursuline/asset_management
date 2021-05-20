@@ -397,8 +397,8 @@ class Topomap():
         return fee
 
 
-    def get_current_strategy(self):
-        '''Returns the current (last row) of the strategy dataframe '''
+    def get_recom_strategy(self):
+        '''Returns the recommended (last row) of the strategy dataframe '''
         current = self._strategy.iloc[-1]
         return current
 
@@ -675,6 +675,7 @@ class Topomap():
             fig.update_layout(xaxis=dict(hoverformat='.2%'),
                               yaxis=dict(hoverformat='.0f'),)
 
+        os.makedirs(os.path.join(dft.PLOT_DIR, self._name), exist_ok = True)
         if not remote:
             pio.renderers.default='browser'
             filename = self.get_plot_filename(ticker_object, name_range, style, 'html')
