@@ -27,7 +27,8 @@ DISPLAY_TIME_SERIES  = True
 DISPLAY_SURFACE_PLOT = True
 DISPLAY_CONTOUR_PLOT = True
 
-REMOTE = False # Cloud or local run
+REMOTE = False # Cloud or local run (time series plot)
+CTR_SFC_PLOT_FORMATS = 'html' # html or png
 
 REFRESH_YAHOO = False # Download fresh Yahoo data
 REFRESH_EMA   = False  # Recompute ema map

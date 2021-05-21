@@ -31,7 +31,9 @@ class Recommender():
         self._n_long_recs  = 0 # of long recommendations
         self._n_short_recs = 0 # of short recommendations
         self._n_actions    = 0
-        self._ptf_file = os.path.splitext(os.path.basename(ptf_file))[0]
+        self._ptf_file = ptf_file
+        if ptf_file is not None:
+            self._ptf_file = os.path.splitext(os.path.basename(ptf_file))[0]
         self._screen = screen
         self._email  = email
         self._sms    = sms
