@@ -1,0 +1,8 @@
+Ticker,Position,Strategy
+^N225, cash, long
+^IXIC, cash, long
+^HSI, cash, long
+^GSPC, cash, long
+^FCHI, cash, long
+^DJSH, cash, long
+^DJI, cash, long
