@@ -28,6 +28,8 @@ ZOOM_RANGE = par.ZOOM_RANGE
 POSITIONS  = par.POSITIONS
 NOTIFY     = par.NOTIFY
 REMOTE     = par.REMOTE
+#Contour & surface plot formats
+PLOT_FORMATS = par.CTR_SFC_PLOT_FORMATS
 DISPLAY_TIME_SERIES = par.DISPLAY_TIME_SERIES
 REFRESH_YAHOO = par.REFRESH_YAHOO
 REFRESH_EMA   = par.REFRESH_EMA
@@ -36,8 +38,9 @@ REFRESH_EMA   = par.REFRESH_EMA
 if __name__ == '__main__':
     start_tm = time.time() # total_time
     save_tm  = time.time() # intermediate time
-    recommender = rec.Recommender(screen = par.SCREEN,
-                                  email  = par.EMAIL,
+    recommender = rec.Recommender(ptf_file = None,
+                                  screen   = par.SCREEN,
+                                  email    = par.EMAIL,
                                   )
 
     # Remove unwanted tickers
@@ -89,14 +92,14 @@ if __name__ == '__main__':
                 topomap.surface_plot(ticker_object = ticker_obj,
                                              date_range = date_range,
                                              style = 'contour',
-                                             remote = REMOTE,
+                                             plot_fmt = PLOT_FORMATS,
                                              )
 
                 # Plot EMA 3D map
                 topomap.surface_plot(ticker_object = ticker_obj,
                                              date_range = date_range,
                                              style = 'surface',
-                                             remote = REMOTE,
+                                             plot_fmt = PLOT_FORMATS,
                                              )
 
                 # Plot time series with default parameters from best EMA
@@ -147,7 +150,9 @@ if __name__ == '__main__':
                 print(f'Could not process {ticker}: Exception={ex}')
                 print(sys.exc_info())
     # send notifications
+    email_plot_flags = {'ts': True, 'contour': True, 'surface': True}
     recommender.notify(screen_nc = True,
                        email_nc  = False,
+                       email_plot_flags = email_plot_flags,
                        )
     print(f"Total elapsed time: {util.convert_seconds(time.time()-start_tm)}")
