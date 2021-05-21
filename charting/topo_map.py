@@ -42,6 +42,8 @@ class Topomap():
         self._hold       = None
         self._best_emas  = None
         self._n_best     = None # number of best_emas
+        self._ctr_plot_pathname = None
+        self._sfc_plot_pathname = None
 
     ## Setters
     def set_buffers(self, buffers):
@@ -110,6 +112,15 @@ class Topomap():
     def get_global_max(self):
         '''Returns the top span, buffer, ema, hold combination'''
         return self._best_emas.iloc[0]
+
+    def get_plot_pathname(self, style:str):
+        '''Return a contour or a surface plot defined with style'''
+        if style == 'contour':
+            return self._ctr_plot_pathname
+        if style == 'surface':
+            return self._sfc_plot_pathname
+        msg = f'style {style} should be contour or surface'
+        raise AssertionError(msg)
 
 
     def build_ema_map(self, close, dates):
@@ -553,11 +564,14 @@ class Topomap():
     ##########################
     ### Plotting functions ###
     ##########################
-    def surface_plot(self, ticker_object, date_range, style, remote):
+    def surface_plot(self, ticker_object, date_range, style, plot_fmt):
         '''
         plotly surface and contour plots
         style = surface or contour
         '''
+        PLOT_WIDTH  = 750
+        PLOT_HEIGHT = 750
+        TITLE_FONT_SZ = 14
         if style not in ['contour', 'surface']:
             msg = f'style {style} should be contour or surface'
             raise AssertionError(msg)
@@ -617,14 +631,14 @@ class Topomap():
 
         # Default layout
         layout = go.Layout(title           = title,
-                           title_font_size = 14,
+                           title_font_size = TITLE_FONT_SZ,
                            title_xref = 'paper',
                            title_x  = 0.5,
                            xaxis_title = xaxis_title,
                            yaxis_title = yaxis_title,
                            autosize = True,
-                           width  = 750,
-                           height = 750,
+                           width  = PLOT_WIDTH,
+                           height = PLOT_HEIGHT,
                            margin = dict(l=100, r=50, b=100, t=100),
                            xaxis  = dict(tickformat=".0%"),
                            )
@@ -676,14 +690,24 @@ class Topomap():
                               yaxis=dict(hoverformat='.0f'),)
 
         os.makedirs(os.path.join(dft.PLOT_DIR, self._name), exist_ok = True)
-        if not remote:
-            pio.renderers.default='browser'
-            filename = self.get_plot_filename(ticker_object, name_range, style, 'html')
-            plotly.offline.plot(fig, filename=filename)
-        else:
-            pio.renderers.default='png'
-            filename = self.get_plot_filename(ticker_object, name_range, style, 'png')
+        filename = self.get_plot_filename(ticker_object, name_range, style, plot_fmt)
+
+        #plotly.offline.plot(fig, filename=filename)
+        if plot_fmt == 'html':
+            pio.renderers.default = 'browser'
+            # To include plotly.js library in file, set include_plotlyjs to True else cdn
+            fig.write_html(file=filename, include_plotlyjs='cdn')
+        elif plot_fmt == 'png':
+            pio.renderers.default = plot_fmt
             fig.write_image(filename)
+        else:
+            msg = f'plot format {plot_fmt} should be html or png'
+            raise AssertionError(msg)
+        if style == 'surface':
+            self._sfc_plot_pathname = filename
+        else:
+            self._ctr_plot_pathname = filename
+        return fig
 
 
     def get_plot_filename(self, ticker, name_range, style, extension):

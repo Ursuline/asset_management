@@ -59,18 +59,20 @@ class Recommender():
             msg += 'should be long or short.'
             raise ValueError(msg)
 
-    def notify(self, screen_nc: bool, email_nc: bool):
+    def notify(self, screen_nc: bool, email_nc: bool, email_plot_flags=None):
         '''
         Dispatches to make recommendations
         screen_nc : output n/c action recommendation to screen
         email_nc : send email if n/c action
+        plot_flags: which plots to include in email:
+            ts, contour, surface
         NB: screen & action must aalso be set to True for each to be activated
         '''
         if self._screen:
             self._print_recommendations(screen_nc)
 
         if self._email:
-            self._email_recommendations(email_nc)
+            self._email_recommendations(email_nc, email_plot_flags)
 
 
     def _print_recommendations(self, screen_nc: bool):
@@ -95,7 +97,7 @@ class Recommender():
             print(line)
 
 
-    def _email_recommendations(self, email_nc: bool):
+    def _email_recommendations(self, email_nc: bool, email_plot_flags):
         '''Email recommendations when action is required'''
 
         def _build_body(email_nc):
@@ -129,21 +131,19 @@ class Recommender():
                             self._n_actions += 1
             return body
 
-        def add_attachment(msg, rcm):
+        def add_attachment(msg, plot_path):
             '''Adds a file to the body of the message '''
-            attachment_path = rcm.get_time_series_plot().get_pathname()
-
-            mime_type, _ = mimetypes.guess_type(attachment_path)
+            mime_type, _ = mimetypes.guess_type(plot_path)
             mime_type, mime_subtype = mime_type.split('/', 1)
-            with open(attachment_path, 'rb') as atp:
+            with open(plot_path, 'rb') as atp:
                 msg.add_attachment(atp.read(),
                                    maintype = mime_type,
                                    subtype  = mime_subtype,
-                                   filename = os.path.basename(attachment_path),
+                                   filename = os.path.basename(plot_path),
                                    )
             atp.close()
 
-        def add_attachments(msg, email_nc):
+        def add_attachments(msg, email_nc, email_plot_flags):
             '''
             Adds all attachments to body
             source: https://varunver.wordpress.com/2017/08/10/python-smtplib-send-email-with-attachments/
@@ -152,13 +152,30 @@ class Recommender():
                 for rcm in self._long_recommendations:
                     if rcm.get_action() is not None:
                         if email_nc or not (email_nc or rcm.get_action() == 'n/c'):
-                            add_attachment(msg, rcm)
+                            if email_plot_flags['ts']: # add time series attachment
+                                plot_path = rcm.get_time_series_plot().get_pathname()
+                                add_attachment(msg, plot_path)
+                            if email_plot_flags['contour']: # add contour plot attachment
+                                plot_path = rcm.get_plot_pathname('contour')
+                                add_attachment(msg, plot_path)
+                            if email_plot_flags['surface']: # add surface plot attachment
+                                plot_path = rcm.get_plot_pathname('surface')
+                                add_attachment(msg, plot_path)
 
             if self._n_short_recs > 0:
                 for rcm in self._short_recommendations:
                     if rcm.get_action() is not None:
                         if email_nc or not (email_nc or rcm.get_action() == 'n/c'):
-                            add_attachment(msg, rcm)
+                            if email_plot_flags['ts']: # add time series attachment
+                                plot_path = rcm.get_time_series_plot().get_pathname()
+                                add_attachment(msg, plot_path)
+                            if email_plot_flags['contour']: # add contour plot attachment
+                                plot_path = rcm.get_plot_pathname('contour')
+                                add_attachment(msg, plot_path)
+                            if email_plot_flags['surface']: # add surface plot attachment
+                                plot_path = rcm.get_plot_pathname('surface')
+                                add_attachment(msg, plot_path)
+
 
         body = _build_body(email_nc)
         if self._n_actions != 0: # send email if there is something to send
@@ -173,7 +190,7 @@ class Recommender():
             message.set_content(body)
 
             # add html plot files to email body
-            add_attachments(message, email_nc)
+            add_attachments(message, email_nc, email_plot_flags)
 
             mail_server = smtplib.SMTP_SSL(dft.SMTP_SERVER, dft.SSL_PORT)
             mail_server.login(pvt.SENDER_EMAIL, pvt.PASSWORD)
@@ -202,6 +219,7 @@ class Recommendations():
         self._span     = span
         self._buffer   = buffer
         self._ts_plot  = ts_plot
+        self._topomap  = topomap
         self._ptf_file = None
         self._name     = None
         self._symbol   = None
@@ -285,16 +303,24 @@ class Recommendation_sync(Recommendations):
         holdings_strategy = holdings.get_strategy(ticker_object.get_symbol()).strip()
         super().__init__(ticker_object, topomap, target_date, span, buffer, holdings_strategy, ts_plot)
         self._holdings = holdings
-        self._build_recommendation(topomap)
+        self._build_recommendation()
+
+
+    def get_plot_pathname(self, style:str):
+        '''return style  plot (contour or surface)'''
+        if style in ['contour', 'surface']:
+            return self._topomap.get_plot_pathname(style)
+        msg = f'get_plot_pathname: style {style} should be contour or surface'
+        raise AssertionError(msg)
 
 
     def get_action(self):
         '''Return action'''
         return self._action
 
-    def _build_recommendation(self, topomap):
+    def _build_recommendation(self):
         '''Builds a recommendation for the target_date to be emailed'''
-        recom_strat    = topomap.get_recom_strategy()
+        recom_strat    = self._topomap.get_recom_strategy()
         recom_position = recom_strat.POSITION
         strategic_pos  = self._strategic_pos
         symbol         = self._ticker.get_symbol()
@@ -351,15 +377,15 @@ class Recommendation(Recommendations):
     '''
     def __init__(self, ticker_object, topomap, target_date, span, buffer, stratpos, ts_plot):
         super().__init__(ticker_object, topomap, target_date, span, buffer, stratpos, ts_plot)
-        self._build_recommendation(topomap)
+        self._build_recommendation()
 
 
-    def _build_recommendation(self, topomap):
+    def _build_recommendation(self):
         '''
         Builds a recommendation for the target_date to be emailed
         '''
         security = self._ticker.get_close()
-        strategy = topomap.build_strategy(security, self._span, self._buffer)
+        strategy = self._topomap.build_strategy(security, self._span, self._buffer)
 
         data_index  = strategy.index.get_loc(self._date) # row number
         target_date = strategy.iloc[data_index].name
