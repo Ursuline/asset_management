@@ -3,12 +3,13 @@
 """
 Created on Thu Apr  8 17:13:37 2021
 
+topo_map.py
+
 @author: charles mégnin
 """
 import os
 import numpy as np
 import pandas as pd
-import plotly
 import plotly.graph_objects as go
 import plotly.io as pio
 from tqdm import tqdm
@@ -232,7 +233,7 @@ class Topomap():
         self._strategy = d_frame
 
         # remove junk
-        d_frame = self.cleanup_strategy(d_frame)
+        #d_frame = self.cleanup_strategy(d_frame)
 
         return d_frame
 
@@ -569,9 +570,9 @@ class Topomap():
         plotly surface and contour plots
         style = surface or contour
         '''
-        PLOT_WIDTH  = 750
-        PLOT_HEIGHT = 750
-        TITLE_FONT_SZ = 14
+        plot_width  = 750
+        plot_height = 750
+        title_font_sz = 14
         if style not in ['contour', 'surface']:
             msg = f'style {style} should be contour or surface'
             raise AssertionError(msg)
@@ -631,14 +632,14 @@ class Topomap():
 
         # Default layout
         layout = go.Layout(title           = title,
-                           title_font_size = TITLE_FONT_SZ,
+                           title_font_size = title_font_sz,
                            title_xref = 'paper',
                            title_x  = 0.5,
                            xaxis_title = xaxis_title,
                            yaxis_title = yaxis_title,
                            autosize = True,
-                           width  = PLOT_WIDTH,
-                           height = PLOT_HEIGHT,
+                           width  = plot_width,
+                           height = plot_height,
                            margin = dict(l=100, r=50, b=100, t=100),
                            xaxis  = dict(tickformat=".0%"),
                            )
@@ -711,16 +712,16 @@ class Topomap():
 
 
     def get_plot_filename(self, ticker, name_range, style, extension):
-            ''' Build file name '''
-            plot_dir = os.path.join(dft.PLOT_DIR, self._name)
-            filename  = f'{ticker.get_symbol()}_'
-            filename += f'{name_range[0]}_{name_range[1]}_'
-            filename += f'{self._strat_pos}'
-            if style == 'surface':
-                filename += '_surface'
-            else:
-                filename += '_contour'
-            return f"{plot_dir}/{filename}.{extension}"
+        ''' Build file name '''
+        plot_dir = os.path.join(dft.PLOT_DIR, self._name)
+        filename  = f'{ticker.get_symbol()}_'
+        filename += f'{name_range[0]}_{name_range[1]}_'
+        filename += f'{self._strat_pos}'
+        if style == 'surface':
+            filename += '_surface'
+        else:
+            filename += '_contour'
+        return f"{plot_dir}/{filename}.{extension}"
 
 
     def plot_buffer_range(self, ticker_object, security, span, n_best):

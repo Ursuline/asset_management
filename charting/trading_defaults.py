@@ -73,6 +73,7 @@ PLOT_HDIM_BOT = 250
 BK_THEMES = ['dark_minimal', 'light_minimal', 'night_sky', 'contrast', 'caliber']
 
 def get_x_hair_color(theme):
+    '''Set cross-hair color'''
     if theme in [BK_THEMES[1], BK_THEMES[4]]:
         return 'black'
     return 'white'

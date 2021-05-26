@@ -178,7 +178,6 @@ class Recommender():
                                 plot_path = rcm.get_plot_pathname('surface')
                                 add_attachment(msg, plot_path)
 
-
         body = _build_body(email_nc)
         if self._n_actions != 0: # send email if there is something to send
             message = EmailMessage()
@@ -187,7 +186,9 @@ class Recommender():
             if self._ptf_file is None:
                 message["Subject"] = 'Subject: Trade recommendation'
             else:
-                message["Subject"] = f'Subject: Trade recommendation for {self._ptf_file}'
+                msg  = f'Subject: Trade recommendations for *{self._ptf_file}* '
+                msg += 'portfolio'
+                message["Subject"] = msg
 
             message.set_content(body)
 
@@ -324,12 +325,54 @@ class Recommendation_sync(Recommendations):
         '''Builds a recommendation for the target_date to be emailed'''
         recom_strat    = self._topomap.get_recom_strategy()
         recom_position = recom_strat.POSITION
+        recom_sign     = recom_strat.SIGN
         strategic_pos  = self._strategic_pos
         symbol         = self._ticker.get_symbol()
         current_position = self._holdings.get_current_position(symbol,
                                                                strategic_pos)
 
         def _make_recommendation(current_pos:str, recom_pos:str):
+            '''
+            Test when in sync (no recommendation)
+                 when out of sync recommend
+            '''
+            if current_pos == recom_pos:
+                return None
+            if recom_pos == 'long':
+                return 'buy'
+            if recom_pos == 'cash':
+                if current_pos == 'long':
+                    return 'sell'
+                if current_pos == 'short':
+                    return 'buy'
+                return None
+            if recom_pos == 'short':
+                return 'sell'
+            raise IOError(f'{recom_pos} should be long short or cash')
+
+        def _make_recommendation2(current_pos:str, recom_pos:str, recom_sign:int):
+            '''
+            Alternative recommendation strategy:
+                stay cash when in buffer
+            '''
+            if current_pos == 'long':
+                if recom_pos == 'long':
+                    return None
+                return 'sell'
+            if current_pos == 'short':
+                if recom_pos == 'short':
+                    return None
+                return 'buy'
+            if current_pos == 'cash':
+                if recom_sign == 0:
+                    return None
+                if recom_sign == -1:
+                    return 'sell'
+                if recom_sign == 1:
+                    return 'buy'
+            msg = f'current_pos "{current_pos}" should be long short or cash'
+            raise IOError(msg)
+
             if current_pos == recom_pos:
                 return None
             if recom_pos == 'long':
@@ -346,6 +389,7 @@ class Recommendation_sync(Recommendations):
 
         self._action = _make_recommendation(current_position,
                                             recom_position,
+                                            #recom_sign,
                                             )
 
         subject  = f'Recommendation for {self._name} '
@@ -356,6 +400,7 @@ class Recommendation_sync(Recommendations):
         body += f'position current/recommended: {current_position}/{recom_position} '
         body += f'(span={self._span:.0f} days / buffer={self._buffer:.2%})'
         self._body = body
+
 
     def print_recommendation(self, notify: bool, enhanced = True):
         '''Print recommendation to screen'''

@@ -1,3 +1,6 @@
+.pylintrc_old
+.pylintrc
+client_secret.json
 parameters_sync.py
 Untitled.ipynb
 .DS_Store
