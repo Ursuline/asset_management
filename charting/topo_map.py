@@ -75,7 +75,7 @@ class Topomap():
 
     ## Getters
     def get_name(self):
-        '''Return ticker identifier '''
+        '''Return ticker identifier'''
         return self._name
 
     def get_strategic_position(self):
@@ -83,7 +83,7 @@ class Topomap():
         return self._strat_pos
 
     def get_date_range(self):
-        '''Return ticker identifier '''
+        '''Return ticker identifier'''
         return self._date_range
 
     def get_spans(self):
@@ -231,9 +231,6 @@ class Topomap():
         d_frame = self.build_ema(d_frame)
 
         self._strategy = d_frame
-
-        # remove junk
-        #d_frame = self.cleanup_strategy(d_frame)
 
         return d_frame
 

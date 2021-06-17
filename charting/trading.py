@@ -2,11 +2,8 @@
 # -*- coding: utf-8 -*-
 """
 Created on Tue Mar 23 14:48:44 2021
-
 trading.py
-
 Routines for trading
-
 @author: charles mégnin
 """
 import os
