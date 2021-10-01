@@ -321,6 +321,7 @@ class Recommendation_sync(Recommendations):
         '''Return action'''
         return self._action
 
+
     def _build_recommendation(self):
         '''Builds a recommendation for the target_date to be emailed'''
         recom_strat    = self._topomap.get_recom_strategy()
@@ -330,6 +331,7 @@ class Recommendation_sync(Recommendations):
         symbol         = self._ticker.get_symbol()
         current_position = self._holdings.get_current_position(symbol,
                                                                strategic_pos)
+
 
         def _make_recommendation(current_pos:str, recom_pos:str):
             '''
@@ -349,6 +351,7 @@ class Recommendation_sync(Recommendations):
             if recom_pos == 'short':
                 return 'sell'
             raise IOError(f'{recom_pos} should be long short or cash')
+
 
         def _make_recommendation2(current_pos:str, recom_pos:str, recom_sign:int):
             '''
@@ -414,38 +417,38 @@ class Recommendation_sync(Recommendations):
             print(msg)
 
 
-class Recommendation(Recommendations):
-    '''
-    OLDER VERSION
-    encapsulates the recommendation to buy | sell | n/c
-    captured in the target date row ACTION column of tthe ticker object's data
-    NB: position is the recommended position for the security
-        stratpos is the long/short position strategy for the security
-    '''
-    def __init__(self, ticker_object, topomap, target_date, span, buffer, stratpos, ts_plot):
-        super().__init__(ticker_object, topomap, target_date, span, buffer, stratpos, ts_plot)
-        self._build_recommendation()
+# class Recommendation(Recommendations):
+#     '''
+#     OLDER VERSION
+#     encapsulates the recommendation to buy | sell | n/c
+#     captured in the target date row ACTION column of tthe ticker object's data
+#     NB: position is the recommended position for the security
+#         stratpos is the long/short position strategy for the security
+#     '''
+#     def __init__(self, ticker_object, topomap, target_date, span, buffer, stratpos, ts_plot):
+#         super().__init__(ticker_object, topomap, target_date, span, buffer, stratpos, ts_plot)
+#         self._build_recommendation()
 
 
-    def _build_recommendation(self):
-        '''
-        Builds a recommendation for the target_date to be emailed
-        '''
-        security = self._ticker.get_close()
-        strategy = self._topomap.build_strategy(security, self._span, self._buffer)
+#     def _build_recommendation(self):
+#         '''
+#         Builds a recommendation for the target_date to be emailed
+#         '''
+#         security = self._ticker.get_close()
+#         strategy = self._topomap.build_strategy(security, self._span, self._buffer)
 
-        data_index  = strategy.index.get_loc(self._date) # row number
-        target_date = strategy.iloc[data_index].name
-        rec = strategy.loc[target_date, ["ACTION", "POSITION"]]
+#         data_index  = strategy.index.get_loc(self._date) # row number
+#         target_date = strategy.iloc[data_index].name
+#         rec = strategy.loc[target_date, ["ACTION", "POSITION"]]
 
-        self._action   = rec[0]
-        self._position = rec[1]
+#         self._action   = rec[0]
+#         self._position = rec[1]
 
-        subject  = f'Recommendation for {self._name} '
-        subject += f'({self._symbol}) | {self._date}'
-        self._subject = subject
+#         subject  = f'Recommendation for {self._name} '
+#         subject += f'({self._symbol}) | {self._date}'
+#         self._subject = subject
 
-        body  = f'recommendation: {self._action} | '
-        body += f'position: {self._position} '
-        body += f'(span={self._span:.0f} days / buffer={self._buffer:.2%})'
-        self._body = body
+#         body  = f'recommendation: {self._action} | '
+#         body += f'position: {self._position} '
+#         body += f'(span={self._span:.0f} days / buffer={self._buffer:.2%})'
+#         self._body = body

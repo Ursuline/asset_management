@@ -1,3 +1,4 @@
+.cache
 .pylintrc_old
 .pylintrc
 client_secret.json
