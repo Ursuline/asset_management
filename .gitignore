@@ -1,7 +1,6 @@
 .pylintrc_old
 .pylintrc
 client_secret.json
-parameters_sync.py
 Untitled.ipynb
 .DS_Store
 private.py
@@ -25,3 +24,4 @@ comparison_plots.py
 figurewidget-app.ipynb
 .pylintrc
 simulation.xlsx
+api_keys.py

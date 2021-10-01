@@ -26,22 +26,23 @@ REMOTE = False # Cloud or local run
 REFRESH_YAHOO = False # Download fresh Yahoo data
 REFRESH_EMA   = False  # Recompute ema map
 
-PORTFOLIO_DIR   = 'charting/portfolios-old'
-PORTFOLIO_URL    = 'https://ml-finance.ams3.digitaloceanspaces.com'
-PORTFOLIO_PATH   = 'charting/portfolios'
-#PORTFOLIO_DIR    = f'{PORTFOLIO_URL}/{PORTFOLIO_PATH}/'
+# Cloud server
+PORTFOLIO_URL  = 'https://ml-finance.ams3.digitaloceanspaces.com'
+PORTFOLIO_PATH = 'charting/portfolios'
+PORTFOLIO_DIR  = f'{PORTFOLIO_URL}/{PORTFOLIO_PATH}/'
 
 # Indices
 PORTFOLIO_FILES  = ['indices_long.csv', 'indices_short.csv']
 # Holdings
-PORTFOLIO_FILES += ['charly_crypto.csv', 'charly_crypto_short.csv', 'charly_saxo.csv']
+PORTFOLIO_FILES += ['charly_crypto.csv', 'charly_crypto_short.csv']
+PORTFOLIO_FILES = ['charly_saxo.csv']
 PORTFOLIO_FILES += ['saxo_cycliques.csv']
 PORTFOLIO_FILES += ['pea_mc.csv', 'adrien.csv']
 PORTFOLIO_FILES += ['pea_pme.csv', 'abs.csv']
 # Prospective
 PORTFOLIO_FILES += ['watchlist_long.csv', 'watchlist_ark.csv', 'watchlist_gafam.csv', 'futures.csv']
 
-#PORTFOLIO_FILES = ['indices.csv']
+#PORTFOLIO_FILES = ['charly_crypto.csv']
 
 START_DATE = '2018-01-02'
 END_DATE   = dft.TODAY
