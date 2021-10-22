@@ -326,11 +326,13 @@ class Recommendation_sync(Recommendations):
         '''Builds a recommendation for the target_date to be emailed'''
         recom_strat    = self._topomap.get_recom_strategy()
         recom_position = recom_strat.POSITION
-        recom_sign     = recom_strat.SIGN
+        #recom_sign     = recom_strat.SIGN
         strategic_pos  = self._strategic_pos
         symbol         = self._ticker.get_symbol()
         current_position = self._holdings.get_current_position(symbol,
                                                                strategic_pos)
+
+        #print(self._ts_plot.get_strategy().ACTION)
 
 
         def _make_recommendation(current_pos:str, recom_pos:str):
@@ -415,40 +417,3 @@ class Recommendation_sync(Recommendations):
             if (self._action in ['buy', 'sell']) & enhanced:
                 msg = '--> ' + msg + ' <--'
             print(msg)
-
-
-# class Recommendation(Recommendations):
-#     '''
-#     OLDER VERSION
-#     encapsulates the recommendation to buy | sell | n/c
-#     captured in the target date row ACTION column of tthe ticker object's data
-#     NB: position is the recommended position for the security
-#         stratpos is the long/short position strategy for the security
-#     '''
-#     def __init__(self, ticker_object, topomap, target_date, span, buffer, stratpos, ts_plot):
-#         super().__init__(ticker_object, topomap, target_date, span, buffer, stratpos, ts_plot)
-#         self._build_recommendation()
-
-
-#     def _build_recommendation(self):
-#         '''
-#         Builds a recommendation for the target_date to be emailed
-#         '''
-#         security = self._ticker.get_close()
-#         strategy = self._topomap.build_strategy(security, self._span, self._buffer)
-
-#         data_index  = strategy.index.get_loc(self._date) # row number
-#         target_date = strategy.iloc[data_index].name
-#         rec = strategy.loc[target_date, ["ACTION", "POSITION"]]
-
-#         self._action   = rec[0]
-#         self._position = rec[1]
-
-#         subject  = f'Recommendation for {self._name} '
-#         subject += f'({self._symbol}) | {self._date}'
-#         self._subject = subject
-
-#         body  = f'recommendation: {self._action} | '
-#         body += f'position: {self._position} '
-#         body += f'(span={self._span:.0f} days / buffer={self._buffer:.2%})'
-#         self._body = body

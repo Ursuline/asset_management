@@ -142,6 +142,11 @@ class TimeSeriesPlot():
         return directory
 
 
+    def get_strategy(self):
+        '''Getter for strategy'''
+        return self._strategy
+
+
     def _build_title(self, plot):
         ''' Build plot title '''
         dates         = self._display_dates
@@ -424,10 +429,10 @@ class TimeSeriesPlot():
                                      ),
                           )
             plot.add_tools(ResetTool())
-            plot.add_tools(WheelZoomTool())
-            plot.add_tools(ZoomInTool())
-            plot.add_tools(ZoomOutTool())
-            plot.add_tools(WheelPanTool())
+            #plot.add_tools(WheelZoomTool())
+            #plot.add_tools(ZoomInTool())
+            #plot.add_tools(ZoomOutTool())
+            #plot.add_tools(WheelPanTool())
         else:
             tooltips.append(("volume", "@Volume{(0.00 a)}"))
 

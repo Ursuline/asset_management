@@ -32,7 +32,7 @@ PORTFOLIO_PATH = 'charting/portfolios'
 PORTFOLIO_DIR  = f'{PORTFOLIO_URL}/{PORTFOLIO_PATH}/'
 
 # Indices
-PORTFOLIO_FILES  = ['indices_long.csv', 'indices_short.csv']
+PORTFOLIO_FILES  = ['indices.csv', 'indices_short.csv']
 # Holdings
 PORTFOLIO_FILES += ['charly_crypto.csv', 'charly_crypto_short.csv']
 PORTFOLIO_FILES += ['charly_saxo.csv']
@@ -40,13 +40,16 @@ PORTFOLIO_FILES += ['saxo_cycliques.csv']
 PORTFOLIO_FILES += ['pea_mc.csv', 'adrien.csv']
 PORTFOLIO_FILES += ['pea_pme.csv', 'abs.csv']
 # Prospective
-PORTFOLIO_FILES += ['watchlist_long.csv', 'watchlist_ark.csv', 'watchlist_gafam.csv', 'watchlist_futures.csv']
+PORTFOLIO_FILES += ['watchlist.csv', 'watchlist_short.csv']
+PORTFOLIO_FILES += ['watchlist_gafam.csv', 'watchlist_gafam_short.csv']
+PORTFOLIO_FILES += ['watchlist_ark.csv', 'watchlist_ark_short.csv']
+PORTFOLIO_FILES += ['watchlist_futures.csv', 'watchlist_futures_short.csv']
 
-#PORTFOLIO_FILES = ['charly_crypto.csv']
+PORTFOLIO_FILES = ['charly_crypto.csv', 'charly_crypto_short.csv']
 
 START_DATE = '2018-01-02'
 END_DATE   = dft.TODAY
-#END_DATE = '2021-09-12'
+END_DATE = '2021-05-19'
 
 DATE_RANGE = [START_DATE, END_DATE]
 ZOOM_RANGE = [START_DATE, END_DATE]
