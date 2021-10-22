@@ -11,6 +11,7 @@ import smtplib
 import os
 import mimetypes
 from email.message import EmailMessage
+from datetime import datetime
 
 from charting import trading_defaults as dft
 from charting import private as pvt
@@ -110,7 +111,8 @@ class Recommender():
             body = ''
 
             if self._n_long_recs > 0:
-                body += 'Strategic position: long\n'
+                body += ' Strategic position: long\n'
+
                 for rcm in self._long_recommendations:
                     name = rcm.get_name()
                     symb = rcm.get_symbol()
@@ -123,6 +125,7 @@ class Recommender():
 
             if self._n_short_recs > 0:
                 body += 'Strategic position: short\n'
+
                 for rcm in self._short_recommendations:
                     name = rcm.get_name()
                     symb = rcm.get_symbol()
@@ -186,7 +189,7 @@ class Recommender():
             if self._ptf_file is None:
                 message["Subject"] = 'Subject: Trade recommendation'
             else:
-                msg  = f'Subject: Trade recommendations for *{self._ptf_file}* '
+                msg  = f'Subject: Trade recoms for *{self._ptf_file}* '
                 msg += 'portfolio'
                 message["Subject"] = msg
 
@@ -230,6 +233,7 @@ class Recommendations():
         self._position = None
         self._subject  = None
         self._body     = None
+        self._last_action_date = None
         self.set_name()
         self.set_symbol()
 
@@ -331,8 +335,7 @@ class Recommendation_sync(Recommendations):
         symbol         = self._ticker.get_symbol()
         current_position = self._holdings.get_current_position(symbol,
                                                                strategic_pos)
-
-        #print(self._ts_plot.get_strategy().ACTION)
+        last_action_date = self._ts_plot.last_action_date()
 
 
         def _make_recommendation(current_pos:str, recom_pos:str):
@@ -397,13 +400,15 @@ class Recommendation_sync(Recommendations):
                                             #recom_sign,
                                             )
 
-        subject  = f'Recommendation for {self._name} '
+        subject  = f'Recoms for {self._name} '
         subject += f'({self._symbol}) | {self._date}'
         self._subject = subject
 
-        body  = f'recommendation: {self._action} | '
+        body  = f'recom: {self._action} | '
         body += f'position current/recommended: {current_position}/{recom_position} '
-        body += f'(span={self._span:.0f} days / buffer={self._buffer:.2%})'
+        body += f'(span={self._span:.0f} days / buffer={self._buffer:.2%}) '
+        body += f'since {last_action_date.strftime("%d/%m/%Y")} '
+        body += f'({(self._date - last_action_date).days} days)'
         self._body = body
 
 

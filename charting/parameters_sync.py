@@ -45,11 +45,11 @@ PORTFOLIO_FILES += ['watchlist_gafam.csv', 'watchlist_gafam_short.csv']
 PORTFOLIO_FILES += ['watchlist_ark.csv', 'watchlist_ark_short.csv']
 PORTFOLIO_FILES += ['watchlist_futures.csv', 'watchlist_futures_short.csv']
 
-PORTFOLIO_FILES = ['charly_crypto.csv', 'charly_crypto_short.csv']
+#PORTFOLIO_FILES = ['charly_crypto.csv', 'charly_crypto_short.csv']
 
 START_DATE = '2018-01-02'
 END_DATE   = dft.TODAY
-END_DATE = '2021-05-19'
+#END_DATE = '2021-05-18'
 
 DATE_RANGE = [START_DATE, END_DATE]
 ZOOM_RANGE = [START_DATE, END_DATE]

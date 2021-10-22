@@ -14,7 +14,7 @@ import pandas as pd
 from bokeh.plotting import figure, output_file, save
 from bokeh.models import ColumnDataSource, Title, BooleanFilter, CDSView, Scatter
 from bokeh.models import HoverTool, ResetTool, CrosshairTool
-from bokeh.models import WheelZoomTool, ZoomInTool, ZoomOutTool, WheelPanTool
+#from bokeh.models import WheelZoomTool, ZoomInTool, ZoomOutTool, WheelPanTool
 from bokeh.models import NumeralTickFormatter
 from bokeh.io import output_notebook, export_png
 from bokeh.layouts import gridplot
@@ -300,6 +300,15 @@ class TimeSeriesPlot():
         self._buy_sell = [n_buys, n_sells]
 
         return plot
+
+
+    def last_action_date(self):
+        '''Returns the date of the last action'''
+        actions   = dft.get_actions()
+        action_df = pd.DataFrame(self._strategy.loc[self._display_dates[0]:self._display_dates[1],
+                                 'ACTION'])
+        filter_df = action_df[(action_df['ACTION'] == actions[0]) | (action_df['ACTION'] == actions[1])]
+        return filter_df.index[-1]
 
 
     def _display_value(self, plot, source, axis:str):
