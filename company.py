@@ -1168,175 +1168,175 @@ class Company:
         return color, legend_name
 
 
-    def _build_y_axes(self, fig, currency:bool):
-        if currency is True:
-            title_text = f"{self.get_currency()}"
-        else:
-            title_text = 'ratio'
-        fig.update_yaxes(title_text=title_text,
-                         secondary_y=False,
-                         showticklabels=True,
-                         visible=True
-                         )
-        # RHS y-axis not visible
-        fig.update_yaxes(title_text="",
-                         secondary_y=True,
-                         showticklabels=False,
-                         visible=False,
-                         )
+    # def _build_y_axes(self, fig, currency:bool):
+    #     if currency is True:
+    #         title_text = f"{self.get_currency()}"
+    #     else:
+    #         title_text = 'ratio'
+    #     fig.update_yaxes(title_text=title_text,
+    #                      secondary_y=False,
+    #                      showticklabels=True,
+    #                      visible=True
+    #                      )
+    #     # RHS y-axis not visible
+    #     fig.update_yaxes(title_text="",
+    #                      secondary_y=True,
+    #                      showticklabels=False,
+    #                      visible=False,
+    #                      )
 
-    @staticmethod
-    def _build_zero_growth_line(fig, time_series, defaults):
-        # Add a zero-growth line on secondary axis
-        text = "0% growth"
-        linewidth = 2
-        fig.add_hline(y=0.0,
-                      secondary_y=True,
-                      line = dict(width=linewidth,
-                                  dash='dot',
-                                  color='red',
-                                  ),
-                      )
-        for xpos in [0, -1]:
-            xshift = .25
-            yshift = .25
-            if xpos == 0: xshift = -xshift
-            fig.add_annotation(x=time_series.index[xpos]+xshift,
-                               y=0,
-                               xref='x',
-                               yref='y2',
-                               secondary_y=True,
-                               text=text,
-                               align='right',
-                               showarrow=True,
-                               arrowcolor="grey",
-                               arrowhead=1,
-                               arrowsize=1,
-                               yshift=yshift,
-                               font = {'size': defaults['textfont_size'],
-                                       'color': 'red',
-                                       },
-                               )
+    # @staticmethod
+    # def _build_zero_growth_line(fig, time_series, defaults):
+    #     # Add a zero-growth line on secondary axis
+    #     text = "0% growth"
+    #     linewidth = 2
+    #     fig.add_hline(y=0.0,
+    #                   secondary_y=True,
+    #                   line = dict(width=linewidth,
+    #                               dash='dot',
+    #                               color='red',
+    #                               ),
+    #                   )
+    #     for xpos in [0, -1]:
+    #         xshift = .25
+    #         yshift = .25
+    #         if xpos == 0: xshift = -xshift
+    #         fig.add_annotation(x=time_series.index[xpos]+xshift,
+    #                            y=0,
+    #                            xref='x',
+    #                            yref='y2',
+    #                            secondary_y=True,
+    #                            text=text,
+    #                            align='right',
+    #                            showarrow=True,
+    #                            arrowcolor="grey",
+    #                            arrowhead=1,
+    #                            arrowsize=1,
+    #                            yshift=yshift,
+    #                            font = {'size': defaults['textfont_size'],
+    #                                    'color': 'red',
+    #                                    },
+    #                            )
 
-    @staticmethod
-    def _build_wb_benchmarks(fig, time_series, defaults):
-        # Add a benchmark line on primary axis for WB metrics
-        texts = ["ROE benchmark", "Debt/Equity benchmark", "Current ratio benchmark"]
-        values = [.08, .5, 1.5]
-        linewidth = 2
-        for i, text in enumerate(texts):
-            fig.add_hline(y=values[i],
-                          secondary_y=False,
-                          line = dict(width=linewidth,
-                                      #dash='dash',
-                                      color=defaults['linecolors'][i],
-                                      ),
-                          )
-            for xpos in [0, -1]:
-                xshift = .25
-                #yshift = .0
-                if xpos == 0: xshift = -xshift
-                fig.add_annotation(x=time_series.index[xpos]+xshift,
-                                   y=values[i],
-                                   xref='x',
-                                   yref='y',
-                                   secondary_y=False,
-                                   text=text,
-                                   #align='right',
-                                   showarrow=True,
-                                   arrowcolor="grey",
-                                   arrowhead=1,
-                                   arrowsize=1,
-                                   #yshift=yshift,
-                                   font = {'size': defaults['textfont_size'],
-                                           'color': defaults['linecolors'][i],
-                                           },
-                                   )
+    # @staticmethod
+    # def _build_wb_benchmarks(fig, time_series, defaults):
+    #     # Add a benchmark line on primary axis for WB metrics
+    #     texts = ["ROE benchmark", "Debt/Equity benchmark", "Current ratio benchmark"]
+    #     values = [.08, .5, 1.5]
+    #     linewidth = 2
+    #     for i, text in enumerate(texts):
+    #         fig.add_hline(y=values[i],
+    #                       secondary_y=False,
+    #                       line = dict(width=linewidth,
+    #                                   #dash='dash',
+    #                                   color=defaults['linecolors'][i],
+    #                                   ),
+    #                       )
+    #         for xpos in [0, -1]:
+    #             xshift = .25
+    #             #yshift = .0
+    #             if xpos == 0: xshift = -xshift
+    #             fig.add_annotation(x=time_series.index[xpos]+xshift,
+    #                                y=values[i],
+    #                                xref='x',
+    #                                yref='y',
+    #                                secondary_y=False,
+    #                                text=text,
+    #                                #align='right',
+    #                                showarrow=True,
+    #                                arrowcolor="grey",
+    #                                arrowhead=1,
+    #                                arrowsize=1,
+    #                                #yshift=yshift,
+    #                                font = {'size': defaults['textfont_size'],
+    #                                        'color': defaults['linecolors'][i],
+    #                                        },
+    #                                )
 
 
-    def growth_plot(self, time_series:pd.DataFrame, plot_type:str, markers:list, caption_flag:str, currency_flag:bool, subtitle:str, filename:str):
-        '''
-        Generic time series plot for values (bars) and their growth (lines)
-        plot_type: either of revenue, bs (balance sheet), dupont, wb ("warren buffet")
-        markers: list of columns that should be highlighted
-        caption_flag: redirects towards caption corresponding to plot if any
-        currency_flag: flag for LHS Y axis title: if True, currency name else ratio
-        '''
-        defaults = self.get_time_plot_defaults()
-        metric_lists = self._get_metric_lists()
+    # def growth_plot(self, time_series:pd.DataFrame, plot_type:str, markers:list, caption_flag:str, currency_flag:bool, subtitle:str, filename:str):
+    #     '''
+    #     Generic time series plot for values (bars) and their growth (lines)
+    #     plot_type: either of revenue, bs (balance sheet), dupont, wb ("warren buffet")
+    #     markers: list of columns that should be highlighted
+    #     caption_flag: redirects towards caption corresponding to plot if any
+    #     currency_flag: flag for LHS Y axis title: if True, currency name else ratio
+    #     '''
+    #     defaults = self.get_time_plot_defaults()
+    #     metric_lists = self._get_metric_lists()
 
-        title = self._build_title(f'{self.get_company_name()} ({self.get_ticker()})', subtitle)
+    #     title = self._build_title(f'{self.get_company_name()} ({self.get_ticker()})', subtitle)
 
-        fig = make_subplots(specs=[[{"secondary_y": True}]])
+    #     fig = make_subplots(specs=[[{"secondary_y": True}]])
 
-        for column in time_series.columns:
-            if column in metric_lists[0]:
-                color, legend_name = self._get_legend_attributes(defaults, column)
-                marker_pattern_shape=""
-                if column in markers:
-                    marker_pattern_shape="x"
+    #     for column in time_series.columns:
+    #         if column in metric_lists[0]:
+    #             color, legend_name = self._get_legend_attributes(defaults, column)
+    #             marker_pattern_shape=""
+    #             if column in markers:
+    #                 marker_pattern_shape="x"
 
-                fig.add_trace(go.Bar(x = time_series.index,
-                                     y = time_series[column],
-                                     name = legend_name,
-                                     hovertemplate = '%{y:.3g}',
-                                     marker_pattern_shape=marker_pattern_shape,
-                                     ),
-                              secondary_y=False,
-                              )
-            elif column in metric_lists[1]:
-                dash = 'dash'
-                color, legend_name = self._get_legend_attributes(defaults, column)
-                linewidth = defaults['linewidth']
-                if column in markers:
-                    linewidth *= 2
+    #             fig.add_trace(go.Bar(x = time_series.index,
+    #                                  y = time_series[column],
+    #                                  name = legend_name,
+    #                                  hovertemplate = '%{y:.3g}',
+    #                                  marker_pattern_shape=marker_pattern_shape,
+    #                                  ),
+    #                           secondary_y=False,
+    #                           )
+    #         elif column in metric_lists[1]:
+    #             dash = 'dash'
+    #             color, legend_name = self._get_legend_attributes(defaults, column)
+    #             linewidth = defaults['linewidth']
+    #             if column in markers:
+    #                 linewidth *= 2
 
-                fig.add_trace(go.Scatter(x = time_series.index,
-                                         y = time_series[column],
-                                         name = legend_name,
-                                         hovertemplate = '%{y:.1%}',
-                                         text = time_series[column],
-                                         mode = 'lines+text',
-                                         textposition = 'top center',
-                                         texttemplate = "%{y:.1%}",
-                                         textfont = {'size': defaults['textfont_size'],
-                                                     'color': color,
-                                                     },
-                                         line = dict(width = linewidth,
-                                                     dash  = dash,
-                                                     color = color,
-                                                     ),
-                                         ),
-                              secondary_y =  True,
-                              )
-            else:
-                print(f'growth_plot: metric {column} not implemented')
-        if plot_type == 'wb': # Add WB benchmarks
-            self._build_wb_benchmarks(fig=fig, time_series=time_series, defaults=defaults)
-        self._build_zero_growth_line(fig=fig, time_series=time_series, defaults=defaults)
-        self._build_caption(fig, caption_flag)
-        self._build_y_axes(fig, currency_flag)
+    #             fig.add_trace(go.Scatter(x = time_series.index,
+    #                                      y = time_series[column],
+    #                                      name = legend_name,
+    #                                      hovertemplate = '%{y:.1%}',
+    #                                      text = time_series[column],
+    #                                      mode = 'lines+text',
+    #                                      textposition = 'top center',
+    #                                      texttemplate = "%{y:.1%}",
+    #                                      textfont = {'size': defaults['textfont_size'],
+    #                                                  'color': color,
+    #                                                  },
+    #                                      line = dict(width = linewidth,
+    #                                                  dash  = dash,
+    #                                                  color = color,
+    #                                                  ),
+    #                                      ),
+    #                           secondary_y =  True,
+    #                           )
+    #         else:
+    #             print(f'growth_plot: metric {column} not implemented')
+    #     if plot_type == 'wb': # Add WB benchmarks
+    #         self._build_wb_benchmarks(fig=fig, time_series=time_series, defaults=defaults)
+    #     self._build_zero_growth_line(fig=fig, time_series=time_series, defaults=defaults)
+    #     self._build_caption(fig, caption_flag)
+    #     self._build_y_axes(fig, currency_flag)
 
-        #self._build_buttons(time_series, plot_type)
-        updatemenus = self._build_yscale_dropdown()
-        print(f'type updatemenus 1 = {type(updatemenus)}\n{updatemenus}\n')
-        if plot_type == 'wb':
-            updatemenus = self._build_buttons()
+    #     #self._build_buttons(time_series, plot_type)
+    #     updatemenus = self._build_yscale_dropdown()
+    #     print(f'type updatemenus 1 = {type(updatemenus)}\n{updatemenus}\n')
+    #     if plot_type == 'wb':
+    #         updatemenus = self._build_buttons()
 
-            print(f'type updatemenus 2 = {type(updatemenus)}\n{updatemenus}\n')
+    #         print(f'type updatemenus 2 = {type(updatemenus)}\n{updatemenus}\n')
 
-        fig.update_layout(
-            title    = title,
-            template = defaults['template'],
-            legend   = dict(font = dict(size = 12,)),
-            xaxis_tickfont_size = 14,
-            updatemenus=[updatemenus],
-            hovermode="x unified",
-            barmode='group',
-            bargap=defaults['bargap'],
-            bargroupgap=defaults['groupgap'],
-            )
-        pio.write_html(fig, file=filename, auto_open=True)
+    #     fig.update_layout(
+    #         title    = title,
+    #         template = defaults['template'],
+    #         legend   = dict(font = dict(size = 12,)),
+    #         xaxis_tickfont_size = 14,
+    #         updatemenus=[updatemenus],
+    #         hovermode="x unified",
+    #         barmode='group',
+    #         bargap=defaults['bargap'],
+    #         bargroupgap=defaults['groupgap'],
+    #         )
+    #     pio.write_html(fig, file=filename, auto_open=True)
 
     ### BOKEH PLOTS ####
 
@@ -1357,8 +1357,6 @@ class Company:
         # Legend
         defaults['legend_font_size'] = '11pt'
         # Bars
-        # defaults['bar_width'] = .22
-        # defaults['bar_shift'] = .25
         defaults['bar_width_shift_ratio'] = .9 # bar width/shift
         # Lines
         defaults['line_dash'] = ''
@@ -1376,7 +1374,7 @@ class Company:
 
     @staticmethod
     def _initialize_plot(axis_type:str, defaults:dict, source:ColumnDataSource, max_y):
-        '''Initialize plots'''
+        '''Initialize top plot'''
         fig = figure(x_range = source.data['year'],
                      y_range = [1e-6, max_y],
                      plot_width    = defaults['plot_width'],
@@ -1395,7 +1393,7 @@ class Company:
 
     @staticmethod
     def _initialize_plot_bottom(axis_type:str, defaults:dict, source:ColumnDataSource, min_y, max_y):
-        '''Initialize plots'''
+        '''Initialize bottom plot'''
         fig = figure(x_range = source.data['year'],
                      y_range = [min_y, max_y],
                      plot_width    = defaults['plot_width'],
@@ -1441,21 +1439,6 @@ class Company:
                        'above',
                        )
 
-    # @staticmethod
-    # def _build_legend_label(metric:str):
-    #     '''
-    #     Build human-readable labels. Dataframe column expects column names
-    #     corresponding to changes to start with "d_"
-    #     NB: \u0394 = Delta
-    #     '''
-    #     if metric == 'freeCashFlow':
-    #         return 'FCF'
-    #     if metric == 'd_freeCashFlow':
-    #         return '\u0394 FCF'
-    #     if metric.startswith('d_'):
-    #         return f'\u0394 {metric[2:].capitalize()}'
-    #     return f'{metric.capitalize()}'
-
 
     def _build_axes_bokeh(self, fig, defaults:dict, y_axis_label:str):
         '''Sets various parameters for x & y axes'''
@@ -1468,11 +1451,6 @@ class Company:
         fig.yaxis.axis_label_text_color      = defaults['axis_label_text_color']
         fig.yaxis.axis_label   = y_axis_label
         fig.yaxis[0].formatter = NumeralTickFormatter(format="0.0a")
-
-        # Add secondary axis
-        # fig.extra_y_ranges = {'dydt': Range1d(start=-1, end=max_y2)}
-        # fig.extra_y_scales = {'dydt': LinearScale()}
-        # fig.add_layout(LinearAxis(y_range_name='dydt', axis_label="Changes"), 'right')
 
 
     @staticmethod
@@ -1513,32 +1491,6 @@ class Company:
                 save_bar = vbar
             x_pos += bar_shift
         self._build_bar_tooltips(fig, save_bar, metrics)
-
-
-    # def _build_line_plots_old(self, fig, defaults:dict, metrics:list, source:ColumnDataSource):
-    #     '''Builds line plots (metrics change) on secondary axis'''
-    #     for i, metric in enumerate(metrics):
-    #         legend_label = self._build_legend_label(metric)
-    #         line = fig.line(x = 'year',
-    #                         y = metric,
-    #                         line_width = 1,
-    #                         line_dash = defaults['line_dash'],
-    #                         color = defaults['palette'][i],
-    #                         legend_label = legend_label,
-    #                         y_range_name = 'dydt',
-    #                         source = source,
-    #                         )
-    #         fig.circle(x='year',
-    #                     y=metric,
-    #                     color=defaults['palette'][i],
-    #                     fill_color='white',
-    #                     size=5,
-    #                     legend_label=legend_label,
-    #                     y_range_name = 'dydt',
-    #                     source = source,
-    #                     )
-    #     self._build_line_tooltips(fig, line, metrics)
-    #     self._build_zero_growth_line_bokeh(fig, defaults, source)
 
 
     def _build_line_plots(self, fig, defaults:dict, metrics:list, source:ColumnDataSource):
@@ -1620,58 +1572,6 @@ class Company:
                                )
         fig.add_tools(hover_tool)
 
-
-    # def fundamentals_plot_old(self, time_series:pd.DataFrame, plot_type:str, markers:list, caption_flag:str, currency_flag:bool, subtitle:str, filename:str):
-    #     '''
-    #     Generic time series plot for values (bars) and their growth (lines)
-    #     plot_type: either of revenue, bs (balance sheet), dupont, wb ("warren buffet")
-    #     markers: list of columns that should be highlighted
-    #     caption_flag: redirects towards caption corresponding to plot if any
-    #     currency_flag: flag for LHS Y axis title: if True, currency name else ratio
-    #     '''
-    #     defaults = self.get_plot_defaults()
-    #     time_series.index = time_series.index.astype('string')
-    #     years = time_series.index.tolist()
-    #     cds = ColumnDataSource(data = time_series)
-
-    #     metrics   = list(map(str, time_series.columns[0:int(time_series.shape[0]/2)]))
-    #     d_metrics = list(map(str, time_series.columns[int(time_series.shape[0]/2):]))
-    #     #max value for primary & secondary y axes
-    #     max_y1 = time_series[metrics].max().max()
-    #     #max_y2 = time_series[d_metrics].max().max()
-    #     panels = []
-    #     for axis_type in ['linear', 'log']:
-    #         plot = self._initialize_plot(max_y     = max_y1,
-    #                                      axis_type = axis_type,
-    #                                      defaults  = defaults,
-    #                                      source    = cds,
-    #                                      )
-    #         self._build_title_bokeh(fig      = plot,
-    #                                 defaults = defaults,
-    #                                 subtitle = subtitle,
-    #                                 )
-    #         self._build_axes_bokeh(fig       = plot,
-    #                                defaults  = defaults,
-    #                                currency  = currency_flag,
-    #                                )
-    #         self._build_bar_plots(fig      = plot,
-    #                               defaults = defaults,
-    #                               years    = years,
-    #                               metrics  = metrics,
-    #                               source   = cds,
-    #                               )
-    #         self._build_line_plots(fig       = plot,
-    #                                 defaults  = defaults,
-    #                                 metrics = d_metrics,
-    #                                 source    = cds,
-    #                                 )
-    #         self._position_legend(fig      = plot,
-    #                               defaults = defaults,
-    #                               )
-    #         panel = Panel(child=plot, title=axis_type)
-    #         panels.append(panel)
-    #     tabs = Tabs(tabs=panels)
-    #     show(tabs)
 
     def fundamentals_plot_bokeh(self, time_series:pd.DataFrame, plot_type:str, markers:list, caption_flag:str, currency_flag:bool, subtitle:str, filename:str):
         '''
