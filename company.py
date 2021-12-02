@@ -13,14 +13,14 @@ import inspect
 import math
 import datetime as dt
 import pandas as pd
+import numpy as np
 import plotly.graph_objects as go
 import plotly.io as pio
 #import plotly.express as px
 from plotly.subplots import make_subplots
-from bokeh.plotting import figure, show
+from bokeh.plotting import figure, show, output_file, save
 from bokeh.models import HoverTool, Title, Span, Label, NumeralTickFormatter
-from bokeh.models import LinearAxis, LinearScale, ColumnDataSource
-from bokeh.models import Range1d, FactorRange
+from bokeh.models import ColumnDataSource, FactorRange
 from bokeh.models.widgets import Tabs, Panel
 from bokeh.transform import dodge
 from bokeh.palettes import Dark2_8
@@ -35,19 +35,13 @@ import utilities as util
 API_KEY = keys.FMP
 
 # Utilities
-def round_up(x:float, ndigits:int):
-    y  =  x * math.pow(10, ndigits)
-    y  = math.ceil(y)
-    y += 1
-    y  = y / math.pow(10, ndigits)
-    return y
+def round_up(val:float, ndigits:int):
+    return (math.ceil(val * math.pow(10, ndigits)) + 1) / math.pow(10, ndigits)
 
-def round_down(x:float, ndigits:int):
-    y  =  x * math.pow(10, ndigits)
-    y  = math.floor(y)
-    y -= 1
-    y  = y / math.pow(10, ndigits)
-    return y
+
+def round_down(val:float, ndigits:int):
+    return (math.floor(val * math.pow(10, ndigits)) - 1) / math.pow(10, ndigits)
+
 
 class Company:
     '''
@@ -325,6 +319,8 @@ class Company:
         if item.lower() == 'assetturnover': return 'Asset turnover'
         if item.lower() == 'netprofitmargin': return 'Net profit margin'
         if item.lower() == 'returnonequity': return 'ROE'
+        if item.lower() == 'currentratio': return 'Current ratio'
+        if item.lower() == 'debttoequity': return 'Debt to equity ratio'
         print(f'unknown item {item}')
         return ''
 
@@ -1194,6 +1190,17 @@ class Company:
         defaults['zero_growth_line_thickness'] = .5
         defaults['zero_growth_line_dash']      = 'dotted'
         defaults['zero_growth_font_size']      = '10pt'
+        # WB Benchmarks:
+        defaults['roe_benchmark']            =  .08
+        defaults['debt_to_equity_benchmark'] =  .5
+        defaults['current_ratio_benchmark']  = 1.5
+        defaults['benchmark_line_dash'] = 'dashed'
+        defaults['benchmark_line_thickness'] = 2
+        defaults['benchmark_font_size'] = '10pt'
+        # Means
+        defaults['means_line_dash'] = 'dotted'
+        defaults['means_line_thickness'] = 1
+        defaults['means_font_size'] = '10pt'
 
         defaults['label_alpha']     = .75
         defaults['label_font_size'] = '10pt'
@@ -1203,40 +1210,25 @@ class Company:
         return defaults
 
     @staticmethod
-    def _initialize_plot(axis_type:str, defaults:dict, source:ColumnDataSource, max_y):
-        '''Initialize top plot'''
-        fig = figure(x_range = source.data['year'],
-                     y_range = [1e-6, max_y],
-                     plot_width    = defaults['plot_width'],
-                     plot_height   = defaults['plot_height'],
-                     tools         = 'box_zoom, ywheel_zoom, reset, save',
-                     #active_scroll = "ywheel_zoom",
-                     sizing_mode   = 'stretch_width',
-                     y_axis_type   = axis_type,
-                     )
-        fig.xgrid.grid_line_color  = None
-        # Configure toolbar & bokeh logo
-        fig.toolbar.autohide = True
-        fig.toolbar_location = 'left'
-        fig.toolbar.logo     = None
-        return fig
-
-    @staticmethod
-    def _initialize_plot_bottom(axis_type:str, defaults:dict, source:ColumnDataSource, min_y, max_y):
-        '''Initialize bottom plot'''
+    def _initialize_plot(position:str, axis_type:str, defaults:dict, source:ColumnDataSource, min_y:float, max_y:float):
+        '''Initialize  plot
+        position = top or bottom
+        axis_type = log or linear
+        '''
+        if position == 'top': plot_height = defaults['plot_height']
+        else: plot_height = defaults['plot_bottom_height']
         fig = figure(x_range = source.data['year'],
                      y_range = [min_y, max_y],
                      plot_width    = defaults['plot_width'],
-                     plot_height   = defaults['plot_bottom_height'],
-                     tools         = 'ywheel_zoom, reset, save',
+                     plot_height   = plot_height,
+                     tools         = 'box_zoom, ywheel_zoom, reset, save',
                      #active_scroll = "ywheel_zoom",
-                     sizing_mode   = 'stretch_width',
                      y_axis_type   = axis_type,
                      )
         fig.xgrid.grid_line_color  = None
         # Configure toolbar & bokeh logo
         fig.toolbar.autohide = True
-        fig.toolbar_location = 'left'
+        fig.toolbar_location = 'above'
         fig.toolbar.logo     = None
         return fig
 
@@ -1269,8 +1261,18 @@ class Company:
                        'above',
                        )
 
+    @staticmethod
+    def _build_caption_bokeh(fig):
+        citation = Label(x = -1,
+                         y = -.1,
+                         x_units = 'data',
+                         y_units = 'data',
+                         text    = 'Collected by Luke C. 2016-04-01',
+                         )
+        fig.add_layout(citation)
 
-    def _build_axes_bokeh(self, fig, defaults:dict, y_axis_label:str):
+    @staticmethod
+    def _build_axes(fig, defaults:dict, axis_format:str, y_axis_label:str):
         '''Sets various parameters for x & y axes'''
         # X axis
         fig.xaxis.major_label_text_font_size = defaults['axis_label_text_font_size']
@@ -1280,8 +1282,7 @@ class Company:
         fig.yaxis.major_label_text_font_size = defaults['axis_label_text_font_size']
         fig.yaxis.axis_label_text_color      = defaults['axis_label_text_color']
         fig.yaxis.axis_label   = y_axis_label
-        fig.yaxis[0].formatter = NumeralTickFormatter(format="0.0a")
-
+        fig.yaxis[0].formatter = NumeralTickFormatter(format=axis_format)
 
     @staticmethod
     def _get_initial_x_offset(metrics):
@@ -1291,7 +1292,6 @@ class Company:
         if len(metrics) == 5: return -.5
         print(f'_get_initial_x_offset: metrics length {len(metrics)} not handled')
         return 0
-
 
     @staticmethod
     def _get_bar_shift(metrics):
@@ -1303,24 +1303,22 @@ class Company:
         return 0
 
 
-    def _build_bar_plots(self, fig, defaults:dict, years:list, metrics:list, source:ColumnDataSource):
+    def _build_bar_plots(self, fig, defaults:dict, years:list, metrics:list, plot_type:str, source:ColumnDataSource):
         '''Builds bar plots (metrics) on primary axis'''
         x_pos = self._get_initial_x_offset(metrics)
         bar_shift = self._get_bar_shift(metrics)
         bar_width = defaults['bar_width_shift_ratio'] * bar_shift
         for i, metric in enumerate(metrics):
-            vbar = fig.vbar(x   = dodge('year', x_pos, FactorRange(*years)),
+            vbar = fig.vbar(x      = dodge('year', x_pos, FactorRange(*years)),
                             bottom = 1e-6,
-                            top = metric,
+                            top    = metric,
                             width  = bar_width,
                             source = source,
                             color  = defaults['palette'][i],
                             legend_label = self._map_item_to_name(metric),
                             )
-            if i == 1:
-                save_bar = vbar
+            self._build_bar_tooltip(fig, vbar, metrics, plot_type)
             x_pos += bar_shift
-        self._build_bar_tooltips(fig, save_bar, metrics)
 
 
     def _build_line_plots(self, fig, defaults:dict, metrics:list, source:ColumnDataSource):
@@ -1344,11 +1342,10 @@ class Company:
                         source = source,
                         )
         self._build_line_tooltips(fig, line, metrics)
-        self._build_zero_growth_line_bokeh(fig, defaults, source)
-
+        self._build_zero_growth_line(fig, defaults, source)
 
     @staticmethod
-    def _build_zero_growth_line_bokeh(fig, defaults:dict, source:ColumnDataSource):
+    def _build_zero_growth_line(fig, defaults:dict, source:ColumnDataSource):
         '''Builds zero growth horizontal line on secondary axis'''
         # Build line
         zero_growth = Span(location   = 0.0,
@@ -1356,7 +1353,6 @@ class Company:
                            line_color = defaults['zero_growth_line_color'],
                            line_dash  = defaults['zero_growth_line_dash'],
                            line_width = defaults['zero_growth_line_thickness'],
-                           #y_range_name = 'dydt',
                            )
         fig.add_layout(zero_growth)
         # Add annotation
@@ -1368,54 +1364,108 @@ class Company:
                              text    = 'zero growth',
                              text_color     = defaults['zero_growth_line_color'],
                              text_font_size = defaults['zero_growth_font_size'],
-                             #y_range_name   = 'dydt',
                              )
             fig.add_layout(citation)
+
+    @staticmethod
+    def _build_wb_benchmarks(fig, defaults:dict):
+        '''
+        Plots horizontal lines corresponding to Buffet benchmarks for the
+        3 ratios: roe, current ratio & debt to equity
+        '''
+        # Build line
+        benchmarks = ['roe_benchmark', 'debt_to_equity_benchmark','current_ratio_benchmark']
+        for idx, benchmark in enumerate(benchmarks):
+            bmk = Span(location   = defaults[benchmark],
+                       dimension  ='width',
+                       line_color = defaults['palette'][idx],
+                       line_dash  = defaults['benchmark_line_dash'],
+                       line_width = defaults['benchmark_line_thickness'],
+                       )
+            fig.add_layout(bmk)
+            #Add annotations at start & end
+            for _ in [0, -1]:
+                text = benchmark.replace('_', ' ')
+                citation = Label(x = 2,
+                                 y = defaults[benchmark],
+                                 x_units = 'screen',
+                                 y_units = 'data',
+                                 text    = text,
+                                 text_color     = defaults['palette'][idx],
+                                 text_font_size = defaults['benchmark_font_size'],
+                                 )
+                fig.add_layout(citation)
+
+
+    def _build_means_lines(self, fig, defaults:dict, means:dict):
+        '''Plots means lines for each metric'''
+        for idx, (metric, mean) in enumerate(means.items()):
+            mean_line = Span(location   = mean,
+                             dimension  ='width',
+                             line_color = defaults['palette'][idx],
+                             line_dash  = defaults['means_line_dash'],
+                             line_width = defaults['means_line_thickness'],
+                             )
+            fig.add_layout(mean_line)
+            #Add annotations at start & end
+            for _ in [0, -1]:
+                text = 'Mean'
+                citation = Label(x = 2,
+                                  y = mean,
+                                  x_units = 'screen',
+                                  y_units = 'data',
+                                  text    =  'mean ' + self._map_item_to_name(metric).lower(),
+                                  text_color     = defaults['palette'][idx],
+                                  text_font_size = defaults['means_font_size'],
+                                  )
+                fig.add_layout(citation)
 
 
     def _build_line_tooltips(self, fig, line, metrics:list):
         '''Build tooltips for line plots'''
-        tooltips = []
+        tooltips = [('','@year')]
         for metric in metrics:
             tooltips.append( (self._map_item_to_name(metric),
                               f'@{metric}'+"{0.00}")
                             )
         hover_tool = HoverTool(tooltips   = tooltips,
-                               show_arrow = False,
+                               show_arrow = True,
                                renderers  = [line],
                                mode       = 'vline',
                                )
         fig.add_tools(hover_tool)
 
 
-    def _build_bar_tooltips(self, fig, barplot, metrics:list):
+    def _build_bar_tooltip(self, fig, barplot, metrics:list, plot_type:str):
         '''Build tooltips for bar plots'''
-        tooltips = []
+        tooltip = [('','@year')]
         for metric in metrics:
-            tooltips.append( (self._map_item_to_name(metric),
-                              f'{self._currency_symbol}'+f'@{metric}'+"{0.00a}")
-                            )
-        hover_tool = HoverTool(tooltips   = tooltips,
-                               show_arrow = False,
+            if plot_type in ['wb', 'dupont']:
+                prefix = ''
+            else:
+                prefix = f'{self._currency_symbol}'
+            tooltip.append((self._map_item_to_name(metric),
+                            prefix+f'@{metric}'+"{0.00a}",
+                            ))
+        hover_tool = HoverTool(tooltips   = tooltip,
+                               show_arrow = True,
                                renderers  = [barplot],
                                mode       = 'vline',
                                )
         fig.add_tools(hover_tool)
 
 
-    def fundamentals_plot_bokeh(self, time_series:pd.DataFrame, plot_type:str, markers:list, caption_flag:str, currency_flag:bool, subtitle:str, filename:str):
+    def fundamentals_plot(self, time_series:pd.DataFrame, plot_type:str, subtitle:str, filename:str):
         '''
-        Generic time series plot for values (bars) and their growth (lines)
+        Generic time series bokeh plot for values (bars) and their growth (lines)
         plot_type: either of revenue, bs (balance sheet), dupont, wb ("warren buffet")
-        markers: list of columns that should be highlighted
-        caption_flag: redirects towards caption corresponding to plot if any
-        currency_flag: flag for LHS Y axis title: if True, currency name else ratio
         '''
         defaults = self.get_plot_defaults()
+        time_series.replace(np.inf, 0, inplace=True) # replace infinity values with 0
         time_series.index.name = 'year'
-        time_series.index = time_series.index.astype('string')
-        years = time_series.index.tolist()
-        cds = ColumnDataSource(data = time_series)
+        time_series.index      = time_series.index.astype('string')
+        cds                    = ColumnDataSource(data = time_series)
+
         if plot_type in ['wb', 'dupont']:
             top_y_axis_label = 'ratio'
         else:
@@ -1423,55 +1473,88 @@ class Company:
         cols = time_series.columns.tolist()
         metrics = cols[0:int(len(cols)/2)]
         d_metrics = cols[int(len(cols)/2):]
-        print(metrics, d_metrics)
+
+        means = dict(zip(metrics, time_series[metrics].mean().tolist()))
+        print(means)
+
         #max value for primary y axis
-        max_y1 = time_series[metrics].max().max()
+        max_y = time_series[metrics].max().max()
+        if plot_type == 'wb':
+            max_y = max(max_y, round_up(defaults['current_ratio_benchmark'], 1))
+            print(time_series[d_metrics])
 
         panels = []
         for axis_type in ['linear', 'log']:
-            plot_top = self._initialize_plot(max_y     = max_y1,
+            if axis_type == 'linear':
+                min_y = round_down(time_series[metrics].min().min(), 1)
+            else: min_y = 1e-6
+            # Initialize top plot (data / bars)
+            plot_top = self._initialize_plot(position  = 'top',
+                                             min_y     = min_y,
+                                             max_y     = max_y,
                                              axis_type = axis_type,
                                              defaults  = defaults,
                                              source    = cds,
                                              )
-            plot_bottom = self._initialize_plot_bottom(max_y     = round_up(time_series[d_metrics].max().max(), 1),
-                                                       min_y     = round_down(time_series[d_metrics].min().min(), 1),
-                                                       axis_type = 'linear',
-                                                       defaults  = defaults,
-                                                       source    = cds,
-                                                       )
+            # Initialize bottom plot (changes / lines)
+            plot_bottom = self._initialize_plot(position  = 'bottom',
+                                                max_y     = round_up(time_series[d_metrics].max().max(), 1),
+                                                min_y     = round_down(time_series[d_metrics].min().min(), 1),
+                                                axis_type = 'linear',
+                                                defaults  = defaults,
+                                                source    = cds,
+                                                )
+            # Add title to top plot
             self._build_title_bokeh(fig      = plot_top,
                                     defaults = defaults,
                                     subtitle = subtitle,
                                     )
-
-            self._build_axes_bokeh(fig       = plot_top,
-                                   defaults  = defaults,
-                                   y_axis_label = top_y_axis_label,
-                                   )
-            self._build_axes_bokeh(fig       = plot_bottom,
-                                   defaults  = defaults,
-                                   y_axis_label = 'time \u0394',
-                                   )
-            self._build_bar_plots(fig      = plot_top,
-                                  defaults = defaults,
-                                  years    = years,
-                                  metrics  = metrics,
-                                  source   = cds,
+            # Add bars to top plot
+            self._build_bar_plots(fig       = plot_top, # top blot is bar plot
+                                  defaults  = defaults,
+                                  years     = time_series.index.tolist(),
+                                  metrics   = metrics,
+                                  plot_type = plot_type,
+                                  source    = cds,
                                   )
-            self._build_line_plots(fig       = plot_bottom,
+            self._build_means_lines(fig      = plot_top,
+                                    defaults = defaults,
+                                    means    = means,
+                                    )
+            # Ad WB benchmarks to WB plots
+            if plot_type == 'wb':
+                self._build_wb_benchmarks(fig      = plot_top,
+                                          defaults = defaults,
+                                          )
+            # Add lines to bottom plot
+            self._build_line_plots(fig       = plot_bottom, # bottom plot is line plot
                                    defaults  = defaults,
                                    metrics   = d_metrics,
                                    source    = cds,
                                    )
-            self._position_legend(fig      = plot_top,
-                                  defaults = defaults,
-                                  )
-            self._position_legend(fig      = plot_bottom,
-                                  defaults = defaults,
-                                  )
-            plot = column(plot_top, plot_bottom)
+            # Format axes and legends on top & bottom plots
+            for plot in [plot_top, plot_bottom]:
+                if plot == plot_top:
+                    y_axis_label = top_y_axis_label
+                    fmt = "0.0a"
+                else:
+                    y_axis_label = 'time \u0394'
+                    fmt = "0.%"
+                self._build_axes(fig      = plot,
+                                 defaults = defaults,
+                                 y_axis_label = y_axis_label,
+                                 axis_format = fmt
+                                 )
+                self._position_legend(fig      = plot,
+                                      defaults = defaults,
+                                      )
+            # Merge top & bottom plots into column
+            plot = column(plot_top, plot_bottom, sizing_mode='stretch_width')
             panel = Panel(child=plot, title=axis_type)
             panels.append(panel)
+        #self._build_caption_bokeh(fig = panels)
         tabs = Tabs(tabs=panels)
         show(tabs)
+        # Save plot to tile
+        output_file(filename)
+        save(tabs)
