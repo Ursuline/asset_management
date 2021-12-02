@@ -1210,14 +1210,18 @@ class Company:
         return defaults
 
     @staticmethod
-    def _initialize_plot(position:str, axis_type:str, defaults:dict, source:ColumnDataSource, min_y:float, max_y:float):
+    def _initialize_plot(position:str, axis_type:str, defaults:dict, source:ColumnDataSource, min_y:float, max_y:float, linked_figure=None):
         '''Initialize  plot
         position = top or bottom
         axis_type = log or linear
         '''
-        if position == 'top': plot_height = defaults['plot_height']
-        else: plot_height = defaults['plot_bottom_height']
-        fig = figure(x_range = source.data['year'],
+        if position == 'top':
+            plot_height = defaults['plot_height']
+            x_range = source.data['year']
+        else:
+            plot_height = defaults['plot_bottom_height']
+            x_range = linked_figure.x_range
+        fig = figure(x_range = x_range,
                      y_range = [min_y, max_y],
                      plot_width    = defaults['plot_width'],
                      plot_height   = plot_height,
@@ -1503,6 +1507,7 @@ class Company:
                                                 axis_type = 'linear',
                                                 defaults  = defaults,
                                                 source    = cds,
+                                                linked_figure = plot_top
                                                 )
             # Add title to top plot
             self._build_title_bokeh(fig      = plot_top,
