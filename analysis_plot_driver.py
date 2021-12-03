@@ -8,8 +8,7 @@ Driver for fundamental analysis plot sequence
 @author: charles mégnin
 """
 import os
-import sys
-import pandas as pd
+#import pandas as pd
 import plotly.io as pio
 import company as cny
 
@@ -19,19 +18,10 @@ PERIOD   = 'annual'
 PLOT_DIR = 'plots'
 
 # Target company specs
-TICKER          = 'SU.PA'
+TICKER          = 'ABI.BR'
 EXPIRATION_DATE = '2021-12-31'
 YEAR_0          = int('2013')
 YEAR_1          = int('2020')
-
-
-def get_metrics_over_time(cie, items:list, yr_0:int, yr_1:int):
-    '''Generic getter'''
-    # Get metric
-    df_0 = cie.load_cie_metrics_over_time(items, yr_0, yr_1, change=False)
-    # Get change in metric
-    df_1 = cie.load_cie_metrics_over_time(items, yr_0, yr_1, change=True)
-    return pd.concat([df_0, df_1], axis=1) # merge the two
 
 
 def get_balance_sheet(cie, yr_0:int, yr_1:int):
@@ -39,7 +29,7 @@ def get_balance_sheet(cie, yr_0:int, yr_1:int):
     Returns a dataframe with assets, liabilities & equity and their relative changes over time
     '''
     items = ['totalAssets', 'totalLiabilities', 'totalStockholdersEquity']
-    return get_metrics_over_time(cie, items, yr_0, yr_1)
+    return cie.get_metrics_over_time(items, yr_0, yr_1)
 
 
 def get_revenue_fcf_ebit(cie, yr_0:int, yr_1:int):
@@ -47,7 +37,7 @@ def get_revenue_fcf_ebit(cie, yr_0:int, yr_1:int):
     Returns a dataframe with revenue, free cash flow & EBIT and their relative changes over time
     '''
     items = ['revenue', 'ebit', 'freeCashFlow']
-    return get_metrics_over_time(cie, items, yr_0, yr_1)
+    return cie.get_metrics_over_time(items, yr_0, yr_1)
 
 
 def get_dupont_metrics(cie, yr_0:int, yr_1:int):
@@ -55,7 +45,7 @@ def get_dupont_metrics(cie, yr_0:int, yr_1:int):
     Returns a dataframe with cash ROE, ROE, net profit margin, asset turnover, equity multiplier
     '''
     items = ['returnOnEquity', 'netProfitMargin', 'assetTurnover', 'equityMultiplier']
-    return get_metrics_over_time(cie, items, yr_0, yr_1)
+    return cie.get_metrics_over_time(items, yr_0, yr_1)
 
 
 def get_wb_metrics(cie, yr_0:int, yr_1:int):
@@ -63,7 +53,16 @@ def get_wb_metrics(cie, yr_0:int, yr_1:int):
     Returns a dataframe with ROE, debt to equity, current ratio
     '''
     items = ['returnOnEquity', 'debtToEquity', 'currentRatio']
-    return get_metrics_over_time(cie, items, yr_0, yr_1)
+    return cie.get_metrics_over_time(items, yr_0, yr_1)
+
+
+def get_valuation_metrics(cie, yr_0:int, yr_1:int):
+    '''
+    Returns a dataframe with PEG, debt to equity, current ratio
+    '''
+    items = ['returnOnEquity', 'debtToEquity', 'currentRatio']
+    return cie.get_metrics_over_time(items, yr_0, yr_1)
+
 
 
 if __name__ == '__main__':
@@ -76,7 +75,7 @@ if __name__ == '__main__':
     path = os.path.join(PLOT_DIR, f'{root}_income.html')
     company.fundamentals_plot(time_series=rfe,
                               plot_type = 'revenue',
-                              subtitle='Income & Free cash flow',
+                              subtitle=f'Income & Free cash flow ({YEAR_0}-{YEAR_1})',
                               filename=path,
                               )
 
@@ -85,7 +84,7 @@ if __name__ == '__main__':
     path = os.path.join(PLOT_DIR, f'{root}_bs.html')
     company.fundamentals_plot(time_series=bs,
                               plot_type = 'bs',
-                              subtitle='Balance sheet',
+                              subtitle=f'Balance sheet ({YEAR_0}-{YEAR_1})',
                               filename=path,
                               )
 
@@ -94,7 +93,7 @@ if __name__ == '__main__':
     path = os.path.join(PLOT_DIR, f'{root}_dupont.html')
     company.fundamentals_plot(time_series=dupont,
                               plot_type = 'dupont',
-                              subtitle='Dupont metrics',
+                              subtitle=f'Dupont metrics ({YEAR_0}-{YEAR_1})',
                               filename=path,
                               )
 
@@ -103,6 +102,6 @@ if __name__ == '__main__':
     path = os.path.join(PLOT_DIR, f'{root}_wb.html')
     company.fundamentals_plot(time_series=wb_metrics,
                               plot_type = 'wb',
-                              subtitle='"Warren Buffet" metrics',
+                              subtitle=f'"Warren Buffet" metrics ({YEAR_0}-{YEAR_1})',
                               filename=path,
                               )
