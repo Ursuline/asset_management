@@ -29,7 +29,7 @@ def get_balance_sheet(cie, yr_0:int, yr_1:int):
     Returns a dataframe with assets, liabilities & equity and their relative changes over time
     '''
     items = ['totalAssets', 'totalLiabilities', 'totalStockholdersEquity']
-    return cie.get_metrics_over_time(items, yr_0, yr_1)
+    return cie.get_metric_over_time(items, yr_0, yr_1)
 
 
 def get_revenue_fcf_ebit(cie, yr_0:int, yr_1:int):
@@ -37,7 +37,7 @@ def get_revenue_fcf_ebit(cie, yr_0:int, yr_1:int):
     Returns a dataframe with revenue, free cash flow & EBIT and their relative changes over time
     '''
     items = ['revenue', 'ebit', 'freeCashFlow']
-    return cie.get_metrics_over_time(items, yr_0, yr_1)
+    return cie.get_metric_over_time(items, yr_0, yr_1)
 
 
 def get_dupont_metrics(cie, yr_0:int, yr_1:int):
@@ -45,7 +45,7 @@ def get_dupont_metrics(cie, yr_0:int, yr_1:int):
     Returns a dataframe with cash ROE, ROE, net profit margin, asset turnover, equity multiplier
     '''
     items = ['returnOnEquity', 'netProfitMargin', 'assetTurnover', 'equityMultiplier']
-    return cie.get_metrics_over_time(items, yr_0, yr_1)
+    return cie.get_metric_over_time(items, yr_0, yr_1)
 
 
 def get_wb_metrics(cie, yr_0:int, yr_1:int):
@@ -53,7 +53,7 @@ def get_wb_metrics(cie, yr_0:int, yr_1:int):
     Returns a dataframe with ROE, debt to equity, current ratio
     '''
     items = ['returnOnEquity', 'debtToEquity', 'currentRatio']
-    return cie.get_metrics_over_time(items, yr_0, yr_1)
+    return cie.get_metric_over_time(items, yr_0, yr_1)
 
 
 def get_valuation_metrics(cie, yr_0:int, yr_1:int):
@@ -61,7 +61,7 @@ def get_valuation_metrics(cie, yr_0:int, yr_1:int):
     Returns a dataframe with PEG, debt to equity, current ratio
     '''
     items = ['returnOnEquity', 'debtToEquity', 'currentRatio']
-    return cie.get_metrics_over_time(items, yr_0, yr_1)
+    return cie.get_metric_over_time(items, yr_0, yr_1)
 
 
 

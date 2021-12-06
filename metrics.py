@@ -11,7 +11,13 @@ ratios & related-utilities
 """
 import inspect
 
-metrics_set_names = {'wb_metrics':'Warren Buffet', 'dupont_metrics': 'Dupont'}
+# Set name and plot title
+metrics_set_names = {'mktcap_metrics': 'Assets, Revenue & Market Cap',
+                     'wb_metrics':'Warren Buffet metrics',
+                     'dupont_metrics': 'Dupont metrics',
+                     }
+
+mktcap_metrics = {'totalAssets': 0., 'revenue': 0., 'mktCap': 0.}
 
 # warren buffet metrics
 wb_metrics  = {'debtToEquity':0.5, 'currentRatio':1.5, 'roe':.08}
@@ -24,10 +30,10 @@ wb_metrics  = {'debtToEquity':0.5, 'currentRatio':1.5, 'roe':.08}
 #                                ROE
 #                                 |______________________________|
 #                                                CROE
-# net profit margin -> profitability
-# asset turnover -> efficiency of management
+# net profit margin = net income/sales -> profitability
+# asset turnover = sales/mean asset ->` efficiency of management
 # equity multiplier = asset/equity -> leverage
-# cash conversion -> Free cash-flow / Net income
+# cash conversion -> Free cash flow / Net income
 # roe = NI / Equity & croe = FCF / Equity
 dupont_metrics = {'netProfitMargin':0, 'assetTurnover':0, 'equityMultiplier':0, 'cashConv':0, 'roa':0, 'roe':0.08, 'cashReturnOnEquity':0}
 
@@ -44,6 +50,10 @@ def get_metrics(group:str, metric:str=None):
             if metric is None:
                 return dupont_metrics #return dictionary
             return dupont_metrics[metric] # return value
+        if group == 'mktcap_metrics':
+            if metric is None:
+                return mktcap_metrics #return dictionary
+            return mktcap_metrics[metric] # return value
 
         caller_name = inspect.stack()[1][3]
         func_name   = inspect.stack()[0][3]

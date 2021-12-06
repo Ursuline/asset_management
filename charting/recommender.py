@@ -11,10 +11,11 @@ import smtplib
 import os
 import mimetypes
 from email.message import EmailMessage
-from datetime import datetime
+import datetime as dt
 
 from charting import trading_defaults as dft
 from charting import private as pvt
+from charting import parameters_sync as params
 from finance import utilities as util
 
 class Recommender():
@@ -86,6 +87,7 @@ class Recommender():
         nrecs = len(self._long_recommendations) + len(self._short_recommendations)
 
         if nrecs >0: # if there are recommendations
+            print(dt.datetime.now().strftime('%d %B %Y %H:%M:%S'))
             print(line)
             if self._n_long_recs > 0:
                 print('Long strategic position recommendations:')
@@ -185,7 +187,7 @@ class Recommender():
         if self._n_actions != 0: # send email if there is something to send
             message = EmailMessage()
             message["From"] = pvt.SENDER_EMAIL
-            message["To"]   = ",".join(pvt.RECIPIENT_EMAILS)
+            message["To"]   = ",".join(params.RECIPIENT_EMAILS)
             if self._ptf_file is None:
                 message["Subject"] = 'Subject: Trade recommendation'
             else:
@@ -200,7 +202,7 @@ class Recommender():
 
             mail_server = smtplib.SMTP_SSL(dft.SMTP_SERVER, dft.SSL_PORT)
             mail_server.login(pvt.SENDER_EMAIL, pvt.PASSWORD)
-            for recipient_email in pvt.RECIPIENT_EMAILS:
+            for recipient_email in params.RECIPIENT_EMAILS:
                 mail_server.send_message(message, pvt.SENDER_EMAIL, recipient_email)
 
             mail_server.quit()
@@ -335,7 +337,7 @@ class Recommendation_sync(Recommendations):
         symbol         = self._ticker.get_symbol()
         current_position = self._holdings.get_current_position(symbol,
                                                                strategic_pos)
-        last_action_date = self._ts_plot.last_action_date()
+        last_action_date = self._ts_plot.get_last_action_date()
 
 
         def _make_recommendation(current_pos:str, recom_pos:str):
@@ -407,7 +409,7 @@ class Recommendation_sync(Recommendations):
         body  = f'recom: {self._action} | '
         body += f'position current/recommended: {current_position}/{recom_position} '
         body += f'(span={self._span:.0f} days / buffer={self._buffer:.2%}) '
-        body += f'since {last_action_date.strftime("%d/%m/%Y")} '
+        body += f'since {last_action_date.strftime("%d %b %Y")} '
         body += f'({(self._date - last_action_date).days} days)'
         self._body = body
 

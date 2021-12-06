@@ -14,11 +14,10 @@ import pandas as pd
 from bokeh.plotting import figure, output_file, save
 from bokeh.models import ColumnDataSource, Title, BooleanFilter, CDSView, Scatter
 from bokeh.models import HoverTool, ResetTool, CrosshairTool
-#from bokeh.models import WheelZoomTool, ZoomInTool, ZoomOutTool, WheelPanTool
 from bokeh.models import NumeralTickFormatter
-from bokeh.io import output_notebook, export_png
 from bokeh.layouts import gridplot
-from bokeh.io import show, curdoc
+from bokeh.io import show, curdoc, output_notebook
+from bokeh.resources import CDN
 
 from charting import trading_defaults as dft
 from finance import utilities as util
@@ -97,7 +96,7 @@ class TimeSeriesPlot():
         self._ema  = self._topomap.get_cumret(self._strategy, 'ema', self._fee)  # cumulative returns for EMA
 
 
-    def build_plot(self, dataframe:pd.DataFrame, notebook:bool, display:bool, remote:bool):
+    def build_plot(self, dataframe:pd.DataFrame, notebook:bool, display:bool):
         '''Plotting call'''
         source     = ColumnDataSource(dataframe)
         upper_pane = self._build_upper_pane(source = source)
@@ -117,21 +116,32 @@ class TimeSeriesPlot():
         self._plot = gridplot(children = [upper_pane, lower_pane],
                               ncols    = 1,
                               )
-        self._show(notebook, display, remote)
+        self._show(notebook, display)
+
+
+    def _build_fileprefix(self):
+        root_name  = f'{self._ticker_obj.get_symbol()}_'
+        root_name += f'{self._display_dates[0].date()}-{self._display_dates[1].date()}_'
+        root_name += f'{self._strat_pos}_tmseries'
+        return root_name
 
 
     def _build_pathname(self, extension):
         '''Build html file path name'''
         directory = self._get_directory()
-        filename  = f'{self._ticker_obj.get_symbol()}_'
-        filename += f'{self._display_dates[0].date()}-{self._display_dates[1].date()}_'
-        filename += f'{self._strat_pos}_tmseries.'
-        filename += f'{extension}'
+        prefix = self._build_fileprefix()
+        # filename  = f'{self._ticker_obj.get_symbol()}_'
+        # filename += f'{self._display_dates[0].date()}-{self._display_dates[1].date()}_'
+        # filename += f'{self._strat_pos}_tmseries'
+        filename = prefix + f'.{extension}'
         self._pathname = os.path.join(directory, filename)
 
 
     def get_pathname(self):
         '''Getter for html file path name'''
+        if self._pathname is None:
+            msg = 'TimeSeriesPlot.get_pathname():  pathname not set'
+            print(msg)
         return self._pathname
 
 
@@ -302,7 +312,7 @@ class TimeSeriesPlot():
         return plot
 
 
-    def last_action_date(self):
+    def get_last_action_date(self):
         '''Returns the date of the last action'''
         actions   = dft.get_actions()
         action_df = pd.DataFrame(self._strategy.loc[self._display_dates[0]:self._display_dates[1],
@@ -438,10 +448,6 @@ class TimeSeriesPlot():
                                      ),
                           )
             plot.add_tools(ResetTool())
-            #plot.add_tools(WheelZoomTool())
-            #plot.add_tools(ZoomInTool())
-            #plot.add_tools(ZoomOutTool())
-            #plot.add_tools(WheelPanTool())
         else:
             tooltips.append(("volume", "@Volume{(0.00 a)}"))
 
@@ -453,18 +459,16 @@ class TimeSeriesPlot():
         return plot
 
 
-    def _show(self, notebook:bool, display:bool, remote:bool):
+    def _show(self, notebook:bool, display:bool):
         '''Screen display & save'''
         if notebook:
-            output_notebook()
+            output_notebook(CDN)
         else:
             self._build_pathname('html')
-            output_file(self._pathname)
+            output_file(self._pathname, mode='cdn', title = self._build_fileprefix())
 
-        if display and not remote: # save and display
+        if display: # save and display
             show(self._plot)
-        elif remote: # save to png if remote
-            self._build_pathname('png')
-            export_png(self._plot, filename=self._pathname)
         else: # save to html if local
             save(self._plot)
+        print(f'html saved to {self._pathname}')

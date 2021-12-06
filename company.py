@@ -311,15 +311,6 @@ class Company:
             return date, price, dcf, delta_pct
 
 
-    def get_metric_over_time(self, items:list, yr_0:int, yr_1:int):
-        '''Generic item over time getter'''
-        # Metric
-        df_0 = self.load_cie_metrics_over_time(items, yr_0, yr_1, change=False)
-        # Change in metric
-        df_1 = self.load_cie_metrics_over_time(items, yr_0, yr_1, change=True)
-        return pd.concat([df_0, df_1], axis=1) # merge the two
-
-
     ### Profile data ###
     def _get_profile_item(self, item):
         '''Returns company profile data'''
@@ -719,6 +710,15 @@ class Company:
     def get_peers(self):
         '''return peers as defined in API (***not preferred method***)'''
         return util.extract_peers(self._ticker, API_KEY)
+
+
+    def get_metric_over_time(self, items:list, yr_0:int, yr_1:int):
+        '''Generic item over time getter'''
+        # Metric
+        df_0 = self.load_cie_metrics_over_time(items, yr_0, yr_1, change=False)
+        # Change in metric
+        df_1 = self.load_cie_metrics_over_time(items, yr_0, yr_1, change=True)
+        return pd.concat([df_0, df_1], axis=1) # merge the two
 
 
     def load_cie_metrics_over_time(self, metrics:list, yr_start:int, yr_end:int, change:bool=False):

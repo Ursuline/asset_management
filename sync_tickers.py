@@ -24,7 +24,7 @@ from finance import utilities as util
 DATE_RANGE = par.DATE_RANGE
 ZOOM_RANGE = par.ZOOM_RANGE
 NOTIFY     = par.NOTIFY
-REMOTE     = par.REMOTE
+#REMOTE     = par.REMOTE
 DISPLAY_TIME_SERIES = par.DISPLAY_TIME_SERIES
 REFRESH_YAHOO = par.REFRESH_YAHOO
 REFRESH_EMA   = par.REFRESH_EMA
@@ -118,7 +118,6 @@ if __name__ == '__main__':
                 ts_plot.build_plot(data,
                                    notebook = False,
                                    display  = DISPLAY_TIME_SERIES,
-                                   remote   = REMOTE,
                                    )
 
                 # Determine the action to take for the given END_DATE
