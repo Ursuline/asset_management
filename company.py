@@ -742,6 +742,7 @@ class Company:
             dic_yr = self.load_cie_metrics(year, metrics)
             dic_met[year]= dic_yr
         dfr = pd.DataFrame(dic_met).transpose()
+        dfr.index.name = 'year'
         if change is False:
             return dfr
         # Change = True:
@@ -1145,6 +1146,7 @@ class Company:
         asset_list   = ['totalAssets', 'totalLiabilities', 'totalStockholdersEquity']
         dupont_list  = ['cashReturnOnEquity', 'returnOnEquity', 'returnOnAssets','netProfitMargin', 'assetTurnover', 'equityMultiplier']
         wb_list = ['returnOnEquity', 'debtToEquity', 'currentRatio']
+        valuation_list = ['priceToBook', 'peg']
         d_revenue_list = []
         for item in revenue_list:
             d_revenue_list.append(f'd_{item}')
@@ -1592,7 +1594,7 @@ class Company:
     def fundamentals_plot(self, time_series:pd.DataFrame, plot_type:str, subtitle:str, filename:str):
         '''
         Generic time series bokeh plot for values (bars) and their growth (lines)
-        plot_type: either of revenue, bs (balance sheet), dupont, wb ("warren buffet")
+        plot_type: either of revenue, bs (balance sheet), dupont, wb ("warren buffet"), ...
         '''
         defaults = self.get_plot_defaults()
         time_series.replace(np.inf, 0, inplace=True) # replace infinity values with 0
