@@ -124,6 +124,8 @@ class Company:
         if item.lower() == 'returnonequity': return 'ROE'
         if item.lower() == 'currentratio': return 'Current ratio'
         if item.lower() == 'debttoequity': return 'Debt to equity ratio'
+        if item.lower() == 'pricetobookratio': return 'Price to book ratio'
+        if item.lower() == 'peg': return ' P/E-to-growth'
         print(f'unknown item {item}')
         return ''
 
@@ -304,9 +306,9 @@ class Company:
             print(f'get_dcf_delta: year {year} data unvailable')
             return 0
         else :
-            date = data.loc['date']
+            date  = data.loc['date']
             price = data.loc['Stock Price']
-            dcf = data.loc['DCF']
+            dcf   = data.loc['DCF']
             delta_pct = (dcf-price)/price
             return date, price, dcf, delta_pct
 
@@ -321,12 +323,6 @@ class Company:
             return ''
         else :
             return data.loc[item].iloc[0]
-
-
-    def get_mktCap(self):
-        '''Returns market Cap'''
-        item = 'mktCap'
-        return self._get_profile_item(item=item)
 
 
     ### Balance sheet statement data ###
@@ -514,19 +510,6 @@ class Company:
         return self._get_cash_flow_statement_item(item=item, year=year, change=change)
 
 
-    def get_cashConversion(self, year:str, change:bool=False):
-        '''Returns cash conversion (FCF/Net income) or change in CC'''
-        fcf    = self.get_freeCashFlow(year, change=False)
-        income = self.get_netIncome(year, change=False)
-        if income == 0:
-            return 0
-        if change:
-            d_fcf = self.get_freeCashFlow(year, change=True)
-            d_income = self.get_netIncome(year, change=True)
-            return (d_fcf*income - d_income/fcf)/(income**2)
-        return fcf/income
-
-
     ###Financial ratio data ###
     def _get_financial_ratios_item(self, item:str, year:str, change:bool=False):
         '''Returns generic financial ratios item or its time change'''
@@ -593,22 +576,10 @@ class Company:
         return self._get_key_metrics_item(item=item, year=year, change=change)
 
 
-    # def get_priceEarningsRatio_over_time(self, yr_1:int, yr_2:int, change:bool=False):
-    #    '''Returns PEG ratio (P/E to growth) or change in PEG'''
-    #    item = 'peRatio'
-    #    return self._get_key_metrics_item_over_time(item=item, start_year=yr_1, end_year=yr_2, change=change)
-
-
     def get_priceEarningsToGrowthRatio(self, year:str, change:bool=False):
         '''Returns PE ratio or change in PE over time'''
         item = 'priceEarningsToGrowthRatio'
         return self._get_financial_ratios_item(item=item, year=year, change=change)
-
-
-    # def get_priceEarningsToGrowthRatio_over_time(self, yr_1:int, yr_2:int, change:bool=False):
-    #     '''Returns PEG ratio (P/E to growth) or change in PEG'''
-    #     item = 'priceEarningsToGrowthRatio'
-    #     return self.get_financial_ratios_item_over_time(item=item, start_year=yr_1, end_year=yr_2, change=change)
 
 
     def get_priceToBookRatio(self, year:str, change:bool=False):
@@ -617,10 +588,10 @@ class Company:
         return self._get_financial_ratios_item(item=item, year=year, change=change)
 
 
-    # def get_priceToBookRatio_over_time(self, yr_1:int, yr_2:int, change:bool=False):
-    #     '''Returns P/B ratio (price to book) or change in P/B'''
-    #     item = 'priceToBookRatio'
-    #     return self.get_financial_ratios_item_over_time(item=item, start_year=yr_1, end_year=yr_2, change=change)
+    def get_roe(self, year:str, change:bool=False):
+        '''Returns ROE or change in ROE'''
+        item = 'returnOnEquity'
+        return self._get_financial_ratios_item(item=item, year=year, change=change)
 
 
     def get_cashReturnOnEquity(self, year:str, change:bool=False):
@@ -632,19 +603,6 @@ class Company:
             d_cash_conv = self.get_cashConversion(year=year, change=True)
             return d_roe*cash_conv + roe*d_cash_conv
         return roe*cash_conv
-
-
-    def get_equityMultiplier(self, year:str, change:bool=False):
-        '''Returns equity multiplier = Total Assets/Total Equity or change in EM'''
-        assets = self._get_balance_sheet_item('totalAssets', year, change=False)
-        equity = self._get_balance_sheet_item('totalStockholdersEquity', year, change=False)
-        if change:
-            d_assets = self._get_balance_sheet_item('totalAssets', year, change=True)
-            d_equity = self._get_balance_sheet_item('totalStockholdersEquity', year, change=True)
-            return (d_assets*equity - d_equity/assets)/(equity**2)
-        if equity == 0:
-            return 0
-        return assets/equity
 
 
     ### key metrics data ###
@@ -683,16 +641,22 @@ class Company:
             return data[(data.index <= end_year) & (data.index >= start_year)]
 
 
-    def get_roe(self, year:str, change:bool=False):
-        '''Returns ROE or change in ROE'''
-        item = 'returnOnEquity'
-        return self._get_financial_ratios_item(item=item, year=year, change=change)
+    def get_payoutRatio(self, year:str, change:bool=False):
+        '''Returns payout ratio (dividend rate / earnings) or change in payout ratio'''
+        item = 'payoutRatio'
+        return self._get_key_metrics_item(item=item, year=year, change=change)
 
 
-    # def get_roe_over_time(self, yr_1:int, yr_2:int, change:bool=False):
-    #     '''Returns ROE or change in ROE'''
-    #     item = 'returnOnEquity'
-    #     return self._get_financial_ratios_item_over_time(item=item, start_year=yr_1, end_year=yr_2, change=change)
+    def get_marketCap(self, year:str, change:bool=False):
+        '''Returns market cap or change in market cap'''
+        item = 'marketCap'
+        return self._get_key_metrics_item(item=item, year=year, change=change)
+
+
+    def get_entrepriseValue(self, year:str, change:bool=False):
+        '''Returns enterprise value or change in enterprise value'''
+        item = 'entrepriseValue'
+        return self._get_key_metrics_item(item=item, year=year, change=change)
 
 
     def get_currentRatio(self, year:str, change:bool=False):
@@ -701,10 +665,55 @@ class Company:
         return self._get_key_metrics_item(item=item, year=year, change=change)
 
 
+    def get_peRatio(self, year:str, change:bool=False):
+        '''Returns price/earnings ratio or change in p/e ratio'''
+        item = 'peRatio'
+        return self._get_key_metrics_item(item=item, year=year, change=change)
+
+
     def get_debtToEquity(self, year:str, change:bool=False):
         '''Returns debt to equity ratio or change in debt to equity ratio'''
         item = 'debtToEquity'
         return self._get_key_metrics_item(item=item, year=year, change=change)
+
+    ### Derived metrics ###
+    def get_evToebit(self, year:str, change:bool=False):
+        '''Returns enterprise value to ebit ratio or change '''
+        ev   = self.get_entrepriseValue(year=year, change=False)
+        ebit = self.get_ebit(year=year, change=False)
+        if ebit == 0:
+            return 0
+        if change is True:
+            d_ev   = self.get_entrepriseValue(year=year, change=True)
+            d_ebit = self.get_ebit(year=year, change=True)
+        if change is False:
+            return ev/ebit
+        return (d_ev*ebit-d_ebit*ev)/(ebit*ebit)
+
+
+    def get_cashConversion(self, year:str, change:bool=False):
+        '''Returns cash conversion (FCF/Net income) or change in CC'''
+        fcf    = self.get_freeCashFlow(year, change=False)
+        income = self.get_netIncome(year, change=False)
+        if income == 0:
+            return 0
+        if change:
+            d_fcf = self.get_freeCashFlow(year, change=True)
+            d_income = self.get_netIncome(year, change=True)
+            return (d_fcf*income - d_income/fcf)/(income**2)
+        return fcf/income
+
+    def get_equityMultiplier(self, year:str, change:bool=False):
+        '''Returns equity multiplier = Total Assets/Total Equity or change in EM'''
+        assets = self._get_balance_sheet_item('totalAssets', year, change=False)
+        equity = self._get_balance_sheet_item('totalStockholdersEquity', year, change=False)
+        if equity == 0:
+            return 0
+        if change:
+            d_assets = self._get_balance_sheet_item('totalAssets', year, change=True)
+            d_equity = self._get_balance_sheet_item('totalStockholdersEquity', year, change=True)
+            return (d_assets*equity - d_equity/assets)/(equity**2)
+        return assets/equity
 
 
     def get_peers(self):
@@ -747,51 +756,61 @@ class Company:
 
 
     def load_cie_metrics(self, year:str, requested_metrics:list):
-        '''load metrics values corresponding to keys in cie_metrics'''
+        '''load metrics values corresponding to keys in cie_metrics, save as dictionary & return'''
         cie_metrics = {}
         for metric in requested_metrics:
-            if metric == 'debtToEquity':
-                cie_metrics['debtToEquity'] = self.get_debtToEquity(year)
-            elif metric == 'currentRatio':
-                cie_metrics['currentRatio'] = self.get_currentRatio(year)
-            elif metric == 'roa':
-                cie_metrics['roa'] = self.get_returnOnAssets(year)
-            elif metric == 'returnOnAssets':
-                cie_metrics['returnOnAssets'] = self.get_returnOnAssets(year)
-            elif metric == 'roe':
-                cie_metrics['roe'] = self.get_roe(year)
-            elif metric == 'returnOnEquity':
-                cie_metrics['returnOnEquity'] = self.get_roe(year)
-            elif metric == 'peg':
-                cie_metrics['peg'] = self.get_priceEarningsToGrowthRatio(year)
-            elif metric == 'priceEarningsToGrowthRatio':
-                cie_metrics['priceEarningsToGrowthRatio'] = self.get_priceEarningsToGrowthRatio(year)
-            elif metric == 'cashReturnOnEquity':
-                cie_metrics['cashReturnOnEquity'] = self.get_cashReturnOnEquity(year)
-            elif metric == 'netProfitMargin':
-                cie_metrics['netProfitMargin'] = self.get_netProfitMargin(year)
-            elif metric == 'assetTurnover':
-                cie_metrics['assetTurnover'] = self.get_assetTurnover(year)
-            elif metric == 'equityMultiplier':
-                cie_metrics['equityMultiplier'] = self.get_equityMultiplier(year)
+            if metric == 'assetTurnover':
+                cie_metrics['assetTurnover'] = self.get_assetTurnover(year=year)
             elif metric =='cashConv':
-                cie_metrics['cashConv'] = self.get_cashConversion(year)
-            elif metric =='mktCap':
-                cie_metrics['mktCap'] = self.get_mktCap()
+                cie_metrics['cashConv'] = self.get_cashConversion(year=year)
+            elif metric == 'cashReturnOnEquity':
+                cie_metrics['cashReturnOnEquity'] = self.get_cashReturnOnEquity(year=year)
+            elif metric == 'currentRatio':
+                cie_metrics['currentRatio'] = self.get_currentRatio(year=year)
+            elif metric == 'debtToEquity':
+                cie_metrics['debtToEquity'] = self.get_debtToEquity(year=year)
+            elif metric == 'ebit':
+                cie_metrics['ebit'] = self.get_ebit(year=year)
+            elif metric == 'enterpriseValue':
+                cie_metrics['enterpriseValue'] = self.evToebit(year=year)
+            elif metric == 'evToebit':
+                cie_metrics['evToebit'] = self.get_evToebit(year=year)
+            elif metric == 'equityMultiplier':
+                cie_metrics['equityMultiplier'] = self.get_equityMultiplier(year=year)
+            elif metric == 'freeCashFlow':
+                cie_metrics['freeCashFlow'] = self.get_freeCashFlow(year=year)
+            elif metric =='marketCap':
+                cie_metrics['marketCap'] = self.get_marketCap(year=year)
+            elif metric =='netIncome':
+                cie_metrics['netIncome'] = self.get_netIncome(year=year)
+            elif metric == 'netProfitMargin':
+                cie_metrics['netProfitMargin'] = self.get_netProfitMargin(year=year)
+            elif metric == 'payoutRatio':
+                cie_metrics['payoutRatio'] = self.get_payoutRatio(year=year)
+            elif metric == 'peg':
+                cie_metrics['peg'] = self.get_priceEarningsToGrowthRatio(year=year)
+            elif metric == 'priceEarningsToGrowthRatio':
+                cie_metrics['priceEarningsToGrowthRatio'] = self.get_priceEarningsToGrowthRatio(year=year)
+            elif metric == 'priceToBookRatio':
+                cie_metrics['priceToBookRatio'] = self.get_priceToBookRatio(year=year)
+            elif metric == 'peRatio':
+                cie_metrics['peRatio'] = self.get_peRatio(year=year)
+            elif metric == 'roa':
+                cie_metrics['roa'] = self.get_returnOnAssets(year=year)
+            elif metric == 'returnOnAssets':
+                cie_metrics['returnOnAssets'] = self.get_returnOnAssets(year=year)
+            elif metric == 'roe':
+                cie_metrics['roe'] = self.get_roe(year=year)
+            elif metric == 'returnOnEquity':
+                cie_metrics['returnOnEquity'] = self.get_roe(year=year)
+            elif metric =='revenue':
+                cie_metrics['revenue'] = self.get_revenue(year=year)
             elif metric =='totalAssets':
                 cie_metrics['totalAssets'] = self.get_totalAssets(year=year)
             elif metric =='totalLiabilities':
                 cie_metrics['totalLiabilities'] = self.get_totalLiabilities(year=year)
             elif metric =='totalStockholdersEquity':
                 cie_metrics['totalStockholdersEquity'] = self.get_totalStockholdersEquity(year=year)
-            elif metric =='revenue':
-                cie_metrics['revenue'] = self.get_revenue(year=year)
-            elif metric =='netIncome':
-                cie_metrics['netIncome'] = self.get_netIncome(year=year)
-            elif metric == 'ebit':
-                cie_metrics['ebit'] = self.get_ebit(year)
-            elif metric == 'freeCashFlow':
-                cie_metrics['freeCashFlow'] = self.get_freeCashFlow(year)
             else:
                 caller_name = inspect.stack()[1][3]
                 func_name   = inspect.stack()[0][3]
@@ -1179,6 +1198,9 @@ class Company:
         elif col == 'currentRatio':
             color = defaults['linecolors'][2]
             legend_name = "Current ratio"
+        elif col == 'priceToBook':
+            color = defaults['linecolors'][0]
+            legend_name = "P/B"
 
         elif col == 'd_revenue':
             color = defaults['linecolors'][0]
@@ -1212,10 +1234,13 @@ class Company:
             legend_name = "\u0394 Equity multiplier"
         elif col == 'd_debtToEquity':
             color = defaults['linecolors'][1]
-            legend_name = "Debt to equity"
+            legend_name = "\u0394 Debt to equity"
         elif col == 'd_currentRatio':
             color = defaults['linecolors'][2]
-            legend_name = "Current ratio"
+            legend_name = "\u0394 Current ratio"
+        elif col == 'd_priceToBook':
+            color = defaults['linecolors'][0]
+            legend_name = "\u0394 P/B"
         return color, legend_name
 
 
@@ -1250,6 +1275,8 @@ class Company:
         defaults['roe_benchmark']            = .08
         defaults['debt_to_equity_benchmark'] = .5
         defaults['current_ratio_benchmark']  = 1.5
+        defaults['price_to_book_ratio_benchmark']  = 1.0
+        defaults['peg_ratio_benchmark']            = 1.0
         defaults['benchmark_line_dash']      = 'dashed'
         defaults['benchmark_line_thickness'] = 2
         defaults['benchmark_font_size']      = '9pt'
@@ -1351,7 +1378,9 @@ class Company:
     @staticmethod
     def _get_initial_x_offset(metrics):
         '''Returns initial bar offset for bar plot'''
-        if len(metrics) == 3: return -.25
+        if len(metrics) == 1: return 0.
+        if len(metrics) == 2: return 0.
+        if len(metrics) == 3: return -.125
         if len(metrics) == 4: return -.375
         if len(metrics) == 5: return -.5
         print(f'_get_initial_x_offset: metrics length {len(metrics)} not handled')
@@ -1360,10 +1389,12 @@ class Company:
     @staticmethod
     def _get_bar_shift(metrics):
         '''Returns shift amount bw successive bars'''
+        if len(metrics) == 1: return .5
+        if len(metrics) == 2: return .35
         if len(metrics) == 3: return .75/3
         if len(metrics) == 4: return .8/4
         if len(metrics) == 5: return .75/5
-        print(f'_get_bar_shift`; metrics length {len(metrics)} not handled')
+        print(f'_get_bar_shift; metrics length {len(metrics)} not handled')
         return 0
 
 
@@ -1471,6 +1502,35 @@ class Company:
                                )
 
 
+    def _build_valuation_benchmarks(self, fig, defaults:dict):
+        '''
+        Plots horizontal lines corresponding to valuation benchmarks for the
+        price-to-book ratio
+        '''
+        # Build line
+        benchmarks = ['price_to_book_ratio_benchmark', 'peg_ratio_benchmark']
+        for idx, benchmark in enumerate(benchmarks):
+            bmk = Span(location   = defaults[benchmark],
+                       dimension  ='width',
+                       line_color = defaults['palette'][idx],
+                       line_dash  = defaults['benchmark_line_dash'],
+                       line_width = defaults['benchmark_line_thickness'],
+                       )
+            fig.add_layout(bmk)
+            #Add annotation
+            text = benchmark.replace('_', ' ')
+            text += f': {defaults[benchmark]}'
+            fig.add_layout(self._build_line_caption(text      = text,
+                                                    x_value   = 2,
+                                                    y_value   = defaults[benchmark],
+                                                    x_units   = 'screen',
+                                                    y_units   = 'data',
+                                                    color     = 'dimgray',#defaults['palette'][idx],
+                                                    font_size = defaults['benchmark_font_size'],
+                                                    )
+                               )
+
+
     def _build_means_lines(self, fig, defaults:dict, means:dict):
         '''Plots means lines for each metric'''
         for idx, (metric, mean) in enumerate(means.items()):
@@ -1514,7 +1574,7 @@ class Company:
         '''Build tooltips for bar plots'''
         tooltip = [('','@year')]
         for metric in metrics:
-            if plot_type in ['wb', 'dupont']:
+            if plot_type in ['wb', 'dupont', 'valuation']:
                 prefix = ''
             else:
                 prefix = f'{self._currency_symbol}'
@@ -1540,7 +1600,7 @@ class Company:
         time_series.index      = time_series.index.astype('string')
         cds                    = ColumnDataSource(data = time_series)
 
-        if plot_type in ['wb', 'dupont']:
+        if plot_type in ['wb', 'dupont', 'valuation']:
             top_y_axis_label = 'ratio'
         else:
             top_y_axis_label = f'{self.get_currency().capitalize()}'
@@ -1551,7 +1611,7 @@ class Company:
         # Build a dictionary of metrics and their respective means
         means = dict(zip(metrics, time_series[metrics].mean().tolist()))
 
-        #max value for primary y axis
+        # max value for primary y axis
         max_y = time_series[metrics].max().max()
         if plot_type == 'wb':
             max_y = max(max_y, round_up(defaults['current_ratio_benchmark'], 1))
@@ -1560,6 +1620,8 @@ class Company:
         for axis_type in ['linear', 'log']:
             if axis_type == 'linear':
                 min_y = round_down(time_series[metrics].min().min(), 1)
+                if plot_type == 'valuation':
+                    min_y = 1e-6
             else: min_y = 1e-6
             # Initialize top plot (data / bars)
             plot_top = self._initialize_plot(position  = 'top',
@@ -1595,11 +1657,16 @@ class Company:
                                     defaults = defaults,
                                     means    = means,
                                     )
-            # Ad WB benchmarks to WB plots
+            # Add WB benchmarks to WB plots
             if plot_type == 'wb':
                 self._build_wb_benchmarks(fig      = plot_top,
                                           defaults = defaults,
                                           )
+            elif plot_type == 'valuation':
+                self._build_valuation_benchmarks(fig      = plot_top,
+                                          defaults = defaults,
+                                          )
+
             # Add lines to bottom plot
             self._build_line_plots(fig       = plot_bottom, # bottom plot is line plot
                                    defaults  = defaults,
