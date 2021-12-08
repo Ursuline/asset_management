@@ -19,8 +19,11 @@ metrics_set_names = {'mktcap_metrics': 'Assets, Revenue & Market Cap',
 
 mktcap_metrics = {'totalAssets': 0., 'revenue': 0., 'mktCap': 0.}
 
+bs_metrics = {'totalAssets': 0., 'totalLiabilities': 0., 'totalStockholdersEquity': 0.}
+income_metrics = {'revenue': 0., 'ebit': 0., 'freeCashFlow': 0.}
+
 # warren buffet metrics
-wb_metrics  = {'debtToEquity':0.5, 'currentRatio':1.5, 'roe':.08}
+wb_metrics  = {'returnOnEquity':.08, 'debtToEquity':0.5, 'currentRatio':1.5}
 
 # Dupont metrics split cash return on equity (CROE) into:
 # net profit margin * asset turnover * equity multiplier * cash conversion
@@ -35,8 +38,8 @@ wb_metrics  = {'debtToEquity':0.5, 'currentRatio':1.5, 'roe':.08}
 # equity multiplier = asset/equity -> leverage
 # cash conversion -> Free cash flow / Net income
 # roe = NI / Equity & croe = FCF / Equity
-dupont_metrics = {'netProfitMargin':0, 'assetTurnover':0, 'equityMultiplier':0, 'cashConv':0, 'roa':0, 'roe':0.08, 'cashReturnOnEquity':0}
-
+dupont_metrics = {'returnOnEquity':.08, 'netProfitMargin':0, 'assetTurnover':0, 'equityMultiplier':0}
+full_dupont_metrics = {'returnOnEquity':.08, 'netProfitMargin':0, 'assetTurnover':0, 'equityMultiplier':0, 'cashConv':0, 'roa':0, 'cashReturnOnEquity':0}
 
 def get_metrics(group:str, metric:str=None):
     '''returns metric value group=dictionary name / metric=metric kind.
@@ -54,6 +57,14 @@ def get_metrics(group:str, metric:str=None):
             if metric is None:
                 return mktcap_metrics #return dictionary
             return mktcap_metrics[metric] # return value
+        if group == 'bs_metrics':
+            if metric is None:
+                return bs_metrics #return dictionary
+            return bs_metrics[metric] # return value
+        if group == 'income_metrics':
+            if metric is None:
+                return income_metrics #return dictionary
+            return income_metrics[metric] # return value
 
         caller_name = inspect.stack()[1][3]
         func_name   = inspect.stack()[0][3]
