@@ -123,8 +123,10 @@ class Company:
         if item.lower() == 'currentratio': return 'Current ratio'
         if item.lower() == 'debttoequity': return 'Debt to equity ratio'
         if item.lower() == 'pricetobookratio': return 'Price to book ratio'
-        if item.lower() == 'peg': return ' P/E-to-growth'
-        print(f'unknown item {item}')
+        if item.lower() == 'peg': return 'P/E-to-growth'
+        if item.lower() == 'dividendyield': return 'Dividend yield'
+        if item.lower() == 'payoutratio': return 'Payout ratio'
+        print(f'_map_item_to_name: unknown item {item}')
         return ''
 
 
@@ -568,12 +570,6 @@ class Company:
         return self._get_financial_ratios_item(item=item, year=year, change=change)
 
 
-    def get_priceEarningsRatio(self, year:str, change:bool=False):
-        '''Returns PE ratio or change in PE'''
-        item = 'peRatio'
-        return self._get_key_metrics_item(item=item, year=year, change=change)
-
-
     def get_priceEarningsToGrowthRatio(self, year:str, change:bool=False):
         '''Returns PE ratio or change in PE over time'''
         item = 'priceEarningsToGrowthRatio'
@@ -639,6 +635,12 @@ class Company:
             return data[(data.index <= end_year) & (data.index >= start_year)]
 
 
+    def get_enterpriseValue(self, year:str, change:bool=False):
+        '''Returns enterpriuse value (assets + liabs - cash) or its change'''
+        item = 'enterpriseValue'
+        return self._get_key_metrics_item(item=item, year=year, change=change)
+
+
     def get_payoutRatio(self, year:str, change:bool=False):
         '''Returns payout ratio (dividend rate / earnings) or change in payout ratio'''
         item = 'payoutRatio'
@@ -669,10 +671,17 @@ class Company:
         return self._get_key_metrics_item(item=item, year=year, change=change)
 
 
+    def get_dividendYield(self, year:str, change:bool=False):
+        '''Returns Dividend yield or its change'''
+        item = 'dividendYield'
+        return self._get_key_metrics_item(item=item, year=year, change=change)
+
+
     def get_debtToEquity(self, year:str, change:bool=False):
         '''Returns debt to equity ratio or change in debt to equity ratio'''
         item = 'debtToEquity'
         return self._get_key_metrics_item(item=item, year=year, change=change)
+
 
     ### Derived metrics ###
     def get_evToebit(self, year:str, change:bool=False):
@@ -768,10 +777,12 @@ class Company:
                 cie_metrics['currentRatio'] = self.get_currentRatio(year=year)
             elif metric == 'debtToEquity':
                 cie_metrics['debtToEquity'] = self.get_debtToEquity(year=year)
+            elif metric == 'dividendYield':
+                cie_metrics['dividendYield'] = self.get_dividendYield(year=year)
             elif metric == 'ebit':
                 cie_metrics['ebit'] = self.get_ebit(year=year)
             elif metric == 'enterpriseValue':
-                cie_metrics['enterpriseValue'] = self.evToebit(year=year)
+                cie_metrics['enterpriseValue'] = self.get_enterpriseValue(year=year)
             elif metric == 'evToebit':
                 cie_metrics['evToebit'] = self.get_evToebit(year=year)
             elif metric == 'equityMultiplier':
@@ -1138,110 +1149,122 @@ class Company:
             )
         pio.write_html(fig, file=filename, auto_open=True)
 
-    @staticmethod
-    def _get_metric_lists():
-        revenue_list = ['revenue', 'freeCashFlow', 'ebit']
-        asset_list   = ['totalAssets', 'totalLiabilities', 'totalStockholdersEquity']
-        dupont_list  = ['cashReturnOnEquity', 'returnOnEquity', 'returnOnAssets','netProfitMargin', 'assetTurnover', 'equityMultiplier']
-        wb_list = ['returnOnEquity', 'debtToEquity', 'currentRatio']
-        valuation_list = ['priceToBook', 'peg']
-        d_revenue_list = []
-        for item in revenue_list:
-            d_revenue_list.append(f'd_{item}')
-        d_asset_list = []
-        for item in asset_list:
-            d_asset_list.append(f'd_{item}')
-        d_dupont_list = []
-        for item in dupont_list:
-            d_dupont_list.append(f'd_{item}')
-        d_wb_list = []
-        for item in wb_list:
-            d_wb_list.append(f'd_{item}')
-        return revenue_list+asset_list+dupont_list+wb_list, d_revenue_list+d_asset_list+d_dupont_list+d_wb_list
+    # @staticmethod
+    # def _get_metric_lists():
+    #     revenue_list = ['revenue', 'freeCashFlow', 'ebit']
+    #     asset_list   = ['totalAssets', 'totalLiabilities', 'totalStockholdersEquity']
+    #     dupont_list  = ['cashReturnOnEquity', 'returnOnEquity', 'returnOnAssets','netProfitMargin', 'assetTurnover', 'equityMultiplier']
+    #     wb_list = ['returnOnEquity', 'debtToEquity', 'currentRatio']
+    #     valuation_list = ['priceToBook', 'peg']
+    #     d_revenue_list = []
+    #     for item in revenue_list:
+    #         d_revenue_list.append(f'd_{item}')
+    #     d_asset_list = []
+    #     for item in asset_list:
+    #         d_asset_list.append(f'd_{item}')
+    #     d_dupont_list = []
+    #     for item in dupont_list:
+    #         d_dupont_list.append(f'd_{item}')
+    #     d_wb_list = []
+    #     for item in wb_list:
+    #         d_wb_list.append(f'd_{item}')
+    #     return revenue_list+asset_list+dupont_list+wb_list, d_revenue_list+d_asset_list+d_dupont_list+d_wb_list
 
-    @staticmethod
-    def _get_legend_attributes(defaults, col):
-        '''Return legend color and label from column name'''
-        if col == 'revenue':
-            color = defaults['linecolors'][0]
-            legend_name = 'Revenue'
-        elif col == 'freeCashFlow':
-            color = defaults['linecolors'][1]
-            legend_name = 'FCF'
-        elif col == 'ebit':
-            color = defaults['linecolors'][2]
-            legend_name = 'EBIT'
-        elif col == 'totalAssets':
-            color = defaults['linecolors'][0]
-            legend_name = 'Assets'
-        elif col == 'totalLiabilities':
-            color = defaults['linecolors'][1]
-            legend_name = 'Liabilities'
-        elif col == 'totalStockholdersEquity':
-            color = defaults['linecolors'][2]
-            legend_name = "Shareholder's Equity"
-        elif col == 'returnOnEquity':
-            color = defaults['linecolors'][0]
-            legend_name = "ROE"
-        elif col == 'netProfitMargin':
-            color = defaults['linecolors'][1]
-            legend_name = "Net profit margin"
-        elif col == 'assetTurnover':
-            color = defaults['linecolors'][2]
-            legend_name = "Asset turnover"
-        elif col == 'equityMultiplier':
-            color = defaults['linecolors'][3]
-            legend_name = "Equity multiplier"
-        elif col == 'debtToEquity':
-            color = defaults['linecolors'][1]
-            legend_name = "Debt to equity"
-        elif col == 'currentRatio':
-            color = defaults['linecolors'][2]
-            legend_name = "Current ratio"
-        elif col == 'priceToBook':
-            color = defaults['linecolors'][0]
-            legend_name = "P/B"
+    # @staticmethod
+    # def _get_legend_attributes(defaults, col):
+    #     '''Return legend color and label from column name'''
+    #     if col == 'revenue':
+    #         color = defaults['linecolors'][0]
+    #         legend_name = 'Revenue'
+    #     elif col == 'freeCashFlow':
+    #         color = defaults['linecolors'][1]
+    #         legend_name = 'FCF'
+    #     elif col == 'ebit':
+    #         color = defaults['linecolors'][2]
+    #         legend_name = 'EBIT'
+    #     elif col == 'totalAssets':
+    #         color = defaults['linecolors'][0]
+    #         legend_name = 'Assets'
+    #     elif col == 'totalLiabilities':
+    #         color = defaults['linecolors'][1]
+    #         legend_name = 'Liabilities'
+    #     elif col == 'totalStockholdersEquity':
+    #         color = defaults['linecolors'][2]
+    #         legend_name = "Shareholder's Equity"
+    #     elif col == 'returnOnEquity':
+    #         color = defaults['linecolors'][0]
+    #         legend_name = "ROE"
+    #     elif col == 'netProfitMargin':
+    #         color = defaults['linecolors'][1]
+    #         legend_name = "Net profit margin"
+    #     elif col == 'assetTurnover':
+    #         color = defaults['linecolors'][2]
+    #         legend_name = "Asset turnover"
+    #     elif col == 'equityMultiplier':
+    #         color = defaults['linecolors'][3]
+    #         legend_name = "Equity multiplier"
+    #     elif col == 'debtToEquity':
+    #         color = defaults['linecolors'][1]
+    #         legend_name = "Debt to equity"
+    #     elif col == 'currentRatio':
+    #         color = defaults['linecolors'][2]
+    #         legend_name = "Current ratio"
+    #     elif col == 'priceToBook':
+    #         color = defaults['linecolors'][0]
+    #         legend_name = "P/B"
+    #     elif col == 'dividendYield':
+    #         color = defaults['linecolors'][0]
+    #         legend_name = "Dividend yield"
+    #     elif col == 'payoutRatio':
+    #         color = defaults['linecolors'][1]
+    #         legend_name = "Payout ratio"
 
-        elif col == 'd_revenue':
-            color = defaults['linecolors'][0]
-            legend_name = '\u0394 Revenue'
-        elif col == 'd_freeCashFlow':
-            color = defaults['linecolors'][1]
-            legend_name = "\u0394 FCF"
-        elif col == 'd_ebit':
-            color = defaults['linecolors'][2]
-            legend_name = "\u0394 EBIT"
-        elif col == 'd_totalAssets':
-            color = defaults['linecolors'][0]
-            legend_name = '\u0394 Assets'
-        elif col == 'd_totalLiabilities':
-            color = defaults['linecolors'][1]
-            legend_name = '\u0394 Liabilities'
-        elif col == 'd_totalStockholdersEquity':
-            color = defaults['linecolors'][2]
-            legend_name = "\u0394 Shareholder's Equity"
-        elif col == 'd_returnOnEquity':
-            color = defaults['linecolors'][0]
-            legend_name = "\u0394 ROE"
-        elif col == 'd_netProfitMargin':
-            color = defaults['linecolors'][1]
-            legend_name = "\u0394 Net profit margin"
-        elif col == 'd_assetTurnover':
-            color = defaults['linecolors'][2]
-            legend_name = "\u0394 Asset turnover"
-        elif col == 'd_equityMultiplier':
-            color = defaults['linecolors'][3]
-            legend_name = "\u0394 Equity multiplier"
-        elif col == 'd_debtToEquity':
-            color = defaults['linecolors'][1]
-            legend_name = "\u0394 Debt to equity"
-        elif col == 'd_currentRatio':
-            color = defaults['linecolors'][2]
-            legend_name = "\u0394 Current ratio"
-        elif col == 'd_priceToBook':
-            color = defaults['linecolors'][0]
-            legend_name = "\u0394 P/B"
-        return color, legend_name
+    #     elif col == 'd_revenue':
+    #         color = defaults['linecolors'][0]
+    #         legend_name = '\u0394 Revenue'
+    #     elif col == 'd_freeCashFlow':
+    #         color = defaults['linecolors'][1]
+    #         legend_name = "\u0394 FCF"
+    #     elif col == 'd_ebit':
+    #         color = defaults['linecolors'][2]
+    #         legend_name = "\u0394 EBIT"
+    #     elif col == 'd_totalAssets':
+    #         color = defaults['linecolors'][0]
+    #         legend_name = '\u0394 Assets'
+    #     elif col == 'd_totalLiabilities':
+    #         color = defaults['linecolors'][1]
+    #         legend_name = '\u0394 Liabilities'
+    #     elif col == 'd_totalStockholdersEquity':
+    #         color = defaults['linecolors'][2]
+    #         legend_name = "\u0394 Shareholder's Equity"
+    #     elif col == 'd_returnOnEquity':
+    #         color = defaults['linecolors'][0]
+    #         legend_name = "\u0394 ROE"
+    #     elif col == 'd_netProfitMargin':
+    #         color = defaults['linecolors'][1]
+    #         legend_name = "\u0394 Net profit margin"
+    #     elif col == 'd_assetTurnover':
+    #         color = defaults['linecolors'][2]
+    #         legend_name = "\u0394 Asset turnover"
+    #     elif col == 'd_equityMultiplier':
+    #         color = defaults['linecolors'][3]
+    #         legend_name = "\u0394 Equity multiplier"
+    #     elif col == 'd_debtToEquity':
+    #         color = defaults['linecolors'][1]
+    #         legend_name = "\u0394 Debt to equity"
+    #     elif col == 'd_currentRatio':
+    #         color = defaults['linecolors'][2]
+    #         legend_name = "\u0394 Current ratio"
+    #     elif col == 'd_priceToBook':
+    #         color = defaults['linecolors'][0]
+    #         legend_name = "\u0394 P/B"
+    #     elif col == 'dividendYield':
+    #         color = defaults['linecolors'][0]
+    #         legend_name = "\u0394 Dividend yield"
+    #     elif col == 'payoutRatio':
+    #         color = defaults['linecolors'][1]
+    #         legend_name = "\u0394 Payout ratio"
+    #     return color, legend_name
 
 
     ### BOKEH PLOTS ####
@@ -1591,21 +1614,21 @@ class Company:
     @staticmethod
     def _get_minmax_y(ts_df:pd.DataFrame, axis_type:str, plot_type:str, defaults:dict):
         '''
-        Returns min & max for primary y axis
+        Returns min & max values for top plot y axis
         axis_type: log or linear
         plot_type: bs, dupont, wb, etc
         '''
         max_y = ts_df.max().max()
         if plot_type == 'wb': # show benchmarks no matter what
             max_y = max(max_y, round_up(defaults['current_ratio_benchmark'], 1))
-        max_y *= 1.05 # leave some room above
+        max_y *= 1.05 # leave breathing room above
 
         if axis_type == 'linear':
             min_y = min(round_down(ts_df.min().min(), 1), 0)
             if plot_type == 'valuation':
                 min_y = 0
         else: # Log plot
-            min_y = 1e-6
+            min_y = 1e-3
         return (min_y, max_y)
 
 
@@ -1679,8 +1702,8 @@ class Company:
                                           )
             elif plot_type == 'valuation':
                 self._build_valuation_benchmarks(fig      = plot_top,
-                                          defaults = defaults,
-                                          )
+                                                 defaults = defaults,
+                                                 )
 
             # Add lines to bottom plot
             self._build_line_plots(fig       = plot_bottom, # bottom plot is line plot

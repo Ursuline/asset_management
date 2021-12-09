@@ -38,7 +38,7 @@ if __name__ == '__main__':
                                                           yr_1    = YEAR_1,
                                                           ),
                           plot_type   = 'bs',
-                          subtitle    = 'Balance sheet metrics',
+                          subtitle    = mtr.metrics_set_names['bs_metrics'],
                           filename    = os.path.join(DIR, prefix + '_bs.html'),
                           )
 
@@ -47,7 +47,7 @@ if __name__ == '__main__':
                                                           yr_1    = YEAR_1,
                                                           ),
                           plot_type   = 'income',
-                          subtitle    = 'Income & Free cash flow metrics',
+                          subtitle    = mtr.metrics_set_names['income_metrics'],
                           filename    = os.path.join(DIR, prefix + '_bs.html'),
                           )
 
@@ -56,7 +56,7 @@ if __name__ == '__main__':
                                                           yr_1    = YEAR_1,
                                                           ),
                           plot_type   = 'wb',
-                          subtitle    = '"Warren Buffet" metrics',
+                          subtitle    = mtr.metrics_set_names['wb_metrics'],
                           filename    = os.path.join(DIR, prefix + '_wb.html'),
                           )
 
@@ -65,6 +65,24 @@ if __name__ == '__main__':
                                                           yr_1    = YEAR_1,
                                                           ),
                           plot_type   = 'dupont',
-                          subtitle    = 'Dupont metrics',
+                          subtitle    = mtr.metrics_set_names['dupont_metrics'],
                           filename    = os.path.join(DIR, prefix + '_dupont.html'),
+                          )
+
+    cie.fundamentals_plot(time_series = aggregate_metrics(metrics = mtr.get_metrics('valuation_metrics'),
+                                                          yr_0    = YEAR_0,
+                                                          yr_1    = YEAR_1,
+                                                          ),
+                          plot_type   = 'valuation',
+                          subtitle    = 'Valuation metrics',
+                          filename    = os.path.join(DIR, prefix + '_valuation.html'),
+                          )
+
+    cie.fundamentals_plot(time_series = aggregate_metrics(metrics = mtr.get_metrics('dividend_metrics'),
+                                                          yr_0    = YEAR_0,
+                                                          yr_1    = YEAR_1,
+                                                          ),
+                          plot_type   = 'dividend',
+                          subtitle    = mtr.metrics_set_names['dividend_metrics'],
+                          filename    = os.path.join(DIR, prefix + '_dividend.html'),
                           )
