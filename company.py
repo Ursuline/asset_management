@@ -17,7 +17,6 @@ import numpy as np
 from numerize import numerize
 import plotly.graph_objects as go
 import plotly.io as pio
-#import plotly.express as px
 from plotly.subplots import make_subplots
 from bokeh.plotting import figure, show, output_file, save
 from bokeh.models import HoverTool, Title, Span, Label, NumeralTickFormatter
@@ -26,7 +25,6 @@ from bokeh.models.widgets import Tabs, Panel
 from bokeh.transform import dodge
 from bokeh.palettes import Dark2_8
 from bokeh.layouts import column
-#from bokeh.core.properties import value
 import FundamentalAnalysis as fa
 import cache as ksh
 import api_keys as keys
@@ -1297,9 +1295,9 @@ class Company:
 
     @staticmethod
     def _initialize_plot(position:str, axis_type:str, defaults:dict, source:ColumnDataSource, min_y:float, max_y:float, linked_figure=None):
-        '''Initialize  plot
-        position = top or bottom (plot)
-        axis_type = log or linear
+        '''Initialize plot
+            position = top or bottom (plot)
+            axis_type = log or linear
         '''
         if position == 'top':
             plot_height = defaults['plot_height']
@@ -1590,6 +1588,26 @@ class Company:
                                )
         fig.add_tools(hover_tool)
 
+    @staticmethod
+    def _get_minmax_y(ts_df:pd.DataFrame, axis_type:str, plot_type:str, defaults:dict):
+        '''
+        Returns min & max for primary y axis
+        axis_type: log or linear
+        plot_type: bs, dupont, wb, etc
+        '''
+        max_y = ts_df.max().max()
+        if plot_type == 'wb': # show benchmarks no matter what
+            max_y = max(max_y, round_up(defaults['current_ratio_benchmark'], 1))
+        max_y *= 1.05 # leave some room above
+
+        if axis_type == 'linear':
+            min_y = min(round_down(ts_df.min().min(), 1), 0)
+            if plot_type == 'valuation':
+                min_y = 0
+        else: # Log plot
+            min_y = 1e-6
+        return (min_y, max_y)
+
 
     def fundamentals_plot(self, time_series:pd.DataFrame, plot_type:str, subtitle:str, filename:str):
         '''
@@ -1607,25 +1625,20 @@ class Company:
         else:
             top_y_axis_label = f'{self.get_currency().capitalize()}'
         cols = time_series.columns.tolist()
-        metrics = cols[0:int(len(cols)/2)]
+        metrics   = cols[0:int(len(cols)/2)]
         d_metrics = cols[int(len(cols)/2):]
 
         # Build a dictionary of metrics and their respective means
         means = dict(zip(metrics, time_series[metrics].mean().tolist()))
 
-        # max value for primary y axis
-        max_y = time_series[metrics].max().max()
-        if plot_type == 'wb':
-            max_y = max(max_y, round_up(defaults['current_ratio_benchmark'], 1))
-
         panels = []
         for axis_type in ['linear', 'log']:
-            if axis_type == 'linear':
-                min_y = round_down(time_series[metrics].min().min(), 1)
-                if plot_type == 'valuation':
-                    min_y = 1e-6
-            else: min_y = 1e-6
             # Initialize top plot (data / bars)
+            min_y, max_y = self._get_minmax_y(ts_df     = time_series[metrics],
+                                              axis_type = axis_type,
+                                              plot_type = plot_type,
+                                              defaults  = defaults,
+                                              )
             plot_top = self._initialize_plot(position  = 'top',
                                              min_y     = min_y,
                                              max_y     = max_y,

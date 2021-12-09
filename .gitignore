@@ -1,8 +1,15 @@
 .cache
 .pylintrc_old
 .pylintrc
+.idea
+*.sqlite
+*.ipynb
+*old*
+*.sh
+*.html
+markets.py
+test.py
 client_secret.json
-Untitled.ipynb
 .DS_Store
 private.py
 data/
@@ -22,7 +29,6 @@ latex/
 asset_management.shapesdoc/
 comparison_io.py
 comparison_plots.py
-figurewidget-app.ipynb
 .pylintrc
 simulation.xlsx
 api_keys.py
