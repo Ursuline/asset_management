@@ -1421,7 +1421,7 @@ class Company:
         return 0
 
 
-    def _build_bar_plots(self, fig, defaults:dict, years:list, metrics:list, plot_type:str, source:ColumnDataSource):
+    def _build_bar_plots(self, fig, defaults:dict, years:list, metrics:list, plot_type:str, means:dict, source:ColumnDataSource):
         '''Builds bar plots (metrics) on primary axis'''
         x_pos = self._get_initial_x_offset(metrics)
         bar_shift = self._get_bar_shift(metrics)
@@ -1435,7 +1435,7 @@ class Company:
                             color  = defaults['palette'][i],
                             legend_label = self._map_item_to_name(metric),
                             )
-            self._build_bar_tooltip(fig, vbar, metrics, plot_type)
+            self._build_bar_tooltip(fig=fig, barplot=vbar, means=means, metrics=metrics, plot_type=plot_type)
             x_pos += bar_shift
 
 
@@ -1593,16 +1593,18 @@ class Company:
         fig.add_tools(hover_tool)
 
 
-    def _build_bar_tooltip(self, fig, barplot, metrics:list, plot_type:str):
+    def _build_bar_tooltip(self, fig, barplot, means:dict, metrics:list, plot_type:str):
         '''Build tooltips for bar plots'''
         tooltip = [('','@year')]
         for metric in metrics:
             if plot_type in ['wb', 'dupont', 'valuation']:
                 prefix = ''
+                mean = f' (mean = {means[metric]:.2f})'
             else:
                 prefix = f'{self._currency_symbol}'
+                mean = f' (mean = {numerize.numerize(means[metric])})'
             tooltip.append((self._map_item_to_name(metric),
-                            prefix+f'@{metric}'+"{0.00a}",
+                            prefix+f'@{metric}'+"{0.00a}" + mean,
                             ))
         hover_tool = HoverTool(tooltips   = tooltip,
                                show_arrow = True,
@@ -1689,6 +1691,7 @@ class Company:
                                   years     = time_series.index.tolist(),
                                   metrics   = metrics,
                                   plot_type = plot_type,
+                                  means     = means,
                                   source    = cds,
                                   )
             self._build_means_lines(fig      = plot_top,
