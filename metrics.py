@@ -18,6 +18,7 @@ metrics_set_names = {'mktcap_metrics': 'Assets, Revenue & Market Cap',
                      'bs_metrics': 'Balance sheet metrics',
                      'income_metrics': 'Income & Free cash flow metrics',
                      'valuation_metrics': 'Valuation metrics',
+                     'valuation2_metrics': 'Valuation metrics #2',
                      'dividend_metrics': 'Dividend metrics',
                      }
 
@@ -29,6 +30,7 @@ income_metrics = {'revenue': 0., 'ebit': 0., 'freeCashFlow': 0.}
 # warren buffet metrics
 wb_metrics  = {'returnOnEquity':.08, 'debtToEquity':0.5, 'currentRatio':1.5}
 valuation_metrics = {'priceToBookRatio':0, 'peg':0}
+valuation2_metrics = {'peRatio':0, 'evToebit':0, 'priceToSalesRatio':0}
 dividend_metrics = {'dividendYield':0, 'payoutRatio':0}
 
 # Dupont metrics split cash return on equity (CROE) into:
@@ -79,6 +81,10 @@ def get_metrics(group:str, metric:str=None):
             if metric is None:
                 return valuation_metrics #return dictionary
             return valuation_metrics[metric] # return value
+        if group == 'valuation2_metrics':
+            if metric is None:
+                return valuation2_metrics #return dictionary
+            return valuation2_metrics[metric] # return value
         if group == 'dividend_metrics':
             if metric is None:
                 return dividend_metrics #return dictionary
