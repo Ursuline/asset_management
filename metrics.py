@@ -22,16 +22,35 @@ metrics_set_names = {'mktcap_metrics': 'Assets, Revenue & Market Cap',
                      'dividend_metrics': 'Dividend metrics',
                      }
 
+wb_metrics  = {'returnOnEquity':.08, 'debtToEquity':0.5, 'currentRatio':1.5}
+valuation_metrics = {'priceToBookRatio':0, 'peg':0}
+valuation2_metrics = {'peRatio':0, 'evToebit':0, 'priceToSalesRatio':0}
+dividend_metrics = {'dividendYield':0, 'payoutRatio':0}
+
+captions = {'ROE':              'ROE: Net income / Total shareholder equity',
+            'assetTurnover':    'Asset turnover: Sales / Mean total assets',
+            'netProfitMargin': ' Net profit margin: Net income / Sales',
+            'equityMultiplier': 'Equity multiplier: Total assets / Total equity',
+            'cashConversion':   'Cash conversion: Free cash flow / Net income',
+            'debtToEquity':     'Debt to equity ratio: Long-term debt / Total shareholder equity',
+            'currentRatio':     'Current ratio: Total current assets / Total current liabilities',
+            'peRatio':          'P/E ratio: Price * # of shares / Net income',
+            'payoutRatio':      'Payout ratio: Dividend paid / Net income',
+            'dividendYield':    'Dividend yield: Dividend paid / (Price * # of shares)',
+            }
+
+metrics_captions = {'dupont': f'{captions["ROE"]} | {captions["netProfitMargin"]} | \
+                    {captions["assetTurnover"]} | {captions["equityMultiplier"]}',
+                    'wb': f'{captions["ROE"]} | {captions["debtToEquity"]} | {captions["currentRatio"]}',
+                    'dividend': f'{captions["payoutRatio"]} | {captions["dividendYield"]}',
+                    }
+
 mktcap_metrics = {'totalAssets': 0., 'revenue': 0., 'mktCap': 0.}
 
 bs_metrics = {'totalAssets': 0., 'totalLiabilities': 0., 'totalStockholdersEquity': 0.}
 income_metrics = {'revenue': 0., 'ebit': 0., 'freeCashFlow': 0.}
 
-# warren buffet metrics
-wb_metrics  = {'returnOnEquity':.08, 'debtToEquity':0.5, 'currentRatio':1.5}
-valuation_metrics = {'priceToBookRatio':0, 'peg':0}
-valuation2_metrics = {'peRatio':0, 'evToebit':0, 'priceToSalesRatio':0}
-dividend_metrics = {'dividendYield':0, 'payoutRatio':0}
+
 
 # Dupont metrics split cash return on equity (CROE) into:
 # net profit margin * asset turnover * equity multiplier * cash conversion
@@ -46,6 +65,7 @@ dividend_metrics = {'dividendYield':0, 'payoutRatio':0}
 # equity multiplier = asset/equity -> leverage
 # cash conversion -> Free cash flow / Net income
 # roe = NI / Equity & croe = FCF / Equity
+
 dupont_metrics = {'returnOnEquity':.08, 'netProfitMargin':0, 'assetTurnover':0, 'equityMultiplier':0}
 full_dupont_metrics = {'returnOnEquity':.08, 'netProfitMargin':0, 'assetTurnover':0, 'equityMultiplier':0, 'cashConv':0, 'roa':0, 'cashReturnOnEquity':0}
 

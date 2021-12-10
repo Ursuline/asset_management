@@ -21,7 +21,7 @@ from plotly.subplots import make_subplots
 from bokeh.plotting import figure, show, output_file, save
 from bokeh.models import HoverTool, Title, Span, Label, NumeralTickFormatter
 from bokeh.models import ColumnDataSource, FactorRange
-from bokeh.models.widgets import Tabs, Panel
+from bokeh.models.widgets import Tabs, Panel, Paragraph
 from bokeh.transform import dodge
 from bokeh.palettes import Dark2_8
 from bokeh.layouts import column
@@ -130,7 +130,7 @@ class Company:
         if item.lower() == 'peg': return 'P/E-to-growth'
         if item.lower() == 'dividendyield': return 'Dividend yield'
         if item.lower() == 'payoutratio': return 'Payout ratio'
-        if item.lower() == 'evtoebit': return 'EV to ebit'
+        if item.lower() == 'evtoebit': return 'E.V. to ebit'
         print(f'_map_item_to_name: unknown item {item}')
         return ''
 
@@ -1578,6 +1578,15 @@ class Company:
             min_y = 1e-3
         return (min_y, max_y)
 
+    @staticmethod
+    def _build_caption_text(plot_type):
+        '''Builds caption nomenclature to be added to bottom part of plot'''
+        if plot_type in ['dupont', 'wb', 'dividend']:
+            caption_text = Paragraph(text=mtr.metrics_captions[plot_type], align='center')
+        else:
+            caption_text = Paragraph(text='')
+        return caption_text
+
 
     def fundamentals_plot(self, time_series:pd.DataFrame, plot_type:str, subtitle:str, filename:str):
         '''
@@ -1681,8 +1690,15 @@ class Company:
                 self._position_legend(fig      = plot,
                                       defaults = defaults,
                                       )
-            # Merge top & bottom plots into column
-            plot = column(plot_top, plot_bottom, sizing_mode='stretch_width')
+            # Merge top & bottom plots & captions into column
+            caption_text =  self._build_caption_text(plot_type)
+            # if plot_type == 'dupont':
+            #     caption_text = Paragraph(text=mtr.metrics_captions['dupont_metrics'], align='center')
+            # elif plot_type == 'dupont':
+            #     caption_text = Paragraph(text=mtr.metrics_captions['wb_metrics'], align='center')
+            # else:
+            #     caption_text = Paragraph(text='')
+            plot = column(plot_top, plot_bottom, caption_text, sizing_mode='stretch_width')
             panel = Panel(child=plot, title=axis_type)
             panels.append(panel)
         #self._build_caption_bokeh(fig = panels)
