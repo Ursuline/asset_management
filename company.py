@@ -120,12 +120,17 @@ class Company:
         if item.lower() == 'assetturnover': return 'Asset turnover'
         if item.lower() == 'netprofitmargin': return 'Net profit margin'
         if item.lower() == 'returnonequity': return 'ROE'
+        if item.lower() == 'roic': return 'ROIC'
+        if item.lower() == 'croic': return 'Cash ROIC'
         if item.lower() == 'currentratio': return 'Current ratio'
         if item.lower() == 'debttoequity': return 'Debt to equity ratio'
+        if item.lower() == 'peratio': return 'P/E ratio'
         if item.lower() == 'pricetobookratio': return 'Price to book ratio'
+        if item.lower() == 'pricetosalesratio': return 'Price to sales ratio'
         if item.lower() == 'peg': return 'P/E-to-growth'
         if item.lower() == 'dividendyield': return 'Dividend yield'
         if item.lower() == 'payoutratio': return 'Payout ratio'
+        if item.lower() == 'evtoebit': return '`EV to ebit'
         print(f'_map_item_to_name: unknown item {item}')
         return ''
 
@@ -343,26 +348,6 @@ class Company:
             return data.loc[year]
 
 
-    def get_balance_sheet_item_over_time(self, item:str, start_year:str, end_year:str, change:bool=False):
-        '''
-        Returns a generic balance sheet item (or its time change) over year span
-        from start_year to end_year (both inclusive) as a Dataframe with year as index
-        '''
-        try:
-            data = self.get_balance_sheet_statement().loc[item].to_frame()
-            if change:
-                data = data[::-1].pct_change()
-        except KeyError:
-            caller_name = inspect.stack()[1][3]
-            func_name   = inspect.stack()[0][3]
-            msg=f'{func_name}: time series item {item} in {caller_name} unvailable'
-            print(msg)
-            return 0
-        else :
-            data.index = data.index.astype(int)
-            return data[(data.index <= end_year) & (data.index >= start_year)]
-
-
     def get_totalAssets(self, year:str, change:bool=False):
         '''Return total assets or its time derivative'''
         item = 'totalAssets'
@@ -411,26 +396,6 @@ class Company:
         else :
             data.index = data.index.astype(int)
             return data.loc[year]
-
-
-    def get_income_statement_item_over_time(self, item:str, start_year:int, end_year:int, change:bool=False):
-        '''
-        Returns a generic balance sheet item (or its time change) over year span
-        from start_year to end_year (both inclusive) as a Dataframe with year as index
-        '''
-        try:
-            data = self.get_income_statement().loc[item].to_frame()
-            if change:
-                data = data[::-1].pct_change()
-        except KeyError:
-            caller_name = inspect.stack()[1][3]
-            func_name   = inspect.stack()[0][3]
-            msg=f'{func_name}: time series item {item} in {caller_name} unvailable'
-            print(msg)
-            return 0
-        else :
-            data.index = data.index.astype(int)
-            return data[(data.index <= end_year) & (data.index >= start_year)]
 
 
     def get_netIncome(self, year:str, change:bool=False):
@@ -484,26 +449,6 @@ class Company:
             return data.loc[year]
 
 
-    def get_cash_flow_statement_item_over_time(self, item:str, start_year:str, end_year:str, change:bool=False):
-        '''
-        Returns a generic balance sheet item (or its time change) over year span
-        from start_year to end_year (both inclusive) as a Dataframe with year as index
-        '''
-        try:
-            data = self.get_cash_flow_statement().loc[item].to_frame()
-            if change:
-                data = data[::-1].pct_change()
-        except KeyError:
-            caller_name = inspect.stack()[1][3]
-            func_name   = inspect.stack()[0][3]
-            msg=f'{func_name}: time series item {item} in {caller_name} unvailable'
-            print(msg)
-            return 0
-        else :
-            data.index = data.index.astype(int)
-            return data[(data.index <= end_year) & (data.index >= start_year)]
-
-
     def get_freeCashFlow(self, year:str, change:bool=False):
         '''Returns free cash flow or change in FCF'''
         item = 'freeCashFlow'
@@ -530,26 +475,6 @@ class Company:
                 print(f'item {item} is None in the data set')
                 return 0
             return query
-
-
-    def get_financial_ratios_item_over_time(self, item:str, start_year:int, end_year:int, change:bool=False):
-        '''
-        Returns a generic balance sheet item (or its time change) over year span
-        from start_year to end_year (both inclusive) as a Dataframe with year as index
-        '''
-        try:
-            data = self.get_financial_ratios().loc[item].to_frame()
-            if change:
-                data = data[::-1].pct_change()
-        except KeyError:
-            caller_name = inspect.stack()[1][3]
-            func_name   = inspect.stack()[0][3]
-            msg=f'{func_name}: time series item {item} in {caller_name} unvailable'
-            print(msg)
-            return 0
-        else :
-            data.index = data.index.astype(int)
-            return data[(data.index <= end_year) & (data.index >= start_year)]
 
 
     def get_netProfitMargin(self, year:str, change:bool=False):
@@ -604,35 +529,18 @@ class Company:
         '''Returns generic key metrics item or its time change'''
         try:
             data = self.get_key_metrics().loc[item]
-            if change:
-                data = data[::-1].pct_change()
-        except KeyError:
-            msg=f'get_key_metrics_item: {self.get_ticker()} item {item} or year {year} data unvailable'
-            print(msg)
-            return 0
-        else :
-            data.index = data.index.astype(int)
-            return data.loc[year]
 
-
-    def get_key_metrics_item_over_time(self, item:str, start_year:int, end_year:int, change:bool=False):
-        '''
-        Returns a generic balance sheet item (or its time change) over year span
-        from start_year to end_year (both inclusive) as a Dataframe with year as index
-        '''
-        try:
-            data = self.get_key_metrics().loc[item].to_frame()
             if change:
                 data = data[::-1].pct_change()
         except KeyError:
             caller_name = inspect.stack()[1][3]
             func_name   = inspect.stack()[0][3]
-            msg=f'{func_name}: time series item {item} in {caller_name} unvailable'
+            msg=f'{caller_name} > {func_name}: {self.get_ticker()} item {item} or year {year} data unvailable\n'
             print(msg)
             return 0
         else :
             data.index = data.index.astype(int)
-            return data[(data.index <= end_year) & (data.index >= start_year)]
+            return data.loc[year]
 
 
     def get_enterpriseValue(self, year:str, change:bool=False):
@@ -681,6 +589,39 @@ class Company:
         '''Returns debt to equity ratio or change in debt to equity ratio'''
         item = 'debtToEquity'
         return self._get_key_metrics_item(item=item, year=year, change=change)
+
+
+    def get_priceToSalesRatio(self, year:str, change:bool=False):
+        '''Returns price to sales ratio or its change'''
+        item = 'priceToSalesRatio'
+        return self._get_key_metrics_item(item=item, year=year, change=change)
+
+
+    def get_roic(self, year:str, change:bool=False):
+        '''Returns return on invested capital
+        ebit/(totalAsset - totalCurrentLiabilities)
+        '''
+        item = 'roic'
+        return self._get_key_metrics_item(item=item, year=year, change=change)
+
+
+    def get_croic(self, year:str, change:bool=False):
+        '''Returns cash return on invested capital
+        FCF/ebit*roic
+        '''
+        roic = self.get_roic(year=year, change=False)
+        fcf  = self.get_freeCashFlow(year=year, change=False)
+        ebit = self.get_ebit(year=year, change=False)
+        if ebit == 0:
+            return 0
+        if change is True:
+            d_roic = self.get_roic(year=year, change=True)
+            d_fcf  = self.get_freeCashFlow(year=year, change=True)
+            d_ebit = self.get_ebit(year=year, change=True)
+        if change is False:
+            return fcf*roic/ebit
+        else:
+            return ((d_fcf*roic+fcf*d_roic)*ebit - d_ebit*fcf*roic)/(ebit*ebit)
 
 
     ### Derived metrics ###
@@ -773,6 +714,8 @@ class Company:
                 cie_metrics['cashConv'] = self.get_cashConversion(year=year)
             elif metric == 'cashReturnOnEquity':
                 cie_metrics['cashReturnOnEquity'] = self.get_cashReturnOnEquity(year=year)
+            elif metric == 'croic':
+                cie_metrics['croic'] = self.get_croic(year=year)
             elif metric == 'currentRatio':
                 cie_metrics['currentRatio'] = self.get_currentRatio(year=year)
             elif metric == 'debtToEquity':
@@ -783,6 +726,7 @@ class Company:
                 cie_metrics['ebit'] = self.get_ebit(year=year)
             elif metric == 'enterpriseValue':
                 cie_metrics['enterpriseValue'] = self.get_enterpriseValue(year=year)
+                print(f'ev=`{self.get_enterpriseValue(year=year)}')
             elif metric == 'evToebit':
                 cie_metrics['evToebit'] = self.get_evToebit(year=year)
             elif metric == 'equityMultiplier':
@@ -803,10 +747,14 @@ class Company:
                 cie_metrics['priceEarningsToGrowthRatio'] = self.get_priceEarningsToGrowthRatio(year=year)
             elif metric == 'priceToBookRatio':
                 cie_metrics['priceToBookRatio'] = self.get_priceToBookRatio(year=year)
+            elif metric == 'priceToSalesRatio':
+                cie_metrics['priceToSalesRatio'] = self.get_priceToSalesRatio(year=year)
             elif metric == 'peRatio':
                 cie_metrics['peRatio'] = self.get_peRatio(year=year)
             elif metric == 'roa':
                 cie_metrics['roa'] = self.get_returnOnAssets(year=year)
+            elif metric == 'roic':
+                cie_metrics['roic'] = self.get_roic(year=year)
             elif metric == 'returnOnAssets':
                 cie_metrics['returnOnAssets'] = self.get_returnOnAssets(year=year)
             elif metric == 'roe':
@@ -827,7 +775,6 @@ class Company:
                 msg         = f'{func_name}: metric {metric} in {caller_name} has no functional counterpart'
                 raise ValueError(msg)
         return cie_metrics
-
 
     @staticmethod
     def _build_caption(fig, metric_nm):
@@ -888,7 +835,6 @@ class Company:
                     )
         return menu
 
-
     @staticmethod
     def _build_buttons():
         '''Toggles on-off graphic elements'''
@@ -927,7 +873,6 @@ class Company:
         ]
         print(menus)
         return menus
-
 
     @staticmethod
     def _build_title(title_text:str, subtitle_text:str):
@@ -1266,9 +1211,7 @@ class Company:
     #         legend_name = "\u0394 Payout ratio"
     #     return color, legend_name
 
-
     ### BOKEH PLOTS ####
-
     @staticmethod
     def get_plot_defaults():
         '''Returns default plot settings'''
@@ -1319,8 +1262,8 @@ class Company:
     @staticmethod
     def _initialize_plot(position:str, axis_type:str, defaults:dict, source:ColumnDataSource, min_y:float, max_y:float, linked_figure=None):
         '''Initialize plot
-            position = top or bottom (plot)
-            axis_type = log or linear
+           position = top or bottom (plot)
+           axis_type = log or linear
         '''
         if position == 'top':
             plot_height = defaults['plot_height']
@@ -1554,7 +1497,7 @@ class Company:
                                )
 
 
-    def _build_means_lines(self, fig, defaults:dict, means:dict):
+    def _build_means_lines(self, fig, defaults:dict, means:dict, plot_type:str):
         '''Plots means lines for each metric'''
         for idx, (metric, mean) in enumerate(means.items()):
             mean_line = Span(location   = mean,
@@ -1565,8 +1508,10 @@ class Company:
                               )
             fig.add_layout(mean_line)
             #Add annotation
-            text  = 'mean ' + self._map_item_to_name(metric).lower()
-            text += f': {numerize.numerize(mean)}'
+            text  = 'mean ' + self._map_item_to_name(metric).lower() + ': '
+            if plot_type in ['bs', 'income']:
+                text += f'{self._currency_symbol}'
+            text += f'{numerize.numerize(mean)}'
             fig.add_layout(self._build_line_caption(text      = text,
                                                     x_value   = 2,
                                                     y_value   = mean,
@@ -1580,7 +1525,7 @@ class Company:
 
     def _build_line_tooltips(self, fig, line, metrics:list):
         '''Build tooltips for line plots'''
-        tooltips = [('','@year')]
+        tooltips = [('growth','@year')]
         for metric in metrics:
             tooltips.append( (self._map_item_to_name(metric),
                               f'@{metric}'+"{0.0%}")
@@ -1597,12 +1542,12 @@ class Company:
         '''Build tooltips for bar plots'''
         tooltip = [('','@year')]
         for metric in metrics:
-            if plot_type in ['wb', 'dupont', 'valuation']:
+            if plot_type in ['wb', 'dupont', 'valuation', 'valuation2','dividend']:
                 prefix = ''
                 mean = f' (mean = {means[metric]:.2f})'
             else:
                 prefix = f'{self._currency_symbol}'
-                mean = f' (mean = {numerize.numerize(means[metric])})'
+                mean = f' (mean = {prefix}{numerize.numerize(means[metric])})'
             tooltip.append((self._map_item_to_name(metric),
                             prefix+f'@{metric}'+"{0.00a}" + mean,
                             ))
@@ -1645,7 +1590,7 @@ class Company:
         time_series.index      = time_series.index.astype('string')
         cds                    = ColumnDataSource(data = time_series)
 
-        if plot_type in ['wb', 'dupont', 'valuation']:
+        if plot_type in ['wb', 'dupont', 'valuation', 'valuation2', 'dividend']:
             top_y_axis_label = 'ratio'
         else:
             top_y_axis_label = f'{self.get_currency().capitalize()}'
@@ -1694,9 +1639,10 @@ class Company:
                                   means     = means,
                                   source    = cds,
                                   )
-            self._build_means_lines(fig      = plot_top,
-                                    defaults = defaults,
-                                    means    = means,
+            self._build_means_lines(fig       = plot_top,
+                                    defaults  = defaults,
+                                    means     = means,
+                                    plot_type = plot_type,
                                     )
             # Add WB benchmarks to WB plots
             if plot_type == 'wb':
@@ -1707,7 +1653,6 @@ class Company:
                 self._build_valuation_benchmarks(fig      = plot_top,
                                                  defaults = defaults,
                                                  )
-
             # Add lines to bottom plot
             self._build_line_plots(fig       = plot_bottom, # bottom plot is line plot
                                    defaults  = defaults,
@@ -1718,9 +1663,12 @@ class Company:
             for plot in [plot_top, plot_bottom]:
                 if plot == plot_top:
                     y_axis_label = top_y_axis_label
-                    fmt = "0.0a"
+                    if axis_type == 'log':
+                        fmt = '0.00a'
+                    else:
+                        fmt = '0.0a'
                     position = 'top'
-                else:
+                else: #bottom plot
                     y_axis_label = 'time \u0394'
                     fmt = "0.%"
                     position = 'bottom'
