@@ -1581,9 +1581,9 @@ class Company:
     @staticmethod
     def _build_caption_text(plot_type):
         '''Builds caption nomenclature to be added to bottom part of plot'''
-        if plot_type in ['dupont', 'wb', 'dividend']:
+        if plot_type in ['dupont', 'wb', 'dividend', 'valuation', 'valuation2']:
             caption_text = Paragraph(text=mtr.metrics_captions[plot_type], align='center')
-        else:
+        else: # no caption
             caption_text = Paragraph(text='')
         return caption_text
 
@@ -1692,18 +1692,17 @@ class Company:
                                       )
             # Merge top & bottom plots & captions into column
             caption_text =  self._build_caption_text(plot_type)
-            # if plot_type == 'dupont':
-            #     caption_text = Paragraph(text=mtr.metrics_captions['dupont_metrics'], align='center')
-            # elif plot_type == 'dupont':
-            #     caption_text = Paragraph(text=mtr.metrics_captions['wb_metrics'], align='center')
-            # else:
-            #     caption_text = Paragraph(text='')
-            plot = column(plot_top, plot_bottom, caption_text, sizing_mode='stretch_width')
-            panel = Panel(child=plot, title=axis_type)
+            plot         = column(plot_top,
+                                  plot_bottom,
+                                  caption_text,
+                                  sizing_mode='stretch_width',
+                                  )
+            panel        = Panel(child=plot,
+                                 title=axis_type,
+                                 )
             panels.append(panel)
-        #self._build_caption_bokeh(fig = panels)
         tabs = Tabs(tabs=panels)
         show(tabs)
-        # Save plot to tile
+        # Save plot to file
         output_file(filename)
         save(tabs)

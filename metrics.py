@@ -27,29 +27,33 @@ valuation_metrics = {'priceToBookRatio':0, 'peg':0}
 valuation2_metrics = {'peRatio':0, 'evToebit':0, 'priceToSalesRatio':0}
 dividend_metrics = {'dividendYield':0, 'payoutRatio':0}
 
-captions = {'ROE':              'ROE: Net income / Total shareholder equity',
-            'assetTurnover':    'Asset turnover: Sales / Mean total assets',
-            'netProfitMargin': ' Net profit margin: Net income / Sales',
-            'equityMultiplier': 'Equity multiplier: Total assets / Total equity',
-            'cashConversion':   'Cash conversion: Free cash flow / Net income',
-            'debtToEquity':     'Debt to equity ratio: Long-term debt / Total shareholder equity',
-            'currentRatio':     'Current ratio: Total current assets / Total current liabilities',
-            'peRatio':          'P/E ratio: Price * # of shares / Net income',
-            'payoutRatio':      'Payout ratio: Dividend paid / Net income',
-            'dividendYield':    'Dividend yield: Dividend paid / (Price * # of shares)',
+captions = {'ROE':               'ROE: Net income / Total shareholder equity',
+            'assetTurnover':     'Asset turnover: Sales / Mean total assets',
+            'cashConversion':    'Cash conversion: Free cash flow / Net income',
+            'currentRatio':      'Current ratio: Total current assets / Total current liabilities',
+            'debtToEquity':      'Debt to equity ratio: Long-term debt / Total shareholder equity',
+            'dividendYield':     'Dividend yield: Dividend paid / (Price x # of shares)',
+            'equityMultiplier':  'Equity multiplier: Total assets / Total equity',
+            'evToebit':          'E.V. to ebit: Enterprise value / ebit',
+            'netProfitMargin':   'Net profit margin: Net income / Sales',
+            'payoutRatio':       'Payout ratio: Dividend paid / Net income',
+            'peg':               'P/E to growth: P/E ratio / expected growth',
+            'peRatio':           'P/E ratio: Price x # of shares / Net income',
+            'priceToBookRatio':  'P/B: Price x # of shares / Total shareholder equity',
+            'priceToSalesRatio': 'P/B: Price x # of shares / Revenue',
             }
 
-metrics_captions = {'dupont': f'{captions["ROE"]} | {captions["netProfitMargin"]} | \
+metrics_captions = {'dupont'    : f'{captions["ROE"]} | {captions["netProfitMargin"]} | \
                     {captions["assetTurnover"]} | {captions["equityMultiplier"]}',
-                    'wb': f'{captions["ROE"]} | {captions["debtToEquity"]} | {captions["currentRatio"]}',
-                    'dividend': f'{captions["payoutRatio"]} | {captions["dividendYield"]}',
+                    'wb'        : f'{captions["ROE"]} | {captions["debtToEquity"]} | {captions["currentRatio"]}',
+                    'valuation' : f'{captions["priceToBookRatio"]} | {captions["peg"]}',
+                    'valuation2': f'{captions["peRatio"]} | {captions["evToebit"]}| {captions["priceToSalesRatio"]}',
+                    'dividend'  : f'{captions["dividendYield"]} | {captions["payoutRatio"]}',
                     }
 
 mktcap_metrics = {'totalAssets': 0., 'revenue': 0., 'mktCap': 0.}
-
 bs_metrics = {'totalAssets': 0., 'totalLiabilities': 0., 'totalStockholdersEquity': 0.}
 income_metrics = {'revenue': 0., 'ebit': 0., 'freeCashFlow': 0.}
-
 
 
 # Dupont metrics split cash return on equity (CROE) into:
