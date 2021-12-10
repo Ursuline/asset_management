@@ -130,7 +130,7 @@ class Company:
         if item.lower() == 'peg': return 'P/E-to-growth'
         if item.lower() == 'dividendyield': return 'Dividend yield'
         if item.lower() == 'payoutratio': return 'Payout ratio'
-        if item.lower() == 'evtoebit': return '`EV to ebit'
+        if item.lower() == 'evtoebit': return 'EV to ebit'
         print(f'_map_item_to_name: unknown item {item}')
         return ''
 
@@ -561,9 +561,9 @@ class Company:
         return self._get_key_metrics_item(item=item, year=year, change=change)
 
 
-    def get_entrepriseValue(self, year:str, change:bool=False):
+    def get_enterpriseValue(self, year:str, change:bool=False):
         '''Returns enterprise value or change in enterprise value'''
-        item = 'entrepriseValue'
+        item = 'enterpriseValue'
         return self._get_key_metrics_item(item=item, year=year, change=change)
 
 
@@ -627,12 +627,12 @@ class Company:
     ### Derived metrics ###
     def get_evToebit(self, year:str, change:bool=False):
         '''Returns enterprise value to ebit ratio or change '''
-        ev   = self.get_entrepriseValue(year=year, change=False)
+        ev   = self.get_enterpriseValue(year=year, change=False)
         ebit = self.get_ebit(year=year, change=False)
         if ebit == 0:
             return 0
         if change is True:
-            d_ev   = self.get_entrepriseValue(year=year, change=True)
+            d_ev   = self.get_enterpriseValue(year=year, change=True)
             d_ebit = self.get_ebit(year=year, change=True)
         if change is False:
             return ev/ebit
