@@ -92,6 +92,7 @@ class Company:
         self._quote  = None
         self._enterprise = None
         self._rating = None
+        self._beta = None
         self._discounted_cash_flow = None
         self._cash_flow_statement = None
         self._income_statement = None
@@ -110,27 +111,34 @@ class Company:
         '''Converts column name to readable metric (WIP)'''
         if item.startswith('d_'):
             return '\u0394 ' + self._map_item_to_name(item[2:])
-        if item.lower() == 'totalassets': return 'Total assets'
-        if item.lower() == 'totalliabilities': return 'Total liabilities'
+        if item.lower() == 'assetturnover':           return 'Asset turnover'
+        if item.lower() == 'croic':                   return 'Cash ROIC'
+        if item.lower() == 'currentratio':            return 'Current ratio'
+        if item.lower() == 'debttoassets':            return 'Debt-to-assets ratio'
+        if item.lower() == 'debttoequity':            return 'Debt-to-equity ratio'
+        if item.lower() == 'dividendyield':           return 'Dividend yield'
+        if item.lower() == 'ebit':                    return 'EBIT'
+        if item.lower() == 'ebitperrevenue':          return 'EBIT-to-revenue'
+        if item.lower() == 'evtoebit':                return 'E.V.-to-ebit'
+        if item.lower() == 'equitymultiplier':        return 'Equity multiplier'
+        if item.lower() == 'grossprofitratio':        return 'Gross profit margin'
+        if item.lower() == 'interestcoverage':        return 'Interest coverage'
+        if item.lower() == 'freecashflow':            return 'FCF'
+        if item.lower() == 'freecashflowtorevenue':   return 'FCF-to-revenue'
+        if item.lower() == 'netdebttoebit':           return 'Net debt-to-ebit'
+        if item.lower() == 'netprofitmargin':         return 'Net profit margin'
+        if item.lower() == 'payoutratio':             return 'Payout ratio'
+        if item.lower() == 'peg':                     return 'P/E-to-growth'
+        if item.lower() == 'peratio':                 return 'P/E ratio'
+        if item.lower() == 'pricetobookratio':        return 'Price-to-book ratio'
+        if item.lower() == 'pricetosalesratio':       return 'Price-to-sales ratio'
+        if item.lower() == 'returnonequity':          return 'ROE'
+        if item.lower() == 'revenue':                 return 'Revenue'
+        if item.lower() == 'shorttermcoverageratios': return 'Short term coverage ratio'
+        if item.lower() == 'roic':                    return 'ROIC'
+        if item.lower() == 'totalassets':             return 'Total assets'
+        if item.lower() == 'totalliabilities':        return 'Total liabilities'
         if item.lower() == 'totalstockholdersequity': return 'Total stockholders equity'
-        if item.lower() == 'freecashflow': return 'FCF'
-        if item.lower() == 'ebit': return 'EBIT'
-        if item.lower() == 'revenue': return 'Revenue'
-        if item.lower() == 'equitymultiplier': return 'Equity multiplier'
-        if item.lower() == 'assetturnover': return 'Asset turnover'
-        if item.lower() == 'netprofitmargin': return 'Net profit margin'
-        if item.lower() == 'returnonequity': return 'ROE'
-        if item.lower() == 'roic': return 'ROIC'
-        if item.lower() == 'croic': return 'Cash ROIC'
-        if item.lower() == 'currentratio': return 'Current ratio'
-        if item.lower() == 'debttoequity': return 'Debt to equity ratio'
-        if item.lower() == 'peratio': return 'P/E ratio'
-        if item.lower() == 'pricetobookratio': return 'Price to book ratio'
-        if item.lower() == 'pricetosalesratio': return 'Price to sales ratio'
-        if item.lower() == 'peg': return 'P/E-to-growth'
-        if item.lower() == 'dividendyield': return 'Dividend yield'
-        if item.lower() == 'payoutratio': return 'Payout ratio'
-        if item.lower() == 'evtoebit': return 'E.V. to ebit'
         print(f'_map_item_to_name: unknown item {item}')
         return ''
 
@@ -196,6 +204,7 @@ class Company:
         self._industry     = self._profile.loc['industry'][0]
         self._currency     = self._profile.loc['currency'][0]
         self._country      = self._profile.loc['country'][0]
+        self._beta         = self._profile.loc['beta'][0]
         self._currency_symbol = self._set_currency_symbol()
 
 
@@ -246,6 +255,11 @@ class Company:
     def get_currency_symbol(self):
         '''Returns symbol corresponding to currency'''
         return self._currency_symbol
+
+
+    def get_beta(self):
+        '''Returns symbol corresponding to currency'''
+        return self._beta
 
 
     def get_enterprise(self):
@@ -404,6 +418,12 @@ class Company:
         return self._get_income_statement_item(item=item, year=year, change=change)
 
 
+    def get_grossProfitRatio(self, year:str, change:bool=False):
+        '''Return gross profit ratio'''
+        item = 'grossProfitRatio'
+        return self._get_income_statement_item(item=item, year=year, change=change)
+
+
     def get_depam(self, year:str, change:bool=False):
         '''Returns depreciation & amortization or change in D&A'''
         item = 'depreciationAndAmortization'
@@ -483,6 +503,12 @@ class Company:
         return self._get_financial_ratios_item(item=item, year=year, change=change)
 
 
+    def get_ebitPerRevenue(self, year:str, change:bool=False):
+        '''Returns EBIT/Sales or its change'''
+        item = 'ebitPerRevenue'
+        return self._get_financial_ratios_item(item=item, year=year, change=change)
+
+
     def get_assetTurnover(self, year:str, change:bool=False):
         '''Returns asset turnover (revenue/avg total assets) or change in A.T.'''
         item = 'assetTurnover'
@@ -513,15 +539,10 @@ class Company:
         return self._get_financial_ratios_item(item=item, year=year, change=change)
 
 
-    def get_cashReturnOnEquity(self, year:str, change:bool=False):
-        '''Returns cash return on equity (ROE*cash conversion) or change in CROE'''
-        roe = self.get_roe(year=year, change=False)
-        cash_conv = self.get_cashConversion(year=year, change=False)
-        if change:
-            d_roe       = self.get_roe(year=year, change=True)
-            d_cash_conv = self.get_cashConversion(year=year, change=True)
-            return d_roe*cash_conv + roe*d_cash_conv
-        return roe*cash_conv
+    def get_shortTermCoverageRatios(self, year:str, change:bool=False):
+        '''Returns *inverse of* short term coverage ratio or its change'''
+        item = 'shortTermCoverageRatios'
+        return 1.0/self._get_financial_ratios_item(item=item, year=year, change=change)
 
 
     ### key metrics data ###
@@ -561,10 +582,10 @@ class Company:
         return self._get_key_metrics_item(item=item, year=year, change=change)
 
 
-    def get_enterpriseValue(self, year:str, change:bool=False):
-        '''Returns enterprise value or change in enterprise value'''
-        item = 'enterpriseValue'
-        return self._get_key_metrics_item(item=item, year=year, change=change)
+    def get_interestCoverage(self, year:str, change:bool=False):
+        '''Returns *inverse of* interest coverage or its change'''
+        item = 'interestCoverage'
+        return 1.0 / self._get_key_metrics_item(item=item, year=year, change=change)
 
 
     def get_currentRatio(self, year:str, change:bool=False):
@@ -585,6 +606,11 @@ class Company:
         return self._get_key_metrics_item(item=item, year=year, change=change)
 
 
+    def get_debtToAssets(self, year:str, change:bool=False):
+        '''Returns debt to assets ratio or its change'''
+        item = 'debtToAssets'
+        return self._get_key_metrics_item(item=item, year=year, change=change)
+
     def get_debtToEquity(self, year:str, change:bool=False):
         '''Returns debt to equity ratio or change in debt to equity ratio'''
         item = 'debtToEquity'
@@ -598,13 +624,19 @@ class Company:
 
 
     def get_roic(self, year:str, change:bool=False):
-        '''Returns return on invested capital
+        '''Returns return on invested capital or its change
         ebit/(totalAsset - totalCurrentLiabilities)
         '''
         item = 'roic'
         return self._get_key_metrics_item(item=item, year=year, change=change)
 
+    def get_netDebtToEBITDA(self, year:str, change:bool=False):
+        '''Returns net debt / ebitda or its change'''
+        item = 'netDebtToEBITDA'
+        return self._get_key_metrics_item(item=item, year=year, change=change)
 
+
+    ### Derived metrics ###
     def get_croic(self, year:str, change:bool=False):
         '''Returns cash return on invested capital
         FCF/ebit*roic
@@ -624,7 +656,6 @@ class Company:
             return ((d_fcf*roic+fcf*d_roic)*ebit - d_ebit*fcf*roic)/(ebit*ebit)
 
 
-    ### Derived metrics ###
     def get_evToebit(self, year:str, change:bool=False):
         '''Returns enterprise value to ebit ratio or change '''
         ev   = self.get_enterpriseValue(year=year, change=False)
@@ -639,6 +670,20 @@ class Company:
         return (d_ev*ebit-d_ebit*ev)/(ebit*ebit)
 
 
+    def get_freeCashFlowToRevenue(self, year:str, change:bool=False):
+        '''Returns FCF to revenue ratio or its change'''
+        fcf   = self.get_freeCashFlow(year=year, change=False)
+        revenue = self.get_revenue(year=year, change=False)
+        if revenue == 0:
+            return 0
+        if change is True:
+            d_fcf     = self.get_freeCashFlow(year=year, change=True)
+            d_revenue = self.get_revenue(year=year, change=True)
+        if change is False:
+            return fcf/revenue
+        return (d_fcf*revenue-d_revenue*fcf)/(revenue*revenue)
+
+
     def get_cashConversion(self, year:str, change:bool=False):
         '''Returns cash conversion (FCF/Net income) or change in CC'''
         fcf    = self.get_freeCashFlow(year, change=False)
@@ -651,6 +696,7 @@ class Company:
             return (d_fcf*income - d_income/fcf)/(income**2)
         return fcf/income
 
+
     def get_equityMultiplier(self, year:str, change:bool=False):
         '''Returns equity multiplier = Total Assets/Total Equity or change in EM'''
         assets = self._get_balance_sheet_item('totalAssets', year, change=False)
@@ -662,6 +708,32 @@ class Company:
             d_equity = self._get_balance_sheet_item('totalStockholdersEquity', year, change=True)
             return (d_assets*equity - d_equity/assets)/(equity**2)
         return assets/equity
+
+
+    def get_netDebtToebit(self, year:str, change:bool=False):
+        '''Returns net debt to ebit or its change D/EBIT = D/EBITDA*EBITDA/EBIT'''
+        ndtoebitda = self.get_netDebtToEBITDA(year=year, change=False)
+        ebitda     = self.get_ebitda(year=year, change=False)
+        ebit       = self.get_ebit(year=year, change=False)
+        if ebit == 0:
+            return 0
+        if change is True:
+            d_ndtoebitda = self.get_netDebtToEBITDA(year=year, change=True)
+            d_ebitda     = self.get_ebitda(year=year, change=True)
+            d_ebit       = self.get_ebit(year=year, change=True)
+            return d_ndtoebitda*ebitda/ebit + ndtoebitda*(d_ebitda*ebit-d_ebit*ebitda)/(ebit*ebit)
+        return ndtoebitda*ebitda/ebit
+
+
+    def get_cashReturnOnEquity(self, year:str, change:bool=False):
+        '''Returns cash return on equity (ROE*cash conversion) or change in CROE'''
+        roe = self.get_roe(year=year, change=False)
+        cash_conv = self.get_cashConversion(year=year, change=False)
+        if change:
+            d_roe       = self.get_roe(year=year, change=True)
+            d_cash_conv = self.get_cashConversion(year=year, change=True)
+            return d_roe*cash_conv + roe*d_cash_conv
+        return roe*cash_conv
 
 
     def get_peers(self):
@@ -718,23 +790,34 @@ class Company:
                 cie_metrics['croic'] = self.get_croic(year=year)
             elif metric == 'currentRatio':
                 cie_metrics['currentRatio'] = self.get_currentRatio(year=year)
+            elif metric == 'debtToAssets':
+                cie_metrics['debtToAssets'] = self.get_debtToAssets(year=year)
             elif metric == 'debtToEquity':
                 cie_metrics['debtToEquity'] = self.get_debtToEquity(year=year)
             elif metric == 'dividendYield':
                 cie_metrics['dividendYield'] = self.get_dividendYield(year=year)
             elif metric == 'ebit':
                 cie_metrics['ebit'] = self.get_ebit(year=year)
+            elif metric == 'ebitPerRevenue':
+                cie_metrics['ebitPerRevenue'] = self.get_ebitPerRevenue(year=year)
             elif metric == 'enterpriseValue':
                 cie_metrics['enterpriseValue'] = self.get_enterpriseValue(year=year)
-                print(f'ev=`{self.get_enterpriseValue(year=year)}')
             elif metric == 'evToebit':
                 cie_metrics['evToebit'] = self.get_evToebit(year=year)
             elif metric == 'equityMultiplier':
                 cie_metrics['equityMultiplier'] = self.get_equityMultiplier(year=year)
             elif metric == 'freeCashFlow':
                 cie_metrics['freeCashFlow'] = self.get_freeCashFlow(year=year)
+            elif metric == 'freeCashFlowToRevenue':
+                cie_metrics['freeCashFlowToRevenue'] = self.get_freeCashFlowToRevenue(year=year)
+            elif metric == 'grossProfitRatio':
+                cie_metrics['grossProfitRatio'] = self.get_grossProfitRatio(year=year)
+            elif metric == 'interestCoverage':
+                cie_metrics['interestCoverage'] = self.get_interestCoverage(year=year)
             elif metric =='marketCap':
                 cie_metrics['marketCap'] = self.get_marketCap(year=year)
+            elif metric =='netDebtToebit':
+                cie_metrics['netDebtToebit'] = self.get_netDebtToebit(year=year)
             elif metric =='netIncome':
                 cie_metrics['netIncome'] = self.get_netIncome(year=year)
             elif metric == 'netProfitMargin':
@@ -763,6 +846,8 @@ class Company:
                 cie_metrics['returnOnEquity'] = self.get_roe(year=year)
             elif metric =='revenue':
                 cie_metrics['revenue'] = self.get_revenue(year=year)
+            elif metric =='shortTermCoverageRatios':
+                cie_metrics['shortTermCoverageRatios'] = self.get_shortTermCoverageRatios(year=year)
             elif metric =='totalAssets':
                 cie_metrics['totalAssets'] = self.get_totalAssets(year=year)
             elif metric =='totalLiabilities':
@@ -1238,11 +1323,11 @@ class Company:
         defaults['zero_growth_font_size']      = '8pt'
         defaults['zero_growth_font_color']     = 'dimgray'
         # WB Benchmarks:
-        defaults['roe_benchmark']            = .08
-        defaults['debt_to_equity_benchmark'] = .5
-        defaults['current_ratio_benchmark']  = 1.5
-        defaults['price_to_book_ratio_benchmark']  = 1.0
-        defaults['peg_ratio_benchmark']            = 1.0
+        defaults['returnOnEquity_benchmark'] = .08
+        defaults['debtToEquity_benchmark']   = .5
+        defaults['currentRatio_benchmark']   = 1.5
+        defaults['priceToBookRatio_benchmark'] = 1.0
+        defaults['pegRatio_benchmark']        = 1.0
         defaults['benchmark_line_dash']      = 'dashed'
         defaults['benchmark_line_thickness'] = 2
         defaults['benchmark_font_size']      = '9pt'
@@ -1378,7 +1463,7 @@ class Company:
                             color  = defaults['palette'][i],
                             legend_label = self._map_item_to_name(metric),
                             )
-            self._build_bar_tooltip(fig=fig, barplot=vbar, means=means, metrics=metrics, plot_type=plot_type)
+            self._build_bar_tooltip(fig=fig, barplot=vbar, means=means, metrics=metrics, plot_type=plot_type, defaults=defaults)
             x_pos += bar_shift
 
 
@@ -1402,7 +1487,7 @@ class Company:
                        legend_label=legend_label,
                        source = source,
                        )
-        self._build_line_tooltips(fig, line, metrics)
+            self._build_line_tooltips(fig, line, metrics)
         self._build_zero_growth_line(fig, defaults)
 
     @staticmethod
@@ -1445,7 +1530,7 @@ class Company:
         3 ratios: roe, current ratio & debt to equity
         '''
         # Build line
-        benchmarks = ['roe_benchmark', 'debt_to_equity_benchmark','current_ratio_benchmark']
+        benchmarks = ['returnOnEquity_benchmark', 'debtToEquity_benchmark','currentRatio_benchmark']
         for idx, benchmark in enumerate(benchmarks):
             bmk = Span(location   = defaults[benchmark],
                        dimension  ='width',
@@ -1474,7 +1559,7 @@ class Company:
         price-to-book ratio
         '''
         # Build line
-        benchmarks = ['price_to_book_ratio_benchmark', 'peg_ratio_benchmark']
+        benchmarks = ['priceToBookRatio_benchmark', 'pegRatio_benchmark']
         for idx, benchmark in enumerate(benchmarks):
             bmk = Span(location   = defaults[benchmark],
                        dimension  ='width',
@@ -1511,7 +1596,10 @@ class Company:
             text  = 'mean ' + self._map_item_to_name(metric).lower() + ': '
             if plot_type in ['bs', 'income']:
                 text += f'{self._currency_symbol}'
-            text += f'{numerize.numerize(mean)}'
+            if plot_type in ['debt', 'dividend', 'income2']:
+                text += f'{mean:.1%}'
+            else:
+                text += f'{numerize.numerize(mean)}'
             fig.add_layout(self._build_line_caption(text      = text,
                                                     x_value   = 2,
                                                     y_value   = mean,
@@ -1525,32 +1613,38 @@ class Company:
 
     def _build_line_tooltips(self, fig, line, metrics:list):
         '''Build tooltips for line plots'''
-        tooltips = [('growth','@year')]
+        tooltips = [('Growth','@year')]
         for metric in metrics:
             tooltips.append( (self._map_item_to_name(metric),
                               f'@{metric}'+"{0.0%}")
                             )
-        hover_tool = HoverTool(tooltips   = tooltips,
-                               show_arrow = True,
-                               renderers  = [line],
-                               mode       = 'vline',
-                               )
-        fig.add_tools(hover_tool)
+            hover_tool = HoverTool(tooltips   = tooltips,
+                                   show_arrow = True,
+                                   renderers  = [line],
+                                   #mode       = 'vline',
+                                   )
+            fig.add_tools(hover_tool)
 
 
-    def _build_bar_tooltip(self, fig, barplot, means:dict, metrics:list, plot_type:str):
+    def _build_bar_tooltip(self, fig, barplot, means:dict, metrics:list, plot_type:str, defaults:dict):
         '''Build tooltips for bar plots'''
         tooltip = [('','@year')]
         for metric in metrics:
-            if plot_type in ['wb', 'dupont', 'valuation', 'valuation2','dividend']:
-                prefix = ''
-                mean = f' (mean = {means[metric]:.2f})'
+            prefix = ''
+            if plot_type in ['wb', 'dupont', 'valuation', 'valuation2']:
+                text  = f' (mean = {means[metric]:.1f})'
+                if plot_type == 'wb':
+                    bmark = defaults[f'{metric}_benchmark']
+                    text  = f' (mean = {means[metric]:.1f} | benchmark = {bmark})'
+                value = prefix + f'@{metric}' + "{0.0a}" + text
+            elif plot_type in ['dividend', 'debt', 'income2']:
+                text = f' (mean = {means[metric]:.1%})'
+                value = prefix + f'@{metric}' + "{0.0%}" + text
             else:
                 prefix = f'{self._currency_symbol}'
-                mean = f' (mean = {prefix}{numerize.numerize(means[metric])})'
-            tooltip.append((self._map_item_to_name(metric),
-                            prefix+f'@{metric}'+"{0.00a}" + mean,
-                            ))
+                text = f' (mean = {prefix}{numerize.numerize(means[metric])})'
+                value = prefix + f'@{metric}' + "{0.0a}" + text
+            tooltip.append((self._map_item_to_name(metric), value))
         hover_tool = HoverTool(tooltips   = tooltip,
                                show_arrow = True,
                                renderers  = [barplot],
@@ -1559,29 +1653,34 @@ class Company:
         fig.add_tools(hover_tool)
 
     @staticmethod
-    def _get_minmax_y(ts_df:pd.DataFrame, axis_type:str, plot_type:str, defaults:dict):
+    def _get_minmax_y(ts_df:pd.DataFrame, axis_type:str, plot_type:str, plot_position:str, defaults:dict):
         '''
         Returns min & max values for top plot y axis
         axis_type: log or linear
         plot_type: bs, dupont, wb, etc
+        plot_position: top or bottom
         '''
-        max_y = ts_df.max().max()
-        if plot_type == 'wb': # show benchmarks no matter what
-            max_y = max(max_y, round_up(defaults['current_ratio_benchmark'], 1))
-        max_y *= 1.05 # leave breathing room above
-
-        if axis_type == 'linear':
-            min_y = min(round_down(ts_df.min().min(), 1), 0)
-            if plot_type == 'valuation':
-                min_y = 0
-        else: # Log plot
-            min_y = 1e-3
+        if plot_position == 'top':
+            max_y = ts_df.max().max()
+            if plot_type == 'wb': # show benchmarks no matter what
+                max_y = max(max_y, round_up(defaults['currentRatio_benchmark'], 1))
+            max_y *= 1.05 # leave breathing room above
+            if axis_type == 'linear':
+                min_y = min(round_down(ts_df.min().min(), 1), 0)
+                if plot_type == 'valuation':
+                    min_y = 0
+            else: # Log plot
+                min_y = 1e-3
+        else: #Bottom plot
+            max_y = min(round_up(ts_df.max().max(), 1), 10)
+            min_y = max(round_down(ts_df.min().min(), 1), -1)
         return (min_y, max_y)
+
 
     @staticmethod
     def _build_caption_text(plot_type):
         '''Builds caption nomenclature to be added to bottom part of plot'''
-        if plot_type in ['dupont', 'wb', 'dividend', 'valuation', 'valuation2']:
+        if plot_type in ['dupont', 'wb', 'dividend', 'valuation', 'valuation2', 'debt', 'income2']:
             caption_text = Paragraph(text=mtr.metrics_captions[plot_type], align='center')
         else: # no caption
             caption_text = Paragraph(text='')
@@ -1599,7 +1698,7 @@ class Company:
         time_series.index      = time_series.index.astype('string')
         cds                    = ColumnDataSource(data = time_series)
 
-        if plot_type in ['wb', 'dupont', 'valuation', 'valuation2', 'dividend']:
+        if plot_type in ['wb', 'dupont', 'valuation', 'valuation2', 'dividend', 'debt', 'income2']:
             top_y_axis_label = 'ratio'
         else:
             top_y_axis_label = f'{self.get_currency().capitalize()}'
@@ -1617,6 +1716,7 @@ class Company:
                                               axis_type = axis_type,
                                               plot_type = plot_type,
                                               defaults  = defaults,
+                                              plot_position = 'top',
                                               )
             plot_top = self._initialize_plot(position  = 'top',
                                              min_y     = min_y,
@@ -1626,9 +1726,15 @@ class Company:
                                              source    = cds,
                                              )
             # Initialize bottom plot (changes / lines)
+            min_y, max_y = self._get_minmax_y(ts_df     = time_series[d_metrics],
+                                              axis_type = axis_type,
+                                              plot_type = plot_type,
+                                              defaults  = defaults,
+                                              plot_position = 'bottom',
+                                              )
             plot_bottom = self._initialize_plot(position  = 'bottom',
-                                                max_y     = round_up(time_series[d_metrics].max().max(), 1),
-                                                min_y     = round_down(time_series[d_metrics].min().min(), 1),
+                                                max_y     = max_y,
+                                                min_y     = min_y,
                                                 axis_type = 'linear',
                                                 defaults  = defaults,
                                                 source    = cds,
@@ -1675,7 +1781,12 @@ class Company:
                     if axis_type == 'log':
                         fmt = '0.00a'
                     else:
-                        fmt = '0.0a'
+                        if plot_type in ['dividend', 'debt', 'income2']:
+                            fmt = '0.%'
+                        elif plot_type in ['wb', 'dupont']:
+                            fmt = '0.0a'
+                        else:
+                            fmt = '0.a'
                     position = 'top'
                 else: #bottom plot
                     y_axis_label = 'time \u0394'

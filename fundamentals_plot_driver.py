@@ -15,7 +15,7 @@ import metrics as mtr
 DIR = '/Users/charly/Documents/projects/asset_management/data'
 
 EXPIRATION_DATE = '2021-12-31'
-TICKER   = 'MC.PA'
+TICKER   = 'SU.PA'
 YEAR_0   = int('2013')
 YEAR_1   = int('2020')
 
@@ -32,13 +32,16 @@ if __name__ == '__main__':
     prefix = f'{TICKER}_{YEAR_0}-{YEAR_1}_{EXPIRATION_DATE}'
     cie = cny.Company(ticker=TICKER, period='annual', expiration_date=EXPIRATION_DATE)
 
-    plot_types = ['bs', 'income', 'wb', 'dupont', 'valuation', 'valuation2', 'dividend']
+    plot_types = ['bs', 'income', 'income2', 'wb', 'dupont', 'debt', 'valuation', 'valuation2', 'dividend']
     for plot_type in plot_types:
+        subtitle  = mtr.metrics_set_names[f'{plot_type}_metrics']
+        if plot_type.startswith('valuation'):
+            subtitle += f' (current \u03b2={cie.get_beta():.1f})'
         cie.fundamentals_plot(time_series = aggregate_metrics(metrics = mtr.get_metrics(f'{plot_type}_metrics'),
                                                               yr_0    = YEAR_0,
                                                               yr_1    = YEAR_1,
                                                               ),
                               plot_type = plot_type,
-                              subtitle  = mtr.metrics_set_names[f'{plot_type}_metrics'],
+                              subtitle  = subtitle,
                               filename  = os.path.join(DIR, prefix + f'_{plot_type}.html'),
                               )
