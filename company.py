@@ -1427,6 +1427,25 @@ class Company:
         fig.yaxis[0].formatter = NumeralTickFormatter(format=axis_format)
 
     @staticmethod
+    def _get_top_y_axis_format(plot_type:str, plot_position:str, axis_type:str):
+        '''Builds format for y axis'''
+        if plot_position == 'top':
+            if axis_type == 'log':
+                fmt = '0.000a'
+            else:
+                if plot_type in ['dividend', 'debt', 'income2']:
+                    fmt = '0.%'
+                elif plot_type in ['wb', 'dupont']:
+                    fmt = '0.0a'
+                else:
+                    fmt = '0.a'
+            #position = 'top'
+        else: #bottom plot
+            fmt = "0.%"
+            #position = 'bottom'
+        return fmt
+
+    @staticmethod
     def _get_initial_x_offset(metrics):
         '''Returns initial bar offset for bar plot'''
         if len(metrics) == 1: return 0.
@@ -1778,20 +1797,12 @@ class Company:
             for plot in [plot_top, plot_bottom]:
                 if plot == plot_top:
                     y_axis_label = top_y_axis_label
-                    if axis_type == 'log':
-                        fmt = '0.00a'
-                    else:
-                        if plot_type in ['dividend', 'debt', 'income2']:
-                            fmt = '0.%'
-                        elif plot_type in ['wb', 'dupont']:
-                            fmt = '0.0a'
-                        else:
-                            fmt = '0.a'
-                    position = 'top'
+                    position     = 'top'
+                    fmt = self._get_top_y_axis_format(plot_type=plot_type, plot_position='top', axis_type=axis_type)
                 else: #bottom plot
                     y_axis_label = 'time \u0394'
-                    fmt = "0.%"
                     position = 'bottom'
+                    fmt = "0.%"
                 self._build_axes(fig      = plot,
                                  position = position,
                                  defaults = defaults,
