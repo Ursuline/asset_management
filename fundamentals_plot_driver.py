@@ -36,7 +36,7 @@ if __name__ == '__main__':
     for plot_type in plot_types:
         subtitle  = mtr.metrics_set_names[f'{plot_type}_metrics']
         if plot_type.startswith('valuation'):
-            subtitle += f' (current \u03b2={cie.get_beta():.1f})'
+            subtitle += f' (5-year \u03b2={cie.get_beta():.1f})'
         cie.fundamentals_plot(time_series = aggregate_metrics(metrics = mtr.get_metrics(f'{plot_type}_metrics'),
                                                               yr_0    = YEAR_0,
                                                               yr_1    = YEAR_1,
