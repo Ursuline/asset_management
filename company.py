@@ -418,6 +418,18 @@ class Company:
         return self._get_income_statement_item(item=item, year=year, change=change)
 
 
+    def get_incomeTaxExpense(self, year:str, change:bool=False):
+        '''Return income tax expense'''
+        item = 'incomeTaxExpense'
+        return self._get_income_statement_item(item=item, year=year, change=change)
+
+
+    def get_interestExpense(self, year:str, change:bool=False):
+        '''Return interest expense'''
+        item = 'interestExpense'
+        return self._get_income_statement_item(item=item, year=year, change=change)
+
+
     def get_grossProfitRatio(self, year:str, change:bool=False):
         '''Return gross profit ratio'''
         item = 'grossProfitRatio'
@@ -440,6 +452,14 @@ class Company:
         '''Returns EBIT = ebitda - depreciation & amortization'''
         ebitda = self.get_ebitda(year=year, change=change)
         depam  = self.get_depam(year=year, change=change)
+        net_income = self.get_netIncome(year=year, change=change)
+        tax_expense = self.get_incomeTaxExpense(year=year, change=change)
+        interest_expense = self.get_interestExpense(year=year, change=change)
+        if (ebitda-depam) != (net_income+tax_expense+interest_expense):
+            msg = 'WARNING: get_ebit(): '
+            msg += f"ebit calculation doesn't check: ebitda-depam={ebitda-depam} "
+            msg += f'NI+TE+IE={net_income+tax_expense+interest_expense}'
+            print(msg)
         return ebitda - depam
 
 
@@ -1426,10 +1446,14 @@ class Company:
         fig.yaxis.axis_label   = y_axis_label
         fig.yaxis[0].formatter = NumeralTickFormatter(format=axis_format)
 
-    @staticmethod
-    def _get_top_y_axis_format(plot_type:str, plot_position:str, axis_type:str):
+
+    def _get_y_axis_format(self, plot_type:str, position:str, axis_type:str):
         '''Builds format for y axis'''
-        if plot_position == 'top':
+        if position == 'top':
+            if plot_type in ['wb', 'dupont', 'valuation', 'valuation2', 'dividend', 'debt', 'income2']:
+                y_axis_label = 'ratio'
+            else:
+                y_axis_label = f'{self.get_currency().capitalize()}'
             if axis_type == 'log':
                 fmt = '0.000a'
             else:
@@ -1439,11 +1463,10 @@ class Company:
                     fmt = '0.0a'
                 else:
                     fmt = '0.a'
-            #position = 'top'
         else: #bottom plot
-            fmt = "0.%"
-            #position = 'bottom'
-        return fmt
+            y_axis_label = 'time \u0394'
+            fmt = '0.%'
+        return y_axis_label, fmt
 
     @staticmethod
     def _get_initial_x_offset(metrics):
@@ -1661,7 +1684,7 @@ class Company:
                 value = prefix + f'@{metric}' + "{0.0%}" + text
             else:
                 prefix = f'{self._currency_symbol}'
-                text = f' (mean = {prefix}{numerize.numerize(means[metric])})'
+                text = f' (mean = {prefix}{numerize.numerize(means[metric], 1)})'
                 value = prefix + f'@{metric}' + "{0.0a}" + text
             tooltip.append((self._map_item_to_name(metric), value))
         hover_tool = HoverTool(tooltips   = tooltip,
@@ -1796,18 +1819,16 @@ class Company:
             # Format axes and legends on top & bottom plots
             for plot in [plot_top, plot_bottom]:
                 if plot == plot_top:
-                    y_axis_label = top_y_axis_label
                     position     = 'top'
-                    fmt = self._get_top_y_axis_format(plot_type=plot_type, plot_position='top', axis_type=axis_type)
+                    y_axis_label, fmt = self._get_y_axis_format(plot_type=plot_type, position=position, axis_type=axis_type)
                 else: #bottom plot
-                    y_axis_label = 'time \u0394'
                     position = 'bottom'
-                    fmt = "0.%"
+                    y_axis_label, fmt = self._get_y_axis_format(plot_type=plot_type, position=position, axis_type='linear')
                 self._build_axes(fig      = plot,
                                  position = position,
                                  defaults = defaults,
                                  y_axis_label = y_axis_label,
-                                 axis_format  = fmt
+                                 axis_format  = fmt,
                                  )
                 self._position_legend(fig      = plot,
                                       defaults = defaults,
