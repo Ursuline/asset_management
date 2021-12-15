@@ -1834,11 +1834,12 @@ class Company:
                                       )
             # Merge top & bottom plots & captions into column
             caption_text =  self._build_caption_text(plot_type)
-            plot         = gridplot([plot_top,
-                                    plot_bottom,
-                                    caption_text,],
-                                    sizing_mode='stretch_width',
-                                    ncols = 1,
+            plot         = gridplot(children = [plot_top,
+                                                plot_bottom,
+                                                caption_text,
+                                                ],
+                                    ncols    = 1,
+                                    sizing_mode = 'stretch_width',
                                     )
             panel        = Panel(child=plot,
                                  title=axis_type,
