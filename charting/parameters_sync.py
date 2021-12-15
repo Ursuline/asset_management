@@ -37,7 +37,7 @@ PORTFOLIO_DIR  = f'{PORTFOLIO_URL}/{PORTFOLIO_PATH}/'
 PORTFOLIO_FILES  = ['indices.csv', 'indices_short.csv']
 # Holdings
 PORTFOLIO_FILES += ['charly_crypto.csv', 'charly_crypto_short.csv']
-#PORTFOLIO_FILES += ['charly_saxo.csv']
+PORTFOLIO_FILES += ['charly_saxo.csv']
 PORTFOLIO_FILES += ['saxo_cycliques.csv']
 PORTFOLIO_FILES += ['pea_mc.csv', 'adrien.csv']
 PORTFOLIO_FILES += ['pea_pme.csv', 'abs.csv']
