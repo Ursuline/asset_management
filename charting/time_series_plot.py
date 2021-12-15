@@ -24,7 +24,7 @@ from finance import utilities as util
 
 
 class TimeSeriesPlot():
-    '''Bokeh time series plot'''
+    '''Bokeh 2.4.2 time series plot'''
     curdoc().theme = dft.BK_THEMES[0]
 
     @classmethod
@@ -99,10 +99,11 @@ class TimeSeriesPlot():
     def build_plot(self, dataframe:pd.DataFrame, notebook:bool, display:bool):
         '''Plotting call'''
         source     = ColumnDataSource(dataframe)
+        print(f'dataframe={dataframe}')
         upper_pane = self._build_upper_pane(source = source)
         lower_pane = self._build_lower_pane(source = source,
-                                              upper_pane = upper_pane,
-                                              )
+                                            upper_pane = upper_pane,
+                                            )
 
         # Link the CrossHairTools together
         crosshair = CrosshairTool(dimensions = "both",
@@ -113,7 +114,9 @@ class TimeSeriesPlot():
         upper_pane.add_tools(crosshair)
         lower_pane.add_tools(crosshair)
 
-        self._plot = gridplot(children = [upper_pane, lower_pane],
+        self._plot = gridplot(children = [upper_pane,
+                                          lower_pane,
+                                          ],
                               ncols    = 1,
                               )
         self._show(notebook, display)
@@ -173,7 +176,6 @@ class TimeSeriesPlot():
                               text_font_size="16pt",
                               align="center"),
                         'above')
-
         return plot
 
 
@@ -237,23 +239,20 @@ class TimeSeriesPlot():
 
     def _build_upper_pane(self, source):
         '''Plots stock price ema etc
-        source is a ColumnDataSource object
+            source is a ColumnDataSource object
         '''
         y_label = f'Price ({self._ticker_obj.get_currency_symbol()})'
-        pane = figure(x_axis_type      = "datetime",
+        pane = figure(x_axis_type      = 'datetime',
                       plot_width       = dft.PLOT_WIDTH,
                       plot_height      = dft.PLOT_HDIM_TOP,
                       y_axis_label     = y_label,
                       toolbar_location = 'right',
                       toolbar_sticky   = False,
-                      output_backend   = "webgl",
                      )
-
-        # configure so that Bokeh chooses what (if any) scroll tool is active
         pane.toolbar.active_scroll = "auto"
         pane.toolbar.autohide = True
 
-        pane.ygrid.band_fill_color="grey"
+        pane.ygrid.band_fill_color = 'grey'
         pane.ygrid.band_fill_alpha = 0.1
 
         source=ColumnDataSource(self._strategy)
