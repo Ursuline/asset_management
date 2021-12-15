@@ -99,7 +99,7 @@ class TimeSeriesPlot():
     def build_plot(self, dataframe:pd.DataFrame, notebook:bool, display:bool):
         '''Plotting call'''
         source     = ColumnDataSource(dataframe)
-        print(f'dataframe={dataframe}')
+
         upper_pane = self._build_upper_pane(source = source)
         lower_pane = self._build_lower_pane(source = source,
                                             upper_pane = upper_pane,
