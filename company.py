@@ -9,6 +9,7 @@ https://financialmodelingprep.com/developer/docs/formula
 
 @author: charles mégnin
 """
+import os
 import inspect
 import math
 import datetime as dt
@@ -1322,8 +1323,8 @@ class Company:
         '''Returns default plot settings'''
         defaults = {}
         defaults['plot_width']  = 1200
-        defaults['plot_height'] = 600
-        defaults['plot_bottom_height'] = 150
+        defaults['plot_height'] = 550
+        defaults['plot_bottom_height'] = 200
         defaults['theme']       = 'light_minimal'
         defaults['palette']     = Dark2_8
         defaults['text_font']   = 'helvetica'
@@ -1369,19 +1370,19 @@ class Company:
         '''Initialize plot
            position = top or bottom (plot)
            axis_type = log or linear
+           min_y, max_y : y axis bounds
         '''
         if position == 'top':
             plot_height = defaults['plot_height']
-            x_range = source.data['year']
+            x_range     = source.data['year']
         else:
             plot_height = defaults['plot_bottom_height']
-            x_range = linked_figure.x_range # connect bottom x-axis to top
-        fig = figure(x_range = x_range,
-                     y_range = [min_y, max_y],
+            x_range     = linked_figure.x_range # connect bottom plot x-axis to top plot x-axis
+        fig = figure(x_range     = x_range,
+                     y_range     = [min_y, max_y],
                      plot_width  = defaults['plot_width'],
                      plot_height = plot_height,
                      tools       = 'box_zoom, ywheel_zoom, reset, save',
-                     #active_scroll = "ywheel_zoom",
                      y_axis_type = axis_type,
                      )
         fig.xgrid.grid_line_color = None
@@ -1464,7 +1465,7 @@ class Company:
                 else:
                     fmt = '0.a'
         else: #bottom plot
-            y_axis_label = 'time \u0394'
+            y_axis_label = 'growth'
             fmt = '0.%'
         return y_axis_label, fmt
 
@@ -1728,32 +1729,31 @@ class Company:
             caption_text = Paragraph(text='')
         return caption_text
 
+    @staticmethod
+    def _build_cds(time_series:pd.DataFrame):
+        '''Clean up time series & build ColumnDataSource '''
+        time_series.replace(np.inf, 0, inplace=True) # replace infinity values with 0
+        time_series.index.name = 'year'
+        time_series.index      = time_series.index.astype('string')
+        return ColumnDataSource(data = time_series)
+
 
     def fundamentals_plot(self, time_series:pd.DataFrame, plot_type:str, subtitle:str, filename:str):
         '''
         Generic time series bokeh plot for values (bars) and their growth (lines)
         plot_type: either of revenue, bs (balance sheet), dupont, wb ("warren buffet"), ...
         '''
-        defaults = self.get_plot_defaults()
-        time_series.replace(np.inf, 0, inplace=True) # replace infinity values with 0
-        time_series.index.name = 'year'
-        time_series.index      = time_series.index.astype('string')
-        cds                    = ColumnDataSource(data = time_series)
-
-        if plot_type in ['wb', 'dupont', 'valuation', 'valuation2', 'dividend', 'debt', 'income2']:
-            top_y_axis_label = 'ratio'
-        else:
-            top_y_axis_label = f'{self.get_currency().capitalize()}'
-        cols = time_series.columns.tolist()
+        defaults  = self.get_plot_defaults()
+        cds       = self._build_cds(time_series)
+        cols      = time_series.columns.tolist()
         metrics   = cols[0:int(len(cols)/2)]
         d_metrics = cols[int(len(cols)/2):]
 
         # Build a dictionary of metrics and their respective means
         means = dict(zip(metrics, time_series[metrics].mean().tolist()))
 
-        panels = []
+        panels = [] # 2 panels: linear and log plots
         for axis_type in ['linear', 'log']:
-            # Initialize top plot (data / bars)
             min_y, max_y = self._get_minmax_y(ts_df     = time_series[metrics],
                                               axis_type = axis_type,
                                               plot_type = plot_type,
@@ -1801,16 +1801,15 @@ class Company:
                                     means     = means,
                                     plot_type = plot_type,
                                     )
-            # Add WB benchmarks to WB plots
-            if plot_type == 'wb':
+            if plot_type == 'wb': # Add benchmarks to WB plot
                 self._build_wb_benchmarks(fig      = plot_top,
                                           defaults = defaults,
                                           )
-            elif plot_type == 'valuation':
+            elif plot_type == 'valuation': # Add benchmarks to valuation plot
                 self._build_valuation_benchmarks(fig      = plot_top,
                                                  defaults = defaults,
                                                  )
-            # Add lines to bottom plot
+            # Add growth lines to bottom plot
             self._build_line_plots(fig       = plot_bottom, # bottom plot is line plot
                                    defaults  = defaults,
                                    metrics   = d_metrics,
@@ -1847,5 +1846,10 @@ class Company:
         tabs = Tabs(tabs=panels)
         show(tabs)
         # Save plot to file
-        output_file(filename)
+        try:
+            output_file(filename)
+        except FileNotFoundError:
+            print(f'creating data directory {os.path.dirname(filename)}')
+            os.mkdir(os.path.dirname(filename))
+            output_file(filename)
         save(tabs)
