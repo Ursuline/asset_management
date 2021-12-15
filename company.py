@@ -651,17 +651,21 @@ class Company:
         '''Returns cash return on invested capital
         FCF/ebit*roic
         '''
-        roic = self.get_roic(year=year, change=False)
-        fcf  = self.get_freeCashFlow(year=year, change=False)
-        ebit = self.get_ebit(year=year, change=False)
-        if ebit in [0, None]:
+        try:
+            roic = self.get_roic(year=year, change=False)
+            fcf  = self.get_freeCashFlow(year=year, change=False)
+            ebit = self.get_ebit(year=year, change=False)
+            if ebit in [0]:
+                return 0
+            if change is True:
+                d_roic = self.get_roic(year=year, change=True)
+                d_fcf  = self.get_freeCashFlow(year=year, change=True)
+                d_ebit = self.get_ebit(year=year, change=True)
+                return ((d_fcf*roic+fcf*d_roic)*ebit - d_ebit*fcf*roic)/(ebit*ebit)
+            return fcf*roic/ebit
+        except:
+            print('company>get_croic(): inconsistent value')
             return 0
-        if change is True:
-            d_roic = self.get_roic(year=year, change=True)
-            d_fcf  = self.get_freeCashFlow(year=year, change=True)
-            d_ebit = self.get_ebit(year=year, change=True)
-            return ((d_fcf*roic+fcf*d_roic)*ebit - d_ebit*fcf*roic)/(ebit*ebit)
-        return fcf*roic/ebit
 
 
     def get_evToebit(self, year:str, change:bool=False):

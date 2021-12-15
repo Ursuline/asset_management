@@ -46,7 +46,7 @@ class FundamentalsPlotter:
         '''Returns default plot settings'''
         defaults = {}
         defaults['plot_width']  = 1200
-        defaults['plot_height'] = 550
+        defaults['plot_height'] = 500
         defaults['plot_bottom_height'] = 200
         defaults['theme']     = 'light_minimal'
         defaults['palette']   = Dark2_8
@@ -161,7 +161,7 @@ class FundamentalsPlotter:
                      y_range     = [min_y, max_y],
                      plot_width  = defaults['plot_width'],
                      plot_height = plot_height,
-                     tools       = 'box_zoom, ywheel_zoom, reset, save',
+                     tools       = 'pan, box_zoom, ywheel_zoom, reset, save',
                      y_axis_type = axis_type,
                      )
         fig.xgrid.grid_line_color = None
@@ -576,12 +576,18 @@ class FundamentalsPlotter:
                                    )
             # Format axes and legends on top & bottom plots
             for plot in [plot_top, plot_bottom]:
-                if plot == plot_top:
+                if plot == plot_top: #top plot
                     position     = 'top'
-                    y_axis_label, fmt = self._get_y_axis_format(plot_type=plot_type, position=position, axis_type=axis_type)
+                    y_axis_label, fmt = self._get_y_axis_format(plot_type=plot_type,
+                                                                position=position,
+                                                                axis_type=axis_type,
+                                                                )
                 else: #bottom plot
                     position = 'bottom'
-                    y_axis_label, fmt = self._get_y_axis_format(plot_type=plot_type, position=position, axis_type='linear')
+                    y_axis_label, fmt = self._get_y_axis_format(plot_type=plot_type,
+                                                                position=position,
+                                                                axis_type='linear',
+                                                                )
                 self._build_axes(fig      = plot,
                                  position = position,
                                  defaults = defaults,
