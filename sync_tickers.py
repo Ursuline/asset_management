@@ -24,12 +24,11 @@ from finance import utilities as util
 DATE_RANGE = par.DATE_RANGE
 ZOOM_RANGE = par.ZOOM_RANGE
 NOTIFY     = par.NOTIFY
-#REMOTE     = par.REMOTE
 DISPLAY_TIME_SERIES = par.DISPLAY_TIME_SERIES
 REFRESH_YAHOO = par.REFRESH_YAHOO
 REFRESH_EMA   = par.REFRESH_EMA
 #Contour & surface plot formats
-PLOT_FORMATS = par.CTR_SFC_PLOT_FORMATS
+PLOT_FORMATS  = par.CTR_SFC_PLOT_FORMATS
 
 if __name__ == '__main__':
     start_tm = time.time() # total_time
