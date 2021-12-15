@@ -25,7 +25,7 @@ from bokeh.models import ColumnDataSource, FactorRange
 from bokeh.models.widgets import Tabs, Panel, Paragraph
 from bokeh.transform import dodge
 from bokeh.palettes import Dark2_8
-from bokeh.layouts import column
+from bokeh.layouts import gridplot
 import FundamentalAnalysis as fa
 import cache as ksh
 import api_keys as keys
@@ -1834,11 +1834,12 @@ class Company:
                                       )
             # Merge top & bottom plots & captions into column
             caption_text =  self._build_caption_text(plot_type)
-            plot         = column(plot_top,
-                                  plot_bottom,
-                                  caption_text,
-                                  sizing_mode='stretch_width',
-                                  )
+            plot         = gridplot([plot_top,
+                                    plot_bottom,
+                                    caption_text,],
+                                    sizing_mode='stretch_width',
+                                    ncols = 1,
+                                    )
             panel        = Panel(child=plot,
                                  title=axis_type,
                                  )
