@@ -198,7 +198,6 @@ class FundamentalsPlotter:
                      text_font_size = font_size,
                      )
 
-
     @staticmethod
     def _build_caption_text(plot_type):
         '''Builds caption nomenclature to be added to bottom part of plot'''
@@ -222,36 +221,40 @@ class FundamentalsPlotter:
         '''Converts column name to readable metric (WIP)'''
         if item.startswith('d_'):
             return '\u0394 ' + self._map_item_to_name(item[2:])
-        if item.lower() == 'assetturnover':           return 'Asset turnover'
-        if item.lower() == 'croic':                   return 'Cash ROIC'
-        if item.lower() == 'currentratio':            return 'Current ratio'
-        if item.lower() == 'debttoassets':            return 'Debt-to-assets ratio'
-        if item.lower() == 'debttoequity':            return 'Debt-to-equity ratio'
-        if item.lower() == 'dividendyield':           return 'Dividend yield'
-        if item.lower() == 'ebit':                    return 'EBIT'
-        if item.lower() == 'ebitperrevenue':          return 'EBIT-to-revenue'
-        if item.lower() == 'evtoebit':                return 'E.V.-to-ebit'
-        if item.lower() == 'equitymultiplier':        return 'Equity multiplier'
-        if item.lower() == 'grossprofitratio':        return 'Gross profit margin'
-        if item.lower() == 'interestcoverage':        return 'Interest coverage'
-        if item.lower() == 'freecashflow':            return 'FCF'
-        if item.lower() == 'freecashflowtorevenue':   return 'FCF-to-revenue'
-        if item.lower() == 'netdebttoebit':           return 'Net debt-to-ebit'
-        if item.lower() == 'netprofitmargin':         return 'Net profit margin'
-        if item.lower() == 'payoutratio':             return 'Payout ratio'
-        if item.lower() == 'peg':                     return 'P/E-to-growth'
-        if item.lower() == 'peratio':                 return 'P/E ratio'
-        if item.lower() == 'pricetobookratio':        return 'Price-to-book ratio'
-        if item.lower() == 'pricetosalesratio':       return 'Price-to-sales ratio'
-        if item.lower() == 'returnonequity':          return 'ROE'
-        if item.lower() == 'revenue':                 return 'Revenue'
-        if item.lower() == 'shorttermcoverageratios': return 'Short term coverage ratio'
-        if item.lower() == 'roic':                    return 'ROIC'
-        if item.lower() == 'totalassets':             return 'Total assets'
-        if item.lower() == 'totalliabilities':        return 'Total liabilities'
-        if item.lower() == 'totalstockholdersequity': return 'Total stockholders equity'
-        print(f'_map_item_to_name: unknown item {item}')
-        return ''
+        itemdict = {'assetturnover':           'Asset turnover',
+                    'croic':                   'Cash ROIC',
+                    'currentratio':            'Current ratio',
+                    'debttoassets':            'Debt-to-assets ratio',
+                    'debttoequity':            'Debt-to-equity ratio',
+                    'dividendyield':           'Dividend yield',
+                    'ebit':                    'EBIT',
+                    'ebitperrevenue':          'EBIT-to-revenue',
+                    'evtoebit':                'E.V.-to-ebit',
+                    'equitymultiplier':        'Equity multiplier',
+                    'freecashflow':            'FCF',
+                    'grossprofitratio':        'Gross profit margin',
+                    'interestcoverage':        'Interest coverage',
+                    'freecashflowtorevenue':   'FCF-to-revenue',
+                    'netdebttoebit':           'Net debt-to-ebit',
+                    'netprofitmargin':         'Net profit margin',
+                    'payoutratio':             'Payout ratio',
+                    'peg':                     'P/E-to-growth',
+                    'peratio':                 'P/E ratio',
+                    'pricetobookratio':        'Price-to-book ratio',
+                    'pricetosalesratio':       'Price-to-sales ratio',
+                    'returnonequity':          'ROE',
+                    'revenue':                 'Revenue',
+                    'shorttermcoverageratios': 'Short term coverage ratio',
+                    'roic':                    'ROIC',
+                    'totalassets':             'Total assets',
+                    'totalliabilities':        'Total liabilities',
+                    'totalstockholdersequity': 'Total stockholders equity',
+                    }
+        try:
+            return itemdict[item.lower()]
+        except:
+            print(f'_map_item_to_name(): No mapping for item "{item}"')
+            return ''
 
 
     def _build_title(self, fig, defaults:dict, subtitle:str):

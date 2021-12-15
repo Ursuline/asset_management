@@ -502,7 +502,7 @@ class Company:
             data.index = data.index.astype(int)
             query = data.loc[year]
             if query is None:
-                print(f'item {item} is None in the data set')
+                print(f'_get_financial_ratios_item(): item {item} is None in the data set')
                 return 0
             return query
 
@@ -552,7 +552,10 @@ class Company:
     def get_shortTermCoverageRatios(self, year:str, change:bool=False):
         '''Returns *inverse of* short term coverage ratio or its change'''
         item = 'shortTermCoverageRatios'
-        return 1.0/self._get_financial_ratios_item(item=item, year=year, change=change)
+        ratio = self._get_financial_ratios_item(item=item, year=year, change=change)
+        if ratio == 0:
+            return 0
+        return 1.0/ratio
 
 
     ### key metrics data ###
@@ -648,14 +651,13 @@ class Company:
 
     ### Derived metrics ###
     def get_croic(self, year:str, change:bool=False):
-        '''Returns cash return on invested capital
-        FCF/ebit*roic
-        '''
+        '''Returns cash return on invested capital = FCF/ebit*roic'''
         try:
             roic = self.get_roic(year=year, change=False)
             fcf  = self.get_freeCashFlow(year=year, change=False)
             ebit = self.get_ebit(year=year, change=False)
             if ebit in [0]:
+                print('get_croic(): {year} - ebit=0 / croic set to 0')
                 return 0
             if change is True:
                 d_roic = self.get_roic(year=year, change=True)
@@ -664,7 +666,7 @@ class Company:
                 return ((d_fcf*roic+fcf*d_roic)*ebit - d_ebit*fcf*roic)/(ebit*ebit)
             return fcf*roic/ebit
         except:
-            print('company>get_croic(): inconsistent value')
+            print('get_croic(): {year} - inconsistent value / croic set to 0')
             return 0
 
 
@@ -673,6 +675,7 @@ class Company:
         ev   = self.get_enterpriseValue(year=year, change=False)
         ebit = self.get_ebit(year=year, change=False)
         if ebit == 0:
+            print('get_evToebit(): {year} - ebit=0 / ev to ebit set to 0')
             return 0
         if change is True:
             d_ev   = self.get_enterpriseValue(year=year, change=True)
@@ -687,6 +690,7 @@ class Company:
         fcf   = self.get_freeCashFlow(year=year, change=False)
         revenue = self.get_revenue(year=year, change=False)
         if revenue == 0:
+            print('get_freeCashFlowToRevenue(): {year} - revenue=0 / fcf to revenue set to 0')
             return 0
         if change is True:
             d_fcf     = self.get_freeCashFlow(year=year, change=True)
@@ -701,6 +705,7 @@ class Company:
         fcf    = self.get_freeCashFlow(year, change=False)
         income = self.get_netIncome(year, change=False)
         if income == 0:
+            print('get_cashConversion(): {year} - income=0 / cash conversion set to 0')
             return 0
         if change:
             d_fcf = self.get_freeCashFlow(year, change=True)
@@ -714,6 +719,7 @@ class Company:
         assets = self._get_balance_sheet_item('totalAssets', year, change=False)
         equity = self._get_balance_sheet_item('totalStockholdersEquity', year, change=False)
         if equity == 0:
+            print('get_cashConversion(): {year} - equity=0 / cequity multiplier set to 0')
             return 0
         if change:
             d_assets = self._get_balance_sheet_item('totalAssets', year, change=True)
@@ -728,6 +734,7 @@ class Company:
         ebitda     = self.get_ebitda(year=year, change=False)
         ebit       = self.get_ebit(year=year, change=False)
         if ebit == 0:
+            print('get_netDebtToebit(): {year} - ebit=0 / net debt to ebit set to 0')
             return 0
         if change is True:
             d_ndtoebitda = self.get_netDebtToEBITDA(year=year, change=True)
