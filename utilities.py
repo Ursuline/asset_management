@@ -8,6 +8,7 @@ Created on Mon Oct 25 17:03:05 2021
 import json
 import pandas as pd
 import requests
+from numerize import numerize
 
 URL  = 'https://ml-finance.ams3.digitaloceanspaces.com'
 PATH = 'fundamentals'
@@ -75,7 +76,7 @@ def extract_peers(target_ticker:str, filt:dict):
     return set(stocks.symbol)
 
 
-def filter_to_screen(filt:dict):
+def filter_to_screen(filt:dict, currency:str):
     '''Outputs company filter characterisitcs to screen'''
     for key in filt:
         if filt[key][1] == True:
@@ -86,8 +87,8 @@ def filter_to_screen(filt:dict):
             base = filt[key][0]
             lower = base * filt['mktCap_interval'][0]
             upper = base * filt['mktCap_interval'][1]
-            msg  = f'{key}: ${lower/MILLION:.0f}M - ${upper/MILLION:.0f}M '
-            msg += f'(base=${base/MILLION:.0f}M) / status={status}'
+            msg  = f'{key}: {currency}{numerize.numerize(lower)} - {currency}{numerize.numerize(upper)} '
+            msg += f'(base={currency}{numerize.numerize(base)} / status={status})'
             print(msg)
         elif key == 'mktCap_interval':
             continue
