@@ -38,7 +38,7 @@ metrics_set_names = {'mktcap_metrics': 'Assets, Revenue & Market Cap',
                      'debt_metrics': 'Debt metrics',
                      }
 
-mktcap_metrics = {'totalAssets': 0., 'revenue': 0., 'mktCap': 0.,}
+mktcap_metrics = {'totalAssets': 0., 'revenue': 0., 'marketCap': 0.,}
 bs_metrics = {'totalAssets': 0., 'totalLiabilities': 0., 'totalStockholdersEquity': 0.,}
 income_metrics = {'revenue': 0., 'ebit': 0., 'freeCashFlow': 0.,}
 income2_metrics = {'grossProfitRatio': 0., 'ebitPerRevenue': 0., 'freeCashFlowToRevenue': 0.,'croic':0}
