@@ -11,12 +11,12 @@ import os
 import pandas as pd
 import company as cny
 import metrics as mtr
-import fundamentals_plotter as pltr
+import fundamentals_plotter as f_pltr
 
 DIR = '/Users/charly/Documents/projects/asset_management/data'
 
 EXPIRATION_DATE = '2021-12-31'
-TICKER   = 'ROTH.PA'
+TICKER   = 'MC.PA'
 YEAR_0   = int('2013')
 YEAR_1   = int('2020')
 
@@ -38,21 +38,13 @@ if __name__ == '__main__':
         subtitle  = mtr.metrics_set_names[f'{plot_type}_metrics']
         if plot_type.startswith('valuation'):
             subtitle += f' (5-year \u03b2={cie.get_beta():.1f})'
-        plotter = pltr.FundamentalsPlotter(cie,
-                                            time_series = aggregate_metrics(metrics = mtr.get_metrics(f'{plot_type}_metrics'),
-                                                                            yr_0    = YEAR_0,
-                                                                            yr_1    = YEAR_1,
-                                                                            ),
+        plotter = f_pltr.FundamentalsPlotter(cie,
+                                             time_series = aggregate_metrics(metrics = mtr.get_metrics(f'{plot_type}_metrics'),
+                                                                             yr_0    = YEAR_0,
+                                                                             yr_1    = YEAR_1,
+                                                                             ),
                                             )
         plotter.plot(plot_type = plot_type,
                      subtitle  = subtitle,
                      filename  = os.path.join(DIR, prefix + f'_{plot_type}.html'),
                      )
-        # cie.fundamentals_plot(time_series = aggregate_metrics(metrics = mtr.get_metrics(f'{plot_type}_metrics'),
-        #                                                       yr_0    = YEAR_0,
-        #                                                       yr_1    = YEAR_1,
-        #                                                       ),
-        #                       plot_type = plot_type,
-        #                       subtitle  = subtitle,
-        #                       filename  = os.path.join(DIR, prefix + f'_{plot_type}.html'),
-        #                       )
