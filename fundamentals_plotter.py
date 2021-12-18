@@ -20,140 +20,24 @@ from numerize import numerize
 import plotter as pltr
 import company as cny
 import metrics as mtr
+import utilities as util
 
 
 class FundamentalsPlotter(pltr.Plotter):
     '''Plotter for fundamentals plots'''
     def __init__(self, cie:cny.Company, time_series:pd.DataFrame):
-        super().__init__(cie=cie, time_series=time_series)
+        self._time_series = time_series
+        self._cie = cie
+        super().__init__()
+        print(self._cds.data)
 
-    @staticmethod
-    def _get_minmax_y(ts_df:pd.DataFrame, axis_type:str, plot_type:str, plot_position:str, defaults:dict):
-        '''
-        Returns min & max values for top plot y axis
-        axis_type: log or linear
-        plot_type: bs, dupont, wb, etc
-        plot_position: top or bottom
-        '''
-        if plot_position == 'top':
-            max_y = ts_df.max().max()
-            if plot_type == 'wb': # show benchmarks no matter what
-                max_y = max(max_y, pltr.round_up(defaults['currentRatio_benchmark'], 1))
-            max_y *= 1.05 # leave breathing room above
-            if axis_type == 'linear':
-                min_y = min(pltr.round_down(ts_df.min().min(), 1), 0)
-                if plot_type == 'valuation':
-                    min_y = 0
-            else: # Log plot
-                min_y = 1e-3
-        else: #Bottom plot
-            max_y = min(pltr.round_up(ts_df.max().max(), 1), 10)
-            min_y = max(pltr.round_down(ts_df.min().min(), 1), -1)
-        return (min_y, max_y)
 
-    @staticmethod
-    def _get_initial_x_offset(metrics):
-        '''Returns initial bar offset for bar plot'''
-        if len(metrics) == 1:
-            return 0.
-        if len(metrics) == 2:
-            return 0.
-        if len(metrics) == 3:
-            return -.125
-        if len(metrics) == 4:
-            return -.375
-        if len(metrics) == 5:
-            return -.5
-        print(f'_get_initial_x_offset: metrics length {len(metrics)} not handled')
-        return 0
-
-    @staticmethod
-    def _get_bar_shift(metrics):
-        '''Returns shift amount bw successive bars'''
-        if len(metrics) == 1:
-            return .5
-        if len(metrics) == 2:
-            return .35
-        if len(metrics) == 3:
-            return .75/3
-        if len(metrics) == 4:
-            return .8/4
-        if len(metrics) == 5:
-            return .75/5
-        print(f'_get_bar_shift; metrics length {len(metrics)} not handled')
-        return 0
-
-    @staticmethod
-    def _initialize_plot(position:str, axis_type:str, defaults:dict, source:ColumnDataSource, min_y:float, max_y:float, linked_figure=None):
-        '''Initialize plot
-           position = top or bottom (plot)
-           axis_type = log or linear
-           min_y, max_y : y axis bounds
-        '''
-        if position == 'top':
-            plot_height = defaults['plot_height']
-            x_range     = source.data['year']
-        else:
-            plot_height = defaults['plot_bottom_height']
-            x_range     = linked_figure.x_range # connect bottom plot x-axis to top plot x-axis
-        fig = figure(x_range     = x_range,
-                     y_range     = [min_y, max_y],
-                     plot_width  = defaults['plot_width'],
-                     plot_height = plot_height,
-                     tools       = 'pan, box_zoom, ywheel_zoom, reset, save',
-                     y_axis_type = axis_type,
-                     )
-        fig.xgrid.grid_line_color = None
-        # Configure toolbar & bokeh logo
-        fig.toolbar.autohide = True
-        fig.toolbar_location = 'right'
-        fig.toolbar.logo     = None
-        return fig
-
-    @staticmethod
-    def _build_axes(fig, position:str, defaults:dict, axis_format:str, y_axis_label:str):
-        '''Sets various parameters for x & y axes'''
-        # X axis
-        fig.xaxis.major_label_text_font_size = defaults['top_axis_label_text_font_size']
-        fig.xaxis.axis_label_text_color      = defaults['axis_label_text_color']
-        # Y axis
-        fig.yaxis.axis_label_text_font_size  = defaults['top_axis_label_text_font_size']
-        if position == 'top':
-            fig.yaxis.major_label_text_font_size = defaults['top_axis_label_text_font_size']
-        else:
-            fig.yaxis.major_label_text_font_size = defaults['bottom_axis_label_text_font_size']
-        fig.yaxis.axis_label_text_color      = defaults['axis_label_text_color']
-        fig.yaxis.axis_label   = y_axis_label
-        fig.yaxis[0].formatter = NumeralTickFormatter(format=axis_format)
-
-    @staticmethod
-    def _build_line_caption(text:str, x_value:float, y_value:float, x_units:str, y_units:str, color, font_size:int):
-        return Label(x = x_value,
-                     y = y_value,
-                     x_units = x_units,
-                     y_units = y_units,
-                     text    = text,
-                     text_color     = color,
-                     text_font_size = font_size,
-                     )
-
-    @staticmethod
-    def _build_caption_text(plot_type):
-        '''Builds caption nomenclature to be added to bottom part of plot'''
-        if plot_type in ['dupont', 'wb', 'dividend', 'valuation', 'valuation2', 'debt', 'income2']:
-            caption_text = Paragraph(text=mtr.metrics_captions[plot_type], align='center')
-        else: # no caption
-            caption_text = Paragraph(text='')
-        return caption_text
-
-    @staticmethod
-    def _position_legend(fig, defaults):
-        '''Must be set after legend defined'''
-        fig.legend.location     = "top_left"
-        fig.legend.click_policy = 'hide'
-        fig.legend.orientation  = "vertical"
-        fig.legend.label_text_font_size = defaults['legend_font_size']
-        fig.add_layout(fig.legend[0], 'right')
+    def _build_cds(self):
+        '''Builds column data source corresponding to the time series'''
+        self._time_series.replace(np.inf, 0, inplace=True) # replace infinity values with 0
+        self._time_series.index.name = 'year'
+        self._time_series.index      = self._time_series.index.astype('string')
+        self._cds                   = ColumnDataSource(data = self._time_series)
 
 
     def _build_title(self, fig, defaults:dict, subtitle:str):
@@ -284,28 +168,6 @@ class FundamentalsPlotter(pltr.Plotter):
                            )
 
 
-    def _build_zero_growth_line(self, fig, defaults:dict):
-        '''Builds zero growth horizontal line on secondary axis'''
-        # Build line
-        zero_growth = Span(location   = 0.0,
-                           dimension  ='width',
-                           line_color = defaults['zero_growth_line_color'],
-                           line_dash  = defaults['zero_growth_line_dash'],
-                           line_width = defaults['zero_growth_line_thickness'],
-                           )
-        fig.add_layout(zero_growth)
-        # Add annotation
-        fig.add_layout(self._build_line_caption(text      = '',
-                                                x_value   = 2,
-                                                y_value   = 0,
-                                                x_units   = 'screen',
-                                                y_units   = 'data',
-                                                color     = defaults['zero_growth_font_color'],
-                                                font_size = defaults['zero_growth_font_size'],
-                                                )
-                        )
-
-
     def _build_bar_tooltip(self, fig, barplot, means:dict, metrics:list, plot_type:str, defaults:dict):
         '''Build tooltips for bar plots'''
         tooltip = [('','@year')]
@@ -397,8 +259,7 @@ class FundamentalsPlotter(pltr.Plotter):
         plot_type: either of revenue, bs (balance sheet), dupont, wb ("warren buffet"), ...
         '''
         defaults = self.get_plot_defaults()
-
-        cols = self._time_series.columns.tolist()
+        cols     = self._time_series.columns.tolist()
         metrics   = cols[0:int(len(cols)/2)]
         d_metrics = cols[int(len(cols)/2):]
 
@@ -420,6 +281,7 @@ class FundamentalsPlotter(pltr.Plotter):
                                              axis_type = axis_type,
                                              defaults  = defaults,
                                              source    = self._cds,
+                                             x_range_name = 'year',
                                              )
             # Initialize bottom plot (changes / lines)
             min_y, max_y = self._get_minmax_y(ts_df     = self._time_series[d_metrics],
@@ -434,7 +296,8 @@ class FundamentalsPlotter(pltr.Plotter):
                                                 axis_type = 'linear',
                                                 defaults  = defaults,
                                                 source    = self._cds,
-                                                linked_figure = plot_top
+                                                x_range_name = 'year',
+                                                linked_figure = plot_top,
                                                 )
             # Add title to top plot
             self._build_title(fig      = plot_top,
@@ -473,15 +336,15 @@ class FundamentalsPlotter(pltr.Plotter):
             for plot in [plot_top, plot_bottom]:
                 if plot == plot_top: #top plot
                     position     = 'top'
-                    y_axis_label, fmt = self._get_y_axis_format(plot_type=plot_type,
-                                                                position=position,
-                                                                axis_type=axis_type,
+                    y_axis_label, fmt = self._get_y_axis_format(plot_type = plot_type,
+                                                                position  = position,
+                                                                axis_type = axis_type,
                                                                 )
                 else: #bottom plot
                     position = 'bottom'
-                    y_axis_label, fmt = self._get_y_axis_format(plot_type=plot_type,
-                                                                position=position,
-                                                                axis_type='linear',
+                    y_axis_label, fmt = self._get_y_axis_format(plot_type = plot_type,
+                                                                position  = position,
+                                                                axis_type ='linear',
                                                                 )
                 self._build_axes(fig      = plot,
                                  position = position,
