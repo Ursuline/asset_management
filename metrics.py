@@ -26,7 +26,7 @@ roe = NI / Equity & croe = FCF / Equity
 import inspect
 
 # Set name and plot title
-metrics_set_names = {'mktcap_metrics': 'Assets, Revenue & Market Cap',
+metrics_set_names = {#'mktcap_metrics': 'Assets, Revenue & Market Cap',
                      'wb_metrics':'"Warren Buffet" metrics',
                      'dupont_metrics': 'Dupont metrics',
                      'bs_metrics': 'Balance sheet metrics',
@@ -38,7 +38,7 @@ metrics_set_names = {'mktcap_metrics': 'Assets, Revenue & Market Cap',
                      'debt_metrics': 'Debt metrics',
                      }
 
-mktcap_metrics = {'totalAssets': 0., 'revenue': 0., 'marketCap': 0.,}
+#mktcap_metrics = {'totalAssets': 0., 'revenue': 0., 'marketCap': 0.,}
 bs_metrics = {'totalAssets': 0., 'totalLiabilities': 0., 'totalStockholdersEquity': 0.,}
 income_metrics = {'revenue': 0., 'ebit': 0., 'freeCashFlow': 0.,}
 income2_metrics = {'grossProfitRatio': 0., 'ebitPerRevenue': 0., 'freeCashFlowToRevenue': 0.,'croic':0}
@@ -98,10 +98,10 @@ def get_metrics(group:str, metric:str=None):
             if metric is None:
                 return dupont_metrics #return dictionary
             return dupont_metrics[metric] # return value
-        if group == 'mktcap_metrics':
-            if metric is None:
-                return mktcap_metrics #return dictionary
-            return mktcap_metrics[metric] # return value
+        # if group == 'mktcap_metrics':
+        #     if metric is None:
+        #         return mktcap_metrics #return dictionary
+        #     return mktcap_metrics[metric] # return value
         if group == 'bs_metrics':
             if metric is None:
                 return bs_metrics #return dictionary
