@@ -711,9 +711,9 @@ class Company:
         return roe*cash_conv
 
 
-    def get_peers(self):
-        '''return peers as defined in API (***not preferred method***)'''
-        return util.extract_peers(self._ticker, API_KEY)
+    # def get_peers(self):
+    #     '''return peers as defined in API (***not preferred method***)'''
+    #     return util.extract_peers(self._ticker, API_KEY)
 
 
     def get_metric_over_time(self, items:list, yr_0:int, yr_1:int):
