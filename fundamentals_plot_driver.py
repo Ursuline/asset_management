@@ -21,7 +21,7 @@ YEAR_0   = int('2013')
 YEAR_1   = int('2020')
 
 def aggregate_metrics(metrics:str, yr_0:int, yr_1:int):
-    '''Extract metrics coresponding to plot type and aggregate with changes'''
+    '''Extract metrics corresponding to plot type and aggregate with changes'''
     return pd.merge(cie.load_cie_metrics_over_time(metrics=metrics, yr_start=yr_0, yr_end=yr_1, change=False),
                     cie.load_cie_metrics_over_time(metrics=metrics, yr_start=yr_0, yr_end=yr_1, change=True),
                     on  = 'year',
