@@ -8,38 +8,20 @@ superclass for fundamentals`Plotter and comparisonPlotter classes
 
 @author: charly
 """
-import math
-import numpy as np
 import pandas as pd
-from bokeh.models import ColumnDataSource
+from bokeh.plotting import figure
 from bokeh.palettes import Dark2_8
-import company as cny
-
-
-# Utilities
-def round_up(val:float, ndigits:int):
-    '''round up utility'''
-    return (math.ceil(val * math.pow(10, ndigits)) + 1) / math.pow(10, ndigits)
-
-
-def round_down(val:float, ndigits:int):
-    '''round down utility'''
-    return (math.floor(val * math.pow(10, ndigits)) - 1) / math.pow(10, ndigits)
+from bokeh.models import ColumnDataSource, NumeralTickFormatter, Span, Label
+from bokeh.models.widgets import Paragraph
+import utilities as util
+import metrics as mtr
 
 class Plotter:
     '''Super class for plots'''
-    def __init__(self, cie:cny.Company, time_series:pd.DataFrame):
-        self._cie = cie
-        self._time_series = time_series
+    def __init__(self):
         self._cds = None
         self._build_cds()
 
-    def _build_cds(self):
-        '''Builds column data source corresponding to the time series'''
-        self._time_series.replace(np.inf, 0, inplace=True) # replace infinity values with 0
-        self._time_series.index.name = 'year'
-        self._time_series.index      = self._time_series.index.astype('string')
-        self._cds                   = ColumnDataSource(data = self._time_series)
 
     def _map_item_to_name(self, item:str):
         '''Converts column name to readable metric (WIP)'''
@@ -81,13 +63,37 @@ class Plotter:
             return ''
 
 
+    def _get_y_axis_format(self, plot_type:str, position:str, axis_type:str):
+        '''Builds format for y axis'''
+        if position == 'top':
+            if plot_type in ['wb', 'dupont', 'valuation', 'valuation2', 'dividend', 'debt', 'income2']:
+                y_axis_label = 'ratio'
+            else:
+                try:
+                    y_axis_label = f'{self._cie.get_currency().capitalize()}'
+                except AttributeError:
+                    y_axis_label = 'currency'
+            if axis_type == 'log':
+                fmt = '0.000a'
+            else:
+                if plot_type in ['dividend', 'debt', 'income2']:
+                    fmt = '0.%'
+                elif plot_type in ['wb', 'dupont']:
+                    fmt = '0.0a'
+                else:
+                    fmt = '0.a'
+        else: #bottom plot
+            y_axis_label = 'growth'
+            fmt = '0.%'
+        return y_axis_label, fmt
+
     @staticmethod
     def get_plot_defaults():
-        '''Returns default plot settings'''
+        '''Returns a dictionary of default plot settings'''
         defaults = {}
         defaults['plot_width']  = 1200
-        defaults['plot_height'] = 500
-        defaults['plot_bottom_height'] = 200
+        defaults['plot_height'] = 525
+        defaults['plot_bottom_height'] = 150
         defaults['theme']     = 'light_minimal'
         defaults['palette']   = Dark2_8
         defaults['text_font'] = 'helvetica'
@@ -127,3 +133,156 @@ class Plotter:
         defaults['bottom_axis_label_text_font_size'] = '8pt'
         defaults['axis_label_text_color']            = 'dimgray'
         return defaults
+
+
+    @staticmethod
+    def _initialize_plot(position:str, axis_type:str, defaults:dict, source:ColumnDataSource, x_range_name:str ,min_y:float, max_y:float, linked_figure=None):
+        '''Initialize plot
+           position = top or bottom (plot)
+           axis_type = log or linear
+           min_y, max_y : y axis bounds
+        '''
+        if position == 'top':
+            plot_height = defaults['plot_height']
+            x_range     = source.data[x_range_name]
+        else:
+            plot_height = defaults['plot_bottom_height']
+            x_range     = linked_figure.x_range # connect bottom plot x-axis to top plot x-axis
+        fig = figure(x_range     = x_range,
+                     y_range     = [min_y, max_y],
+                     plot_width  = defaults['plot_width'],
+                     plot_height = plot_height,
+                     tools       = 'pan, box_zoom, ywheel_zoom, reset, save',
+                     y_axis_type = axis_type,
+                     )
+        fig.xgrid.grid_line_color = None
+        # Configure toolbar & bokeh logo
+        fig.toolbar.autohide = True
+        fig.toolbar_location = 'right'
+        fig.toolbar.logo     = None
+        return fig
+
+
+    @staticmethod
+    def _build_axes(fig, position:str, defaults:dict, axis_format:str, y_axis_label:str):
+        '''Sets various parameters for x & y axes'''
+        # X axis
+        fig.xaxis.major_label_text_font_size = defaults['top_axis_label_text_font_size']
+        fig.xaxis.axis_label_text_color      = defaults['axis_label_text_color']
+        # Y axis
+        fig.yaxis.axis_label_text_font_size  = defaults['top_axis_label_text_font_size']
+        if position == 'top':
+            fig.yaxis.major_label_text_font_size = defaults['top_axis_label_text_font_size']
+        else:
+            fig.yaxis.major_label_text_font_size = defaults['bottom_axis_label_text_font_size']
+        fig.yaxis.axis_label_text_color      = defaults['axis_label_text_color']
+        fig.yaxis.axis_label   = y_axis_label
+        fig.yaxis[0].formatter = NumeralTickFormatter(format=axis_format)
+
+
+    def _build_zero_growth_line(self, fig, defaults:dict):
+        '''Builds zero growth horizontal line on secondary axis'''
+        # Build line
+        zero_growth = Span(location   = 0.0,
+                           dimension  ='width',
+                           line_color = defaults['zero_growth_line_color'],
+                           line_dash  = defaults['zero_growth_line_dash'],
+                           line_width = defaults['zero_growth_line_thickness'],
+                           )
+        fig.add_layout(zero_growth)
+        # Add annotation
+        fig.add_layout(self._build_line_caption(text      = '',
+                                                x_value   = 2,
+                                                y_value   = 0,
+                                                x_units   = 'screen',
+                                                y_units   = 'data',
+                                                color     = defaults['zero_growth_font_color'],
+                                                font_size = defaults['zero_growth_font_size'],
+                                                )
+                        )
+
+
+    @staticmethod
+    def _get_minmax_y(ts_df:pd.DataFrame, axis_type:str, plot_type:str, plot_position:str, defaults:dict):
+        '''
+        Returns min & max values for top plot y axis
+        axis_type: log or linear
+        plot_type: bs, dupont, wb, etc
+        plot_position: top or bottom
+        '''
+        if plot_position == 'top':
+            max_y = ts_df.max().max()
+            if plot_type == 'wb': # show benchmarks no matter what
+                max_y = max(max_y, util.round_up(defaults['currentRatio_benchmark'], 1))
+            max_y *= 1.05 # leave breathing room above
+            if axis_type == 'linear':
+                min_y = min(util.round_down(ts_df.min().min(), 1), 0)
+                if plot_type == 'valuation':
+                    min_y = 0
+            else: # Log plot
+                min_y = 1e-3
+        else: #Bottom plot
+            max_y = min(util.round_up(ts_df.max().max(), 1), 10)
+            min_y = max(util.round_down(ts_df.min().min(), 1), -1)
+        return (min_y, max_y)
+
+    @staticmethod
+    def _get_initial_x_offset(metrics):
+        '''Returns initial bar offset for bar plot'''
+        if len(metrics) == 1:
+            return 0.
+        if len(metrics) == 2:
+            return 0.
+        if len(metrics) == 3:
+            return -.125
+        if len(metrics) == 4:
+            return -.375
+        if len(metrics) == 5:
+            return -.5
+        print(f'_get_initial_x_offset: metrics length {len(metrics)} not handled')
+        return 0
+
+    @staticmethod
+    def _get_bar_shift(metrics):
+        '''Returns shift amount bw successive bars'''
+        if len(metrics) == 1:
+            return .5
+        if len(metrics) == 2:
+            return .35
+        if len(metrics) == 3:
+            return .75/3
+        if len(metrics) == 4:
+            return .8/4
+        if len(metrics) == 5:
+            return .75/5
+        print(f'_get_bar_shift; metrics length {len(metrics)} not handled')
+        return 0
+
+    @staticmethod
+    def _position_legend(fig, defaults):
+        '''Must be set after legend defined'''
+        fig.legend.location     = "top_left"
+        fig.legend.click_policy = 'hide'
+        fig.legend.orientation  = "vertical"
+        fig.legend.label_text_font_size = defaults['legend_font_size']
+        fig.add_layout(fig.legend[0], 'right')
+
+    @staticmethod
+    def _build_caption_text(plot_type):
+        '''Builds caption nomenclature to be added to bottom part of plot'''
+        if plot_type in ['dupont', 'wb', 'dividend', 'valuation', 'valuation2', 'debt', 'income2']:
+            caption_text = Paragraph(text=mtr.metrics_captions[plot_type], align='center')
+        else: # no caption
+            caption_text = Paragraph(text='')
+        return caption_text
+
+    @staticmethod
+    def _build_line_caption(text:str, x_value:float, y_value:float, x_units:str, y_units:str, color, font_size:int):
+        return Label(x = x_value,
+                     y = y_value,
+                     x_units = x_units,
+                     y_units = y_units,
+                     text    = text,
+                     text_color     = color,
+                     text_font_size = font_size,
+                     )
