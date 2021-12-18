@@ -227,35 +227,27 @@ class Plotter:
         return (min_y, max_y)
 
     @staticmethod
-    def _get_initial_x_offset(metrics):
+    def _get_initial_x_offset(columns):
         '''Returns initial bar offset for bar plot'''
-        if len(metrics) == 1:
-            return 0.
-        if len(metrics) == 2:
-            return 0.
-        if len(metrics) == 3:
-            return -.125
-        if len(metrics) == 4:
-            return -.375
-        if len(metrics) == 5:
-            return -.5
-        print(f'_get_initial_x_offset: metrics length {len(metrics)} not handled')
-        return 0
+        print(f'_get_initial_x_offset: metrics length = {len(columns)}')
+        offset = .1
+        return - (len(columns) -1) * offset
 
+#REFACTOR THIS
     @staticmethod
-    def _get_bar_shift(metrics):
+    def _get_bar_shift(columns):
         '''Returns shift amount bw successive bars'''
-        if len(metrics) == 1:
+        if len(columns) == 1:
             return .5
-        if len(metrics) == 2:
+        if len(columns) == 2:
             return .35
-        if len(metrics) == 3:
+        if len(columns) == 3:
             return .75/3
-        if len(metrics) == 4:
+        if len(columns) == 4:
             return .8/4
-        if len(metrics) == 5:
+        if len(columns) == 5:
             return .75/5
-        print(f'_get_bar_shift; metrics length {len(metrics)} not handled')
+        print(f'_get_bar_shift: metrics length {len(columns)} not handled')
         return 0
 
     @staticmethod

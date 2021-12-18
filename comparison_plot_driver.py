@@ -173,5 +173,10 @@ if __name__ == '__main__':
     df = aggregate_peers(target_ticker=TARGET_TICKER, peers=peers, req_metrics=mtr.bs_metrics, year=YEAR)
     print(df)
 
-    plotter = c_pltr.ComparisonPlotter(base_cie=cie, cie_data=df)
-    plotter.plot(plot_type='bs', subtitle='test', filename=prefix)
+    plotter = c_pltr.ComparisonPlotter(base_cie=cie, cie_data=df, year=YEAR)
+    plot_type = 'bs'
+    subtitle = mtr.metrics_set_names[plot_type + '_metrics']
+    plotter.plot(plot_type = plot_type,
+                 subtitle  = subtitle,
+                 filename  = prefix,
+                 )

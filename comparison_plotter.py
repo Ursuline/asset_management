@@ -22,12 +22,12 @@ import metrics as mtr
 
 class ComparisonPlotter(pltr.Plotter):
     '''Plotter for fundamentals plots'''
-    def __init__(self, base_cie:cny.Company, cie_data:pd.DataFrame):
+    def __init__(self, base_cie:cny.Company, cie_data:pd.DataFrame, year:str):
         self._base_cie = base_cie
         self._cie_data = cie_data
+        self._year     = year
         print(cie_data.columns.tolist())
         super().__init__()
-        print(self._cds.data)
 
 
     def _build_cds(self):
@@ -48,7 +48,7 @@ class ComparisonPlotter(pltr.Plotter):
                        'above',
                        )
         #title
-        fig.add_layout(Title(text=f'Base Cie & Peers',
+        fig.add_layout(Title(text=f'{self._base_cie.get_company_name()} & Peers {self._year}',
                              align='center',
                              text_font_size=defaults['title_font_size'],
                              text_color=defaults['title_color'],
@@ -59,8 +59,8 @@ class ComparisonPlotter(pltr.Plotter):
 
     def _build_bar_plots(self, fig, defaults:dict, companies:list, metrics:list, plot_type:str, source:ColumnDataSource):
         '''Builds bar plots (metrics) on primary axis'''
-        x_pos = self._get_initial_x_offset(metrics)
-        bar_shift = self._get_bar_shift(metrics)
+        x_pos = self._get_initial_x_offset(companies)
+        bar_shift = self._get_bar_shift(companies)
         bar_width = defaults['bar_width_shift_ratio'] * bar_shift
         print(f'plot_type={plot_type}')
         print(f'companies={companies}')
@@ -69,12 +69,18 @@ class ComparisonPlotter(pltr.Plotter):
         print(f'bar_shift={bar_shift}')
         print(f'bar_width={bar_width}')
         for i, company in enumerate(companies):
-            vbar = fig.vbar(x      = dodge('metric', x_pos, FactorRange(*companies)),
+            hatch_pattern = ' '
+            if i == 0:
+                hatch_pattern = '/'
+            vbar = fig.vbar(x      = dodge('metric', x_pos, FactorRange(*metrics)),
                             bottom = 1e-6,
                             top    = company,
                             width  = bar_width,
                             source = source,
                             color  = defaults['palette'][i],
+                            hatch_pattern = hatch_pattern,
+                            hatch_color = 'white',
+                            hatch_alpha = 95,
                             legend_label = company,
                             )
             self._build_bar_tooltip(fig=fig, barplot=vbar, companies=companies, plot_type=plot_type, defaults=defaults)
@@ -107,14 +113,15 @@ class ComparisonPlotter(pltr.Plotter):
 
     def _build_bar_tooltip(self, fig, barplot, companies:list, plot_type:str, defaults:dict):
         '''Build tooltips for bar plots'''
-        tooltip = [('','@year')]
+        tooltip = [('','@metric')]
         for company in companies:
             prefix = ''
             if plot_type in ['wb', 'dupont', 'valuation', 'valuation2']:
                 value = prefix + f'@{company}' + "{0.0a}"
             else:
                 prefix = f'{self._base_cie.get_currency_symbol()}'
-                value = prefix + f'@{company}' + "{0.0a}"
+                value =  prefix + f'@{company}' + '{0.0a}'
+                #print(f'value={value}')
             tooltip.append((company, value))
         hover_tool = HoverTool(tooltips   = tooltip,
                                show_arrow = True,
@@ -129,11 +136,13 @@ class ComparisonPlotter(pltr.Plotter):
            plot_type: either of revenue, bs (balance sheet), dupont, wb ("warren buffet"), ...
            '''
         defaults = self.get_plot_defaults()
-        cols     = self._cie_data.index.tolist()
-        metrics   = cols[0:int(len(cols)/2)]
-        d_metrics = cols[int(len(cols)/2):]
+        rows     = self._cie_data.index.tolist()
+        metrics   = rows[0:int(len(rows)/2)]
+        d_metrics = rows[int(len(rows)/2):]
+        print(f'metrics={metrics}\nd_metrics={d_metrics}')
         print(self._cie_data.loc[metrics])
         print(self._cie_data.loc[d_metrics])
+        print(self._cie_data.columns.tolist())
 
         panels = [] # 2 panels: linear and log plots
         for axis_type in ['linear', 'log']:
@@ -143,13 +152,13 @@ class ComparisonPlotter(pltr.Plotter):
                                               defaults  = defaults,
                                               plot_position = 'top',
                                               )
-            print(f'Top plot min-max = {min_y}->{max_y}')
+            source_top = ColumnDataSource(data = self._cie_data.loc[metrics])
             plot_top = self._initialize_plot(position  = 'top',
                                              min_y     = min_y,
                                              max_y     = max_y,
                                              axis_type = axis_type,
                                              defaults  = defaults,
-                                             source    = self._cds,
+                                             source    = source_top,
                                              x_range_name = 'metric',
                                              )
             # Initialize bottom plot (changes / lines)
@@ -159,13 +168,13 @@ class ComparisonPlotter(pltr.Plotter):
                                               defaults  = defaults,
                                               plot_position = 'bottom',
                                               )
-            print(f'Bottom plot min-max = {min_y}->{max_y}')
+            source_bottom = ColumnDataSource(data = self._cie_data.loc[d_metrics])
             plot_bottom = self._initialize_plot(position  = 'bottom',
                                                 max_y     = max_y,
                                                 min_y     = min_y,
                                                 axis_type = 'linear',
                                                 defaults  = defaults,
-                                                source    = self._cds,
+                                                source    = source_bottom,
                                                 x_range_name = 'metric',
                                                 linked_figure = plot_top
                                                 )
@@ -180,7 +189,7 @@ class ComparisonPlotter(pltr.Plotter):
                                   companies = self._cie_data.columns.tolist(),
                                   metrics   = metrics,
                                   plot_type = plot_type,
-                                  source    = self._cds,
+                                  source    = source_top,
                                   )
             # if plot_type == 'wb': # Add benchmarks to WB plot
             #     self._build_wb_benchmarks(fig      = plot_top,
@@ -191,10 +200,11 @@ class ComparisonPlotter(pltr.Plotter):
             #                                      defaults = defaults,
             #                                      )
             # Add growth lines to bottom plot
-            self._build_line_plots(fig       = plot_bottom, # bottom plot is line plot
+            print(f'building line plot from {source_bottom.data}')
+            self._build_line_plots(fig        = plot_bottom, # bottom plot is line plot
                                     defaults  = defaults,
                                     companies = self._cie_data.columns.tolist(),
-                                    source    = self._cds,
+                                    source    = source_bottom,
                                     )
             # Format axes and legends on top & bottom plots
             for plot in [plot_top, plot_bottom]:
