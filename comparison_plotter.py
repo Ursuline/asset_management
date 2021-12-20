@@ -5,19 +5,15 @@ Created on Thu Dec 16 15:41:32 2021
 
 @author: charly
 """
-import os
 import pandas as pd
 import numpy as np
 from bokeh.layouts import gridplot
 from bokeh.transform import dodge
 from bokeh.models import ColumnDataSource, FactorRange
-from bokeh.models import HoverTool, Title, Span, Label, NumeralTickFormatter
-from bokeh.models.widgets import Tabs, Panel, Paragraph
-from bokeh.plotting import figure, show, output_file, save
-from numerize import numerize
+from bokeh.models import HoverTool, Title
+from bokeh.models.widgets import Tabs, Panel
 import plotter as pltr
 import company as cny
-import metrics as mtr
 
 
 class ComparisonPlotter(pltr.Plotter):
@@ -243,11 +239,4 @@ class ComparisonPlotter(pltr.Plotter):
                           )
             panels.append(panel)
         tabs = Tabs(tabs=panels)
-        show(tabs)
-        try: # Save plot to file
-            output_file(filename)
-        except FileNotFoundError:
-            print(f'creating data directory {os.path.dirname(filename)}')
-            os.mkdir(os.path.dirname(filename))
-            output_file(filename)
-        save(tabs)
+        self._commit(tabs, filename)
