@@ -7,20 +7,16 @@ fundamentals_plotter.py
 
 @author: charly
 """
-import os
 import pandas as pd
 import numpy as np
 from bokeh.layouts import gridplot
 from bokeh.transform import dodge
 from bokeh.models import ColumnDataSource, FactorRange
-from bokeh.models import HoverTool, Title, Span, Label, NumeralTickFormatter
-from bokeh.models.widgets import Tabs, Panel, Paragraph
-from bokeh.plotting import figure, show, output_file, save
+from bokeh.models import HoverTool, Title, Span
+from bokeh.models.widgets import Tabs, Panel
 from numerize import numerize
 import plotter as pltr
 import company as cny
-import metrics as mtr
-import utilities as util
 
 
 class FundamentalsPlotter(pltr.Plotter):
@@ -29,7 +25,7 @@ class FundamentalsPlotter(pltr.Plotter):
         self._time_series = time_series
         self._cie = cie
         super().__init__()
-        print(self._cds.data)
+        #print(self._cds.data)
 
 
     def _build_cds(self):
@@ -369,11 +365,4 @@ class FundamentalsPlotter(pltr.Plotter):
                           )
             panels.append(panel)
         tabs = Tabs(tabs=panels)
-        show(tabs)
-        try: # Save plot to file
-            output_file(filename)
-        except FileNotFoundError:
-            print(f'creating data directory {os.path.dirname(filename)}')
-            os.mkdir(os.path.dirname(filename))
-            output_file(filename)
-        save(tabs)
+        self._commit(tabs, filename)

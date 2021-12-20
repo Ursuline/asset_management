@@ -8,11 +8,13 @@ superclass for fundamentals`Plotter and comparisonPlotter classes
 
 @author: charly
 """
+import os
 import pandas as pd
 from bokeh.plotting import figure
 from bokeh.palettes import Dark2_8
 from bokeh.models import ColumnDataSource, NumeralTickFormatter, Span, Label
 from bokeh.models.widgets import Paragraph
+from bokeh.plotting import show, output_file, save
 import utilities as util
 import metrics as mtr
 
@@ -229,7 +231,6 @@ class Plotter:
     @staticmethod
     def _get_initial_x_offset(columns):
         '''Returns initial bar offset for bar plot'''
-        print(f'_get_initial_x_offset: metrics length = {len(columns)}')
         offset = .1
         return - (len(columns) -1) * offset
 
@@ -278,3 +279,13 @@ class Plotter:
                      text_color     = color,
                      text_font_size = font_size,
                      )
+
+    @staticmethod
+    def _commit(tabs, filename):
+        # Make sure directory exists & save plot to file
+        os.makedirs(os.path.dirname(filename),
+                    exist_ok = True
+                    )
+        output_file(filename)
+        save(tabs)
+        show(tabs)
