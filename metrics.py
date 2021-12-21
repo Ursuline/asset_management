@@ -98,10 +98,6 @@ def get_metrics(group:str, metric:str=None):
             if metric is None:
                 return dupont_metrics #return dictionary
             return dupont_metrics[metric] # return value
-        # if group == 'mktcap_metrics':
-        #     if metric is None:
-        #         return mktcap_metrics #return dictionary
-        #     return mktcap_metrics[metric] # return value
         if group == 'bs_metrics':
             if metric is None:
                 return bs_metrics #return dictionary
