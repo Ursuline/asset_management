@@ -27,11 +27,21 @@ class ComparisonPlotter(pltr.Plotter):
         self._bottom_cds = None # ColumnDataSource change in metrics
         super().__init__()
 
+    def _build_top_cds(self, dataframe):
+        '''Build ColumnDataSource for top plot (metrics)'''
+        dataframe         = dataframe.transpose()
+        for column in dataframe.columns:
+            dataframe.rename(columns={column : self._map_item_to_name(column)}, inplace=True)
+        dataframe         = dataframe.transpose()
+        self._top_cds  = ColumnDataSource(data = dataframe)
+
 
     def _build_bottom_cds(self, dataframe):
         '''Build ColumnDataSource for bottom plot (changes in metrics)'''
         dataframe         = dataframe.transpose()
         dataframe.columns = dataframe.columns.str.replace('d_', '')
+        for column in dataframe.columns:
+            dataframe.rename(columns={column : self._map_item_to_name(column)}, inplace=True)
         dataframe         = dataframe.transpose()
         self._bottom_cds = ColumnDataSource(data = dataframe)
 
@@ -43,27 +53,29 @@ class ComparisonPlotter(pltr.Plotter):
         d_metrics = rows[int(len(rows)/2):]
         self._cie_data.replace(np.inf, 0, inplace=True) # replace infinity values with 0
         self._cie_data.index.name = 'metric'
-        #self._cie_data.columns = self._cie_data.columns.str.replace('.', '_')
-        self._top_cds  = ColumnDataSource(data = self._cie_data.loc[metrics])
+        self._build_top_cds(self._cie_data.loc[metrics].copy())
         self._build_bottom_cds(self._cie_data.loc[d_metrics].copy())
 
 
     def _build_title(self, fig, defaults:dict, subtitle:str):
         '''Build plot title and subtitle'''
         #subtitle
-        fig.add_layout(Title(text=subtitle,
-                             align='center',
-                             text_font_size=defaults['subtitle_font_size'],
-                             text_color=defaults['title_color'],
-                             text_font=defaults['text_font']),
+        fig.add_layout(Title(text  = subtitle,
+                             align = 'center',
+                             text_font_size = defaults['subtitle_font_size'],
+                             text_color     = defaults['title_color'],
+                             text_font      = defaults['text_font'],
+                             ),
                        'above',
                        )
         #title
-        fig.add_layout(Title(text=f'{self._base_cie.get_company_name()} & Peers {self._year}',
-                             align='center',
-                             text_font_size=defaults['title_font_size'],
-                             text_color=defaults['title_color'],
-                             text_font=defaults['text_font']),
+        text = f'{self._base_cie.get_company_name()} & peers ({self._year})'
+        fig.add_layout(Title(text  = text,
+                             align = 'center',
+                             text_font_size = defaults['title_font_size'],
+                             text_color     = defaults['title_color'],
+                             text_font      = defaults['text_font'],
+                             ),
                        'above',
                        )
 
@@ -73,7 +85,6 @@ class ComparisonPlotter(pltr.Plotter):
         x_pos = self._get_initial_x_offset(companies)
         bar_shift = self._get_bar_shift(companies)
         bar_width = defaults['bar_width_shift_ratio'] * bar_shift
-
         for i, company in enumerate(companies):
             hatch_pattern = ' '
             if i == 0:
@@ -89,7 +100,12 @@ class ComparisonPlotter(pltr.Plotter):
                             hatch_alpha = 95,
                             legend_label = company,
                             )
-            self._build_bar_tooltip(fig=fig, barplot=vbar, companies=companies, plot_type=plot_type, defaults=defaults)
+            self._build_bar_tooltip(fig=fig,
+                                    barplot=vbar,
+                                    companies=companies,
+                                    plot_type=plot_type,
+                                    position='top',
+                                    defaults=defaults)
             x_pos += bar_shift
 
 
@@ -110,25 +126,33 @@ class ComparisonPlotter(pltr.Plotter):
                             source = source,
                             color  = defaults['palette'][i],
                             hatch_pattern = hatch_pattern,
-                            hatch_color = 'white',
-                            hatch_alpha = 95,
-                            legend_label = company,
+                            hatch_color   = 'white',
+                            hatch_alpha   = 95,
+                            legend_label  = company,
                             )
-            self._build_bar_tooltip(fig=fig, barplot=vbar, companies=companies, plot_type='', defaults=defaults)
+            self._build_bar_tooltip(fig=fig,
+                                    barplot=vbar,
+                                    companies=companies,
+                                    plot_type='',
+                                    position='bottom',
+                                    defaults=defaults)
             x_pos += bar_shift
+        self._build_zero_growth_line(fig, defaults)
 
 
-    def _build_bar_tooltip(self, fig, barplot, companies:list, plot_type:str, defaults:dict):
+    def _build_bar_tooltip(self, fig, barplot, companies:list, plot_type:str, position:str, defaults:dict):
         '''Build tooltips for bar plots'''
         tooltip = [('','@metric')]
         for company in companies:
             prefix = ''
-            if plot_type in ['wb', 'dupont', 'valuation', 'valuation2']:
-                value = prefix + f'@{company}' + "{0.0a}"
-            else:
-                prefix = f'{self._base_cie.get_currency_symbol()}'
-                value =  prefix + '@' + '{' + company +'}' + '{0.0a}'
-            tooltip.append((company, value))
+            if position == 'top':
+                if plot_type not in ['wb', 'dupont', 'valuation', 'valuation2']:
+                    prefix = f'{self._base_cie.get_currency_symbol()}'
+                value =  prefix + '@{' + company + '}{0.0a}'
+                tooltip.append((company, value))
+            elif position == 'bottom':
+                value =  '@{' + company + '}{0.0%}'
+                tooltip.append((company, value))
         hover_tool = HoverTool(tooltips   = tooltip,
                                show_arrow = True,
                                renderers  = [barplot],
@@ -141,24 +165,19 @@ class ComparisonPlotter(pltr.Plotter):
         '''Generic time series bokeh plot for values (bars) and their growth (lines)
            plot_type: either of revenue, bs (balance sheet), dupont, wb ("warren buffet"), ...
            '''
-        defaults = self.get_plot_defaults()
-        rows     = self._cie_data.index.tolist()
+        defaults  = self.get_plot_defaults()
+        rows      = self._cie_data.index.tolist()
         metrics   = rows[0:int(len(rows)/2)]
         d_metrics = rows[int(len(rows)/2):]
 
-        print(self._cie_data.loc[metrics])
-        print(self._cie_data.loc[d_metrics])
-        print(self._cie_data.columns.tolist())
-
         panels = [] # 2 panels: linear and log plots
         for axis_type in ['linear', 'log']:
-            min_y, max_y = self._get_minmax_y(ts_df = self._cie_data.loc[metrics],
+            min_y, max_y = self._get_minmax_y(ts_df     = self._cie_data.loc[metrics],
                                               axis_type = axis_type,
                                               plot_type = plot_type,
                                               defaults  = defaults,
                                               plot_position = 'top',
                                               )
-            # source_top = ColumnDataSource(data = self._cie_data.loc[metrics])
             plot_top = self._initialize_plot(position  = 'top',
                                              min_y     = min_y,
                                              max_y     = max_y,
@@ -174,8 +193,6 @@ class ComparisonPlotter(pltr.Plotter):
                                               defaults  = defaults,
                                               plot_position = 'bottom',
                                               )
-            # source_bottom = ColumnDataSource(data = self._cie_data.loc[d_metrics])
-            # print(source_bottom.data)
             plot_bottom = self._initialize_plot(position  = 'bottom',
                                                 min_y     = min_y,
                                                 max_y     = max_y,
@@ -191,30 +208,20 @@ class ComparisonPlotter(pltr.Plotter):
                               subtitle = subtitle,
                               )
             # Add bars to top plot
-            self._build_top_bar_plot(fig       = plot_top, # top blot is bar plot
+            self._build_top_bar_plot(fig       = plot_top,
                                      defaults  = defaults,
-                                     #companies = self._cie_data.columns.tolist(),
                                      companies = self._peer_names,
-                                     metrics   = metrics,
+                                     metrics   = self._map_items_to_names(metrics),
                                      plot_type = plot_type,
                                      source    = self._top_cds,
                                      )
-            # if plot_type == 'wb': # Add benchmarks to WB plot
-            #     self._build_wb_benchmarks(fig      = plot_top,
-            #                               defaults = defaults,
-            #                               )
-            # elif plot_type == 'valuation': # Add benchmarks to valuation plot
-            #     self._build_valuation_benchmarks(fig      = plot_top,
-            #                                      defaults = defaults,
-            #                                      )
-            # Add growth lines to bottom plot
-            self._build_bottom_bar_plot(fig        = plot_bottom, # bottom plot is line plot
-                                  defaults  = defaults,
-                                  #companies = self._cie_data.columns.tolist(),
-                                  companies = self._peer_names,
-                                  metrics   = metrics,
-                                  source    = self._bottom_cds,
-                                  )
+            # Add growth bars to bottom plot
+            self._build_bottom_bar_plot(fig       = plot_bottom,
+                                        defaults  = defaults,
+                                        companies = self._peer_names,
+                                        metrics   = self._map_items_to_names(metrics),
+                                        source    = self._bottom_cds,
+                                        )
             # Format axes and legends on top & bottom plots
             for plot in [plot_top, plot_bottom]:
                 if plot == plot_top: #top plot
@@ -238,6 +245,7 @@ class ComparisonPlotter(pltr.Plotter):
                 self._position_legend(fig      = plot,
                                       defaults = defaults,
                                       )
+            plot_bottom.legend.visible=False
             # Merge top & bottom plots & captions into column
             caption_text =  self._build_caption_text(plot_type)
             plot  = gridplot(children = [plot_top,
