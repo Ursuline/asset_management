@@ -7,14 +7,15 @@ Driver for fundamentals comparison plots
 
 @author: charly
 """
+import os
 import pandas as pd
-import plotly.io as pio
 import utilities as util
 import metrics as mtr
 import company as cny
 import comparison_plotter as c_pltr
 
-pio.renderers.default='browser'
+
+DIR = '/Users/charly/Documents/projects/asset_management/data'
 
 URL        = 'https://ml-finance.ams3.digitaloceanspaces.com'
 PATH       = 'fundamentals'
@@ -88,14 +89,21 @@ def build_metric_dataframe(cie, ticker:str, requested_metrics:list, year:str, id
 
 
 def aggregate_peers(target_ticker:str, peers:list, req_metrics:str, year:str):
-    '''Extract metrics for peers and aggregate '''
+    '''Extract metrics for peers and aggregate'''
+    USE_NAME = True
+    TRUNC    = 30
     idx = 'company'
     cie         = cny.Company(ticker=target_ticker,
                               period='annual',
                               expiration_date=EXPIRATION_DATE,
                               )
+    if USE_NAME is True:
+        ticker = cie.get_company_name()[0:TRUNC]
+    else:
+        ticker = cie.TARGET_TICKER
+    print(f'using ticker {ticker}')
     metric_df   = build_metric_dataframe(cie,
-                                         ticker=TARGET_TICKER,
+                                         ticker=ticker,
                                          requested_metrics=req_metrics,
                                          year=year,
                                          idx=idx,
@@ -111,8 +119,13 @@ def aggregate_peers(target_ticker:str, peers:list, req_metrics:str, year:str):
                                 period='annual',
                                 expiration_date=EXPIRATION_DATE,
                                 )
+        if USE_NAME is True:
+            ticker = cie.get_company_name()[0:TRUNC]
+        else:
+            ticker = peer
+        print(f'using ticker {ticker}')
         temp_df   = build_metric_dataframe(cie,
-                                           ticker=peer,
+                                           ticker=ticker,
                                            requested_metrics=req_metrics,
                                            year=year,
                                            idx=idx,
@@ -124,16 +137,20 @@ def aggregate_peers(target_ticker:str, peers:list, req_metrics:str, year:str):
                               period='annual',
                               expiration_date=EXPIRATION_DATE,
                               )
+        if USE_NAME is True:
+            ticker = cie.get_company_name()[0:TRUNC]
+        else:
+            ticker = peer
         temp_df = cie.load_cie_metrics_over_time(metrics=req_metrics,
                                                  yr_start=int(year),
                                                  yr_end=int(year),
                                                  change=True,
                                                  )
-        temp_df.index.name = peer
+        temp_df.index.name = ticker
         d_metric_df = d_metric_df.append(temp_df, ignore_index = False)
 
-    peer_list= list(peers) # peers is a set
-    peer_list.insert(0, target_ticker)
+    peer_list= list(peers) # peers is originally a set
+    peer_list.insert(0, target_ticker) # place target ticker at the begining
     d_metric_df.insert(0, idx, peer_list)
     d_metric_df = d_metric_df.set_index(idx, drop=True)
     # merge metric and its change:
@@ -146,7 +163,7 @@ def aggregate_peers(target_ticker:str, peers:list, req_metrics:str, year:str):
 
 
 if __name__ == '__main__':
-    prefix = f'{TARGET_TICKER}_peers_{YEAR}.html'
+    prefix = f'{TARGET_TICKER}_peers_{YEAR}'
     stocks = pd.read_csv(DATA_PATH)
     target_stock = stocks[stocks.symbol == TARGET_TICKER]
     cie = cny.Company(ticker          = TARGET_TICKER,
@@ -170,13 +187,19 @@ if __name__ == '__main__':
     peers.discard(TARGET_TICKER) # If it exists, remove target stock to avoid duplicate
     print(f'{len(peers)} peers returned: {peers}\n')
 
-    df = aggregate_peers(target_ticker=TARGET_TICKER, peers=peers, req_metrics=mtr.bs_metrics, year=YEAR)
+    df = aggregate_peers(target_ticker=TARGET_TICKER,
+                         peers=peers,
+                         req_metrics=mtr.bs_metrics,
+                         year=YEAR,
+                         )
     print(df)
+    1/0
 
     plotter = c_pltr.ComparisonPlotter(base_cie=cie, cie_data=df, year=YEAR)
     plot_type = 'bs'
+    output_file = os.path.join(DIR, prefix + f'_{plot_type}.html')
     subtitle = mtr.metrics_set_names[plot_type + '_metrics']
     plotter.plot(plot_type = plot_type,
                  subtitle  = subtitle,
-                 filename  = prefix,
+                 filename  = output_file,
                  )

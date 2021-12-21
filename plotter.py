@@ -283,6 +283,8 @@ class Plotter:
     @staticmethod
     def _commit(tabs, filename):
         # Make sure directory exists & save plot to file
+        print(filename)
+        print(os.path.dirname(filename))
         os.makedirs(os.path.dirname(filename),
                     exist_ok = True
                     )
