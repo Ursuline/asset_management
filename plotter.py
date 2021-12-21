@@ -25,6 +25,14 @@ class Plotter:
         self._build_cds()
 
 
+    def _map_items_to_names(self, items:list):
+        '''Recursively calls _map_item_to_name on elements in items'''
+        names = []
+        for item in items:
+            names.append(self._map_item_to_name(item))
+        return names
+
+
     def _map_item_to_name(self, item:str):
         '''Converts column name to readable metric (WIP)'''
         if item.startswith('d_'):
@@ -111,7 +119,7 @@ class Plotter:
         defaults['line_dash'] = ''
         defaults['zero_growth_line_color']     = 'red'
         defaults['zero_growth_line_thickness'] = .5
-        defaults['zero_growth_line_dash']      = 'dotted'
+        defaults['zero_growth_line_dash']      = 'dashed'
         defaults['zero_growth_font_size']      = '8pt'
         defaults['zero_growth_font_color']     = 'dimgray'
         # WB Benchmarks:
