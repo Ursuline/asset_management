@@ -18,12 +18,13 @@ import company as cny
 
 class ComparisonPlotter(pltr.Plotter):
     '''Plotter for fundamentals plots'''
-    def __init__(self, base_cie:cny.Company, cie_data:pd.DataFrame, year:str):
-        self._base_cie = base_cie
-        self._cie_data = cie_data
-        self._year     = year
-        self._top_cds    = None # metrics
-        self._bottom_cds = None # change in metrics
+    def __init__(self, base_cie:cny.Company, cie_data:pd.DataFrame, peer_names:list, year:str):
+        self._base_cie   = base_cie
+        self._cie_data   = cie_data
+        self._peer_names = peer_names
+        self._year       = year
+        self._top_cds    = None # ColumnDataSource metrics
+        self._bottom_cds = None # ColumnDataSource change in metrics
         super().__init__()
 
 
@@ -42,7 +43,7 @@ class ComparisonPlotter(pltr.Plotter):
         d_metrics = rows[int(len(rows)/2):]
         self._cie_data.replace(np.inf, 0, inplace=True) # replace infinity values with 0
         self._cie_data.index.name = 'metric'
-        self._cie_data.columns = self._cie_data.columns.str.replace('.', '_')
+        #self._cie_data.columns = self._cie_data.columns.str.replace('.', '_')
         self._top_cds  = ColumnDataSource(data = self._cie_data.loc[metrics])
         self._build_bottom_cds(self._cie_data.loc[d_metrics].copy())
 
@@ -126,8 +127,7 @@ class ComparisonPlotter(pltr.Plotter):
                 value = prefix + f'@{company}' + "{0.0a}"
             else:
                 prefix = f'{self._base_cie.get_currency_symbol()}'
-                value =  prefix + f'@{company}' + '{0.0a}'
-                #print(f'value={value}')
+                value =  prefix + '@' + '{' + company +'}' + '{0.0a}'
             tooltip.append((company, value))
         hover_tool = HoverTool(tooltips   = tooltip,
                                show_arrow = True,
@@ -193,7 +193,8 @@ class ComparisonPlotter(pltr.Plotter):
             # Add bars to top plot
             self._build_top_bar_plot(fig       = plot_top, # top blot is bar plot
                                      defaults  = defaults,
-                                     companies = self._cie_data.columns.tolist(),
+                                     #companies = self._cie_data.columns.tolist(),
+                                     companies = self._peer_names,
                                      metrics   = metrics,
                                      plot_type = plot_type,
                                      source    = self._top_cds,
@@ -209,7 +210,8 @@ class ComparisonPlotter(pltr.Plotter):
             # Add growth lines to bottom plot
             self._build_bottom_bar_plot(fig        = plot_bottom, # bottom plot is line plot
                                   defaults  = defaults,
-                                  companies = self._cie_data.columns.tolist(),
+                                  #companies = self._cie_data.columns.tolist(),
+                                  companies = self._peer_names,
                                   metrics   = metrics,
                                   source    = self._bottom_cds,
                                   )
