@@ -28,6 +28,7 @@ class ComparisonPlotter(pltr.Plotter):
 
 
     def _build_bottom_cds(self, dataframe):
+        '''Build ColumnDataSource for bottom plot (changes in metrics)'''
         dataframe         = dataframe.transpose()
         dataframe.columns = dataframe.columns.str.replace('d_', '')
         dataframe         = dataframe.transpose()
@@ -36,13 +37,13 @@ class ComparisonPlotter(pltr.Plotter):
 
     def _build_cds(self):
         '''Builds column data source corresponding to the time series'''
-        rows     = self._cie_data.index.tolist()
+        rows      = self._cie_data.index.tolist()
         metrics   = rows[0:int(len(rows)/2)]
         d_metrics = rows[int(len(rows)/2):]
         self._cie_data.replace(np.inf, 0, inplace=True) # replace infinity values with 0
         self._cie_data.index.name = 'metric'
         self._cie_data.columns = self._cie_data.columns.str.replace('.', '_')
-        self._top_cds  = ColumnDataSource(data = self._cie_data.loc[metrics].copy())
+        self._top_cds  = ColumnDataSource(data = self._cie_data.loc[metrics])
         self._build_bottom_cds(self._cie_data.loc[d_metrics].copy())
 
 
@@ -144,14 +145,14 @@ class ComparisonPlotter(pltr.Plotter):
         rows     = self._cie_data.index.tolist()
         metrics   = rows[0:int(len(rows)/2)]
         d_metrics = rows[int(len(rows)/2):]
-        print(f'metrics={metrics}\nd_metrics={d_metrics}')
+
         print(self._cie_data.loc[metrics])
         print(self._cie_data.loc[d_metrics])
         print(self._cie_data.columns.tolist())
 
         panels = [] # 2 panels: linear and log plots
         for axis_type in ['linear', 'log']:
-            min_y, max_y = self._get_minmax_y(ts_df     = self._cie_data.loc[metrics],
+            min_y, max_y = self._get_minmax_y(ts_df = self._cie_data.loc[metrics],
                                               axis_type = axis_type,
                                               plot_type = plot_type,
                                               defaults  = defaults,
