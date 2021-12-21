@@ -21,8 +21,8 @@ FILE       = 'stocks.csv'
 DATA_PATH  = f'{URL}/{PATH}/{FILE}'
 PERIOD     = 'annual'
 
-USE_NAME = True
-TRUNC    = 15
+USE_NAME = True # use company name instead of ticker
+TRUNC    = 15   # of characters to keep in company name
 
 # Filter flags
 INDUSTRY = True
@@ -65,7 +65,7 @@ def extract_peers(target_ticker:str, filt:dict):
     stocks       = pd.read_csv(DATA_PATH)
     target_stock = stocks[stocks.symbol == target_ticker]
 
-    #Returns list of companies matching filter values tagged as True'''
+    #Returns list of company tickers matching filter values tagged as True'''
     for key in list(filt.keys()):
         if filt[key][1] is True:
             if key == 'mktCapUSD':
@@ -90,7 +90,9 @@ def build_metric_dataframe(cie, ticker:str, requested_metrics:list, year:str, id
 
 
 def aggregate_peers(target_ticker:str, peers:list, req_metrics:str, year:str):
-    '''Extract metrics for peers and aggregate'''
+    '''Extract metrics for peers and aggregate
+       Returns list of peer names & dataframe
+    '''
     idx = 'company'
     cie         = cny.Company(ticker          = target_ticker,
                               period          = PERIOD,
@@ -156,7 +158,7 @@ def aggregate_peers(target_ticker:str, peers:list, req_metrics:str, year:str):
     metric_df.index.name = None
     metric_df = metric_df.transpose()
     metric_df.index.name = 'metric'
-    return metric_df
+    return peer_list, metric_df
 
 
 if __name__ == '__main__':
@@ -186,13 +188,17 @@ if __name__ == '__main__':
     peers.discard(TARGET_TICKER) # If it exists, remove target stock to avoid duplicate
     print(f'main: {len(peers)} peers returned: {peers}\n')
 
-    df = aggregate_peers(target_ticker = TARGET_TICKER,
-                         peers         = peers,
-                         req_metrics   = mtr.bs_metrics,
-                         year          = YEAR,
-                         )
+    peer_list, df = aggregate_peers(target_ticker = TARGET_TICKER,
+                                    peers         = peers,
+                                    req_metrics   = mtr.bs_metrics,
+                                    year          = YEAR,
+                                    )
 
-    plotter     = c_pltr.ComparisonPlotter(base_cie=cie, cie_data=df, year=YEAR)
+    plotter = c_pltr.ComparisonPlotter(base_cie  = cie,
+                                       cie_data  = df,
+                                       peer_names = peer_list,
+                                       year      = YEAR,
+                                       )
     plot_type   = 'bs'
     output_file = os.path.join(DIR, prefix + f'_{plot_type}.html')
     subtitle    = mtr.metrics_set_names[plot_type + '_metrics']
