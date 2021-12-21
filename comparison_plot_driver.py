@@ -199,10 +199,11 @@ if __name__ == '__main__':
                                        peer_names = peer_list,
                                        year      = YEAR,
                                        )
-    plot_type   = 'bs'
-    output_file = os.path.join(DIR, prefix + f'_{plot_type}.html')
-    subtitle    = mtr.metrics_set_names[plot_type + '_metrics']
-    plotter.plot(plot_type = plot_type,
-                 subtitle  = subtitle,
-                 filename  = output_file,
-                 )
+    plot_types = ['bs']
+    for plot_type in plot_types:
+        output_file = os.path.join(DIR, prefix + f'_{plot_type}.html')
+        subtitle    = mtr.metrics_set_names[plot_type + '_metrics']
+        plotter.plot(plot_type = plot_type,
+                     subtitle  = subtitle,
+                     filename  = output_file,
+                     )
