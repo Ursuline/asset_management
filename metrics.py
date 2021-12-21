@@ -47,8 +47,8 @@ valuation_metrics = {'priceToBookRatio':0, 'peg':0,}
 valuation2_metrics = {'peRatio':0, 'evToebit':0, 'priceToSalesRatio':0,}
 dividend_metrics = {'dividendYield':0, 'payoutRatio':0,}
 dupont_metrics = {'returnOnEquity':.08, 'netProfitMargin':0, 'assetTurnover':0, 'equityMultiplier':0,}
-full_dupont_metrics = {'returnOnEquity':.08, 'netProfitMargin':0, 'assetTurnover':0, 'equityMultiplier':0, \
-                       'cashConv':0, 'roa':0, 'cashReturnOnEquity':0,}
+full_dupont_metrics = {'cashReturnOnEquity':0, 'returnOnEquity':.08, 'netProfitMargin':0, 'assetTurnover':0,\
+                       'equityMultiplier':0, 'cashConv':0, 'roa':0,}
 debt_metrics = {'debtToEquity':0.5, 'debtToAssets':0, 'interestCoverage':0, \
                 'shortTermCoverageRatios':0,}
 
