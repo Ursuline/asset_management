@@ -62,7 +62,7 @@ def extract_peers(target_ticker:str, filt:dict):
     expressed as fractions of the target market cap
     returns a set of tickers
     '''
-    stocks       = pd.read_csv(DATA_PATH)
+    stocks       = pd.read_csv(DATA_PATH) # load stock data from cloud storage
     target_stock = stocks[stocks.symbol == target_ticker]
 
     #Returns list of company tickers matching filter values tagged as True'''
@@ -77,10 +77,11 @@ def extract_peers(target_ticker:str, filt:dict):
     return set(stocks.symbol)
 
 
-def build_metric_dataframe(cie, ticker:str, requested_metrics:list, year:str, idx:str):
-    metric_df = pd.DataFrame.from_dict(cie.load_cie_metrics(year = year,
-                                                            requested_metrics = requested_metrics,
-                                                            ),
+def build_metric_dataframe(company:cny.Company, ticker:str, req_metrix:list, year:str, idx:str):
+    '''Returns a dataframe of company metrics'''
+    metric_df = pd.DataFrame.from_dict(company.load_cie_metrics(year = year,
+                                                                req_metrics = req_metrix,
+                                                                ),
                                        orient = 'index',
                                        )
     metric_df.columns    = [ticker]
@@ -89,120 +90,120 @@ def build_metric_dataframe(cie, ticker:str, requested_metrics:list, year:str, id
     return metric_df
 
 
-def aggregate_peers(target_ticker:str, peers:list, req_metrics:str, year:str):
+def aggregate_peers(target_ticker:str, peers:list, req_metrix:list, year:str):
     '''Extract metrics for peers and aggregate
        Returns list of peer names & dataframe
     '''
     idx = 'company'
-    cie         = cny.Company(ticker          = target_ticker,
-                              period          = PERIOD,
-                              expiration_date = EXPIRATION_DATE,
-                              )
+    company = cny.Company(ticker          = target_ticker,
+                          period          = PERIOD,
+                          expiration_date = EXPIRATION_DATE,
+                          )
     if USE_NAME is True:
-        ticker = cie.get_company_name()[0:TRUNC]
+        ticker = company.get_company_name()[0:TRUNC]
     else:
-        ticker = cie.TARGET_TICKER
-    peer_list = [ticker]
+        ticker = TARGET_TICKER
+    list_of_peers = [ticker]
     # Build first row with target company data
-    metric_df   = build_metric_dataframe(cie               = cie,
-                                         ticker            = ticker,
-                                         requested_metrics = req_metrics,
-                                         year              = year,
-                                         idx               = idx,
+    metric_df   = build_metric_dataframe(company    = company,
+                                         ticker     = ticker,
+                                         req_metrix = req_metrix,
+                                         year       = year,
+                                         idx        = idx,
                                          )
-    d_metric_df = cie.load_cie_metrics_over_time(metrics  = req_metrics,
+    d_metric_df = company.load_cie_metrics_over_time(metrics  = req_metrix,
                                                  yr_start = int(year),
                                                  yr_end   = int(year),
                                                  change   = True,
                                                  )
     # Add peer companies to  metric dataframe
     for peer in peers:
-        cie = cny.Company(ticker          = peer,
+        company = cny.Company(ticker          = peer,
                           period          = PERIOD,
                           expiration_date = EXPIRATION_DATE,
                           )
         if USE_NAME is True:
-            ticker = cie.get_company_name()[0:TRUNC]
+            ticker = company.get_company_name()[0:TRUNC]
         else:
             ticker = peer
-        peer_list.append(ticker)
-        temp_df   = build_metric_dataframe(cie               = cie,
-                                           ticker            = ticker,
-                                           requested_metrics = req_metrics,
-                                           year              = year,
-                                           idx               = idx,
+        list_of_peers.append(ticker)
+        temp_df   = build_metric_dataframe(company    = company,
+                                           ticker     = ticker,
+                                           req_metrix = req_metrix,
+                                           year       = year,
+                                           idx        = idx,
                                            )
         metric_df = metric_df.append(temp_df, ignore_index = False)
-
     # Add peer companies to change in metric dataframe
     for peer in peers:
-        cie = cny.Company(ticker          = peer,
+        company = cny.Company(ticker          = peer,
                           period          = PERIOD,
                           expiration_date = EXPIRATION_DATE,
                           )
         if USE_NAME is True:
-            ticker = cie.get_company_name()[0:TRUNC]
+            ticker = company.get_company_name()[0:TRUNC]
         else:
             ticker = peer
-        temp_df = cie.load_cie_metrics_over_time(metrics  = req_metrics,
+        temp_df = company.load_cie_metrics_over_time(metrics  = req_metrix,
                                                  yr_start = int(year),
                                                  yr_end   = int(year),
                                                  change   = True,
                                                  )
         temp_df.index.name = ticker
         d_metric_df = d_metric_df.append(temp_df, ignore_index = False)
-    d_metric_df.insert(0, idx, peer_list)
+    d_metric_df.insert(0, idx, list_of_peers)
     d_metric_df = d_metric_df.set_index(idx, drop=True)
     # merge metric and its change:
     metric_df = pd.merge(metric_df, d_metric_df, on=idx, how='inner')
     metric_df.index.name = None
     metric_df = metric_df.transpose()
     metric_df.index.name = 'metric'
-    return peer_list, metric_df
+    return list_of_peers, metric_df
 
 
 if __name__ == '__main__':
     prefix = f'{TARGET_TICKER}_peers_{YEAR}'
-    stocks = pd.read_csv(DATA_PATH)
-    target_stock = stocks[stocks.symbol == TARGET_TICKER]
+    securities = pd.read_csv(DATA_PATH)
+    target_security = securities[securities.symbol == TARGET_TICKER]
     cie = cny.Company(ticker          = TARGET_TICKER,
                       period          = PERIOD,
                       expiration_date = EXPIRATION_DATE,
                       )
-    filter_d = {'industry':          (target_stock['industry'].values[0], INDUSTRY),
-                'sector':            (target_stock['sector'].values[0], SECTOR),
-                'mktCapUSD':         (target_stock['mktCapUSD'].values[0], MKTCAP),
+    filter_d = {'industry':          (target_security['industry'].values[0], INDUSTRY),
+                'sector':            (target_security['sector'].values[0], SECTOR),
+                'mktCapUSD':         (target_security['mktCapUSD'].values[0], MKTCAP),
                 'mktCap_interval':   (MKT_CAP_WINDOW['lower'],
                                       MKT_CAP_WINDOW['upper'],
                                       ),
-                'currency':          (target_stock['currency'].values[0], CURRENCY),
-                'country':           (target_stock['country'].values[0], COUNTRY),
-                'exchangeShortName': (target_stock['exchangeShortName'].values[0], XCHANGE),
+                'currency':          (target_security['currency'].values[0], CURRENCY),
+                'country':           (target_security['country'].values[0], COUNTRY),
+                'exchangeShortName': (target_security['exchangeShortName'].values[0], XCHANGE),
                 }
     util.echo_filter(filt     = filter_d,
                      currency = cie.get_currency_symbol(),
                      )
-    peers = extract_peers(target_ticker = TARGET_TICKER,
-                          filt          = filter_d,
-                          )
-    peers.discard(TARGET_TICKER) # If it exists, remove target stock to avoid duplicate
-    print(f'main: {len(peers)} peers returned: {peers}\n')
-
-    peer_list, df = aggregate_peers(target_ticker = TARGET_TICKER,
-                                    peers         = peers,
-                                    req_metrics   = mtr.bs_metrics,
-                                    year          = YEAR,
-                                    )
-
-    plotter = c_pltr.ComparisonPlotter(base_cie  = cie,
-                                       cie_data  = df,
-                                       peer_names = peer_list,
-                                       year      = YEAR,
-                                       )
+    peer_list = extract_peers(target_ticker = TARGET_TICKER,
+                                  filt          = filter_d,
+                                  )
+    peer_list.discard(TARGET_TICKER) # If it exists, remove target stock to avoid duplicate
+    print(f'main: {len(peer_list)} peers returned: {peer_list}')
     plot_types = ['bs']
     for plot_type in plot_types:
+        metrics_set = f'{plot_type}_metrics'
+        req_metrics = list(getattr(mtr, metrics_set).keys())
+        print(f'{plot_type}_metrics: {req_metrics}\n')
+        peer_names, df = aggregate_peers(target_ticker = TARGET_TICKER,
+                                         peers         = peer_list,
+                                         req_metrix    = req_metrics,
+                                         year          = YEAR,
+                                         )
+        plotter = c_pltr.ComparisonPlotter(base_cie   = cie,
+                                           cie_data   = df,
+                                           peer_names = peer_names,
+                                           year       = YEAR,
+                                           )
         output_file = os.path.join(DIR, prefix + f'_{plot_type}.html')
-        subtitle    = mtr.metrics_set_names[plot_type + '_metrics']
+        subtitle    = mtr.metrics_set_names[metrics_set]
         plotter.plot(plot_type = plot_type,
                      subtitle  = subtitle,
                      filename  = output_file,

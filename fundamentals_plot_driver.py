@@ -39,10 +39,10 @@ if __name__ == '__main__':
         if plot_type.startswith('valuation'):
             subtitle += f' (5-year \u03b2={cie.get_beta():.1f})'
         plotter = f_pltr.FundamentalsPlotter(cie,
-                                             time_series = aggregate_metrics(metrics = mtr.get_metrics(f'{plot_type}_metrics'),
-                                                                             yr_0    = YEAR_0,
-                                                                             yr_1    = YEAR_1,
-                                                                             ),
+                                             cie_data = aggregate_metrics(metrics = mtr.get_metrics(f'{plot_type}_metrics'),
+                                                                          yr_0    = YEAR_0,
+                                                                          yr_1    = YEAR_1,
+                                                                          ),
                                             )
         plotter.plot(plot_type = plot_type,
                      subtitle  = subtitle,

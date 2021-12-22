@@ -17,23 +17,23 @@ from bokeh.models.widgets import Tabs, Panel
 from numerize import numerize
 import plotter as pltr
 import company as cny
+import metrics as mtr
+import plotter_defaults as dft
 
 
 class FundamentalsPlotter(pltr.Plotter):
     '''Plotter for fundamentals plots'''
-    def __init__(self, cie:cny.Company, time_series:pd.DataFrame):
-        self._time_series = time_series
-        self._cie = cie
-        super().__init__()
-        #print(self._cds.data)
+    def __init__(self, cie:cny.Company, cie_data:pd.DataFrame):
+        super().__init__(base_cie=cie, cie_data=cie_data)
+        self._cds = None
 
 
     def _build_cds(self):
         '''Builds column data source corresponding to the time series'''
-        self._time_series.replace(np.inf, 0, inplace=True) # replace infinity values with 0
-        self._time_series.index.name = 'year'
-        self._time_series.index      = self._time_series.index.astype('string')
-        self._cds                   = ColumnDataSource(data = self._time_series)
+        self._cie_data.replace(np.inf, 0, inplace=True) # replace infinity values with 0
+        self._cie_data.index.name = 'year'
+        self._cie_data.index      = self._cie_data.index.astype('string')
+        self._cds                   = ColumnDataSource(data = self._cie_data)
 
 
     def _build_title(self, fig, defaults:dict, subtitle:str):
@@ -47,7 +47,7 @@ class FundamentalsPlotter(pltr.Plotter):
                        'above',
                        )
         #title
-        fig.add_layout(Title(text=f'{self._cie.get_company_name()} ({self._cie.get_ticker()})',
+        fig.add_layout(Title(text=f'{self._base_cie.get_company_name()} ({self._base_cie.get_ticker()})',
                              align='center',
                              text_font_size=defaults['title_font_size'],
                              text_color=defaults['title_color'],
@@ -62,7 +62,7 @@ class FundamentalsPlotter(pltr.Plotter):
             if plot_type in ['wb', 'dupont', 'valuation', 'valuation2', 'dividend', 'debt', 'income2']:
                 y_axis_label = 'ratio'
             else:
-                y_axis_label = f'{self._cie.get_currency().capitalize()}'
+                y_axis_label = f'{self._base_cie.get_currency().capitalize()}'
             if axis_type == 'log':
                 fmt = '0.000a'
             else:
@@ -90,7 +90,7 @@ class FundamentalsPlotter(pltr.Plotter):
                             width  = bar_width,
                             source = source,
                             color  = defaults['palette'][i],
-                            legend_label = self._map_item_to_name(metric),
+                            legend_label = mtr.map_item_to_name(metric),
                             )
             self._build_bar_tooltip(fig=fig, barplot=vbar, means=means, metrics=metrics, plot_type=plot_type, defaults=defaults)
             x_pos += bar_shift
@@ -99,7 +99,7 @@ class FundamentalsPlotter(pltr.Plotter):
     def _build_line_plots(self, fig, defaults:dict, metrics:list, source:ColumnDataSource):
         '''Builds line plots (metrics change) on secondary axis'''
         for i, metric in enumerate(metrics):
-            legend_label = self._map_item_to_name(metric)
+            legend_label = mtr.map_item_to_name(metric)
             line = fig.line(x = 'year',
                             y = metric,
                             line_width = 1,
@@ -124,7 +124,7 @@ class FundamentalsPlotter(pltr.Plotter):
         '''Build tooltips for line plots'''
         tooltips = [('Growth','@year')]
         for metric in metrics:
-            tooltips.append( (self._map_item_to_name(metric),
+            tooltips.append( (mtr.map_item_to_name(metric),
                               f'@{metric}'+"{0.0%}")
                             )
             hover_tool = HoverTool(tooltips   = tooltips,
@@ -146,9 +146,9 @@ class FundamentalsPlotter(pltr.Plotter):
                               )
             fig.add_layout(mean_line)
             #Add annotation
-            text  = 'mean ' + self._map_item_to_name(metric).lower() + ': '
+            text  = 'mean ' + mtr.map_item_to_name(metric).lower() + ': '
             if plot_type in ['bs', 'income']:
-                text += f'{self._cie.get_currency_symbol()}'
+                text += f'{self._base_cie.get_currency_symbol()}'
             if plot_type in ['debt', 'dividend', 'income2']:
                 text += f'{mean:.1%}'
             else:
@@ -179,10 +179,10 @@ class FundamentalsPlotter(pltr.Plotter):
                 text = f' (mean = {means[metric]:.1%})'
                 value = prefix + f'@{metric}' + "{0.0%}" + text
             else:
-                prefix = f'{self._cie.get_currency_symbol()}'
+                prefix = f'{self._base_cie.get_currency_symbol()}'
                 text = f' (mean = {prefix}{numerize.numerize(means[metric], 1)})'
                 value = prefix + f'@{metric}' + "{0.0a}" + text
-            tooltip.append((self._map_item_to_name(metric), value))
+            tooltip.append((mtr.map_item_to_name(metric), value))
         hover_tool = HoverTool(tooltips   = tooltip,
                                show_arrow = True,
                                renderers  = [barplot],
@@ -254,18 +254,19 @@ class FundamentalsPlotter(pltr.Plotter):
         Generic time series bokeh plot for values (bars) and their growth (lines)
         plot_type: either of revenue, bs (balance sheet), dupont, wb ("warren buffet"), ...
         '''
-        defaults = self.get_plot_defaults()
-        cols     = self._time_series.columns.tolist()
+        defaults = dft.get_plot_defaults()
+        cols     = self._cie_data.columns.tolist()
         metrics   = cols[0:int(len(cols)/2)]
         d_metrics = cols[int(len(cols)/2):]
+        self._build_cds()
 
         # Build a dictionary of metrics and their respective means
-        means = dict(zip(metrics, self._time_series[metrics].mean().tolist()))
+        means = dict(zip(metrics, self._cie_data[metrics].mean().tolist()))
 
         panels = [] # 2 panels: linear and log plots
         for axis_type in ['linear', 'log']:
             # Initialize top plot (metrics / bars)
-            min_y, max_y = self._get_minmax_y(ts_df     = self._time_series[metrics],
+            min_y, max_y = self._get_minmax_y(ts_df     = self._cie_data[metrics],
                                               axis_type = axis_type,
                                               plot_type = plot_type,
                                               defaults  = defaults,
@@ -280,7 +281,7 @@ class FundamentalsPlotter(pltr.Plotter):
                                              x_range_name = 'year',
                                              )
             # Initialize bottom plot (changes / lines)
-            min_y, max_y = self._get_minmax_y(ts_df     = self._time_series[d_metrics],
+            min_y, max_y = self._get_minmax_y(ts_df     = self._cie_data[d_metrics],
                                               axis_type = axis_type,
                                               plot_type = plot_type,
                                               defaults  = defaults,
@@ -303,7 +304,7 @@ class FundamentalsPlotter(pltr.Plotter):
             # Add bars to top plot
             self._build_bar_plots(fig       = plot_top, # top blot is bar plot
                                   defaults  = defaults,
-                                  years     = self._time_series.index.tolist(),
+                                  years     = self._cie_data.index.tolist(),
                                   metrics   = metrics,
                                   plot_type = plot_type,
                                   means     = means,

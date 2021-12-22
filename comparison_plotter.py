@@ -14,24 +14,24 @@ from bokeh.models import HoverTool, Title
 from bokeh.models.widgets import Tabs, Panel
 import plotter as pltr
 import company as cny
-
+import metrics as mtr
+import plotter_defaults as dft
 
 class ComparisonPlotter(pltr.Plotter):
     '''Plotter for fundamentals plots'''
     def __init__(self, base_cie:cny.Company, cie_data:pd.DataFrame, peer_names:list, year:str):
-        self._base_cie   = base_cie
-        self._cie_data   = cie_data
+        super().__init__(base_cie=base_cie, cie_data=cie_data)
         self._peer_names = peer_names
         self._year       = year
         self._top_cds    = None # ColumnDataSource metrics
         self._bottom_cds = None # ColumnDataSource change in metrics
-        super().__init__()
+
 
     def _build_top_cds(self, dataframe):
         '''Build ColumnDataSource for top plot (metrics)'''
         dataframe         = dataframe.transpose()
         for column in dataframe.columns:
-            dataframe.rename(columns={column : self._map_item_to_name(column)}, inplace=True)
+            dataframe.rename(columns={column : mtr.map_item_to_name(column)}, inplace=True)
         dataframe         = dataframe.transpose()
         self._top_cds  = ColumnDataSource(data = dataframe)
 
@@ -41,7 +41,7 @@ class ComparisonPlotter(pltr.Plotter):
         dataframe         = dataframe.transpose()
         dataframe.columns = dataframe.columns.str.replace('d_', '')
         for column in dataframe.columns:
-            dataframe.rename(columns={column : self._map_item_to_name(column)}, inplace=True)
+            dataframe.rename(columns={column : mtr.map_item_to_name(column)}, inplace=True)
         dataframe         = dataframe.transpose()
         self._bottom_cds = ColumnDataSource(data = dataframe)
 
@@ -79,8 +79,7 @@ class ComparisonPlotter(pltr.Plotter):
                        'above',
                        )
 
-
-    def _build_top_bar_plot(self, fig, defaults:dict, companies:list, metrics:list, plot_type:str, source:ColumnDataSource):
+    def _build_bar_plot(self, fig, defaults:dict, companies:list, metrics:list, plot_type:str, position:str, source:ColumnDataSource):
         '''Builds bar plots (metrics) on primary axis'''
         x_pos = self._get_initial_x_offset(companies)
         bar_shift = self._get_bar_shift(companies)
@@ -100,44 +99,77 @@ class ComparisonPlotter(pltr.Plotter):
                             hatch_alpha = 95,
                             legend_label = company,
                             )
-            self._build_bar_tooltip(fig=fig,
-                                    barplot=vbar,
-                                    companies=companies,
-                                    plot_type=plot_type,
-                                    position='top',
-                                    defaults=defaults)
+            self._build_bar_tooltip(fig       = fig,
+                                    barplot   = vbar,
+                                    companies = companies,
+                                    plot_type = plot_type,
+                                    position  = position,
+                                    defaults  = defaults,
+                                    )
             x_pos += bar_shift
+            if position == 'bottom':
+                self._build_zero_growth_line(fig, defaults)
 
 
-    def _build_bottom_bar_plot(self, fig, defaults:dict, companies:list, metrics:list, source:ColumnDataSource):
-        ''''Builds bar plots (metrics) on primary axis'''
-        x_pos = self._get_initial_x_offset(companies)
-        bar_shift = self._get_bar_shift(companies)
-        bar_width = defaults['bar_width_shift_ratio'] * bar_shift
 
-        for i, company in enumerate(companies):
-            hatch_pattern = ' '
-            if i == 0:
-                hatch_pattern = '/'
-            vbar = fig.vbar(x      = dodge('metric', x_pos, FactorRange(*metrics)),
-                            bottom = 1e-6,
-                            top    = company,
-                            width  = bar_width,
-                            source = source,
-                            color  = defaults['palette'][i],
-                            hatch_pattern = hatch_pattern,
-                            hatch_color   = 'white',
-                            hatch_alpha   = 95,
-                            legend_label  = company,
-                            )
-            self._build_bar_tooltip(fig=fig,
-                                    barplot=vbar,
-                                    companies=companies,
-                                    plot_type='',
-                                    position='bottom',
-                                    defaults=defaults)
-            x_pos += bar_shift
-        self._build_zero_growth_line(fig, defaults)
+    # def _build_top_bar_plot(self, fig, defaults:dict, companies:list, metrics:list, plot_type:str, source:ColumnDataSource):
+    #     '''Builds bar plots (metrics) on primary axis'''
+    #     x_pos = self._get_initial_x_offset(companies)
+    #     bar_shift = self._get_bar_shift(companies)
+    #     bar_width = defaults['bar_width_shift_ratio'] * bar_shift
+    #     for i, company in enumerate(companies):
+    #         hatch_pattern = ' '
+    #         if i == 0:
+    #             hatch_pattern = '/'
+    #         vbar = fig.vbar(x      = dodge('metric', x_pos, FactorRange(*metrics)),
+    #                         bottom = 1e-6,
+    #                         top    = company,
+    #                         width  = bar_width,
+    #                         source = source,
+    #                         color  = defaults['palette'][i],
+    #                         hatch_pattern = hatch_pattern,
+    #                         hatch_color = 'white',
+    #                         hatch_alpha = 95,
+    #                         legend_label = company,
+    #                         )
+    #         self._build_bar_tooltip(fig=fig,
+    #                                 barplot=vbar,
+    #                                 companies=companies,
+    #                                 plot_type=plot_type,
+    #                                 position='top',
+    #                                 defaults=defaults)
+    #         x_pos += bar_shift
+
+
+    # def _build_bottom_bar_plot(self, fig, defaults:dict, companies:list, metrics:list, source:ColumnDataSource):
+    #     ''''Builds bar plots (metrics) on primary axis'''
+    #     x_pos = self._get_initial_x_offset(companies)
+    #     bar_shift = self._get_bar_shift(companies)
+    #     bar_width = defaults['bar_width_shift_ratio'] * bar_shift
+
+    #     for i, company in enumerate(companies):
+    #         hatch_pattern = ' '
+    #         if i == 0:
+    #             hatch_pattern = '/'
+    #         vbar = fig.vbar(x      = dodge('metric', x_pos, FactorRange(*metrics)),
+    #                         bottom = 1e-6,
+    #                         top    = company,
+    #                         width  = bar_width,
+    #                         source = source,
+    #                         color  = defaults['palette'][i],
+    #                         hatch_pattern = hatch_pattern,
+    #                         hatch_color   = 'white',
+    #                         hatch_alpha   = 95,
+    #                         legend_label  = company,
+    #                         )
+    #         self._build_bar_tooltip(fig=fig,
+    #                                 barplot=vbar,
+    #                                 companies=companies,
+    #                                 plot_type='',
+    #                                 position='bottom',
+    #                                 defaults=defaults)
+    #         x_pos += bar_shift
+    #     self._build_zero_growth_line(fig, defaults)
 
 
     def _build_bar_tooltip(self, fig, barplot, companies:list, plot_type:str, position:str, defaults:dict):
@@ -165,10 +197,12 @@ class ComparisonPlotter(pltr.Plotter):
         '''Generic time series bokeh plot for values (bars) and their growth (lines)
            plot_type: either of revenue, bs (balance sheet), dupont, wb ("warren buffet"), ...
            '''
-        defaults  = self.get_plot_defaults()
+        self._build_cds()
+        defaults  = dft.get_plot_defaults()
         rows      = self._cie_data.index.tolist()
         metrics   = rows[0:int(len(rows)/2)]
         d_metrics = rows[int(len(rows)/2):]
+
 
         panels = [] # 2 panels: linear and log plots
         for axis_type in ['linear', 'log']:
@@ -208,19 +242,22 @@ class ComparisonPlotter(pltr.Plotter):
                               subtitle = subtitle,
                               )
             # Add bars to top plot
-            self._build_top_bar_plot(fig       = plot_top,
-                                     defaults  = defaults,
-                                     companies = self._peer_names,
-                                     metrics   = self._map_items_to_names(metrics),
-                                     plot_type = plot_type,
-                                     source    = self._top_cds,
-                                     )
+            self._build_bar_plot(fig       = plot_top,
+                                 defaults  = defaults,
+                                 companies = self._peer_names,
+                                 metrics   = mtr.map_items_to_names(metrics),
+                                 plot_type = plot_type,
+                                 source    = self._top_cds,
+                                 position  = 'top',
+                                 )
             # Add growth bars to bottom plot
-            self._build_bottom_bar_plot(fig       = plot_bottom,
-                                        defaults  = defaults,
-                                        companies = self._peer_names,
-                                        metrics   = self._map_items_to_names(metrics),
-                                        source    = self._bottom_cds,
+            self._build_bar_plot(fig       = plot_bottom,
+                                 defaults  = defaults,
+                                 companies = self._peer_names,
+                                 metrics   = mtr.map_items_to_names(metrics),
+                                 source    = self._bottom_cds,
+                                 plot_type = '',
+                                 position  = 'bottom',
                                         )
             # Format axes and legends on top & bottom plots
             for plot in [plot_top, plot_bottom]:
