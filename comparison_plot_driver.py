@@ -13,13 +13,7 @@ import utilities as util
 import metrics as mtr
 import company as cny
 import comparison_plotter as c_pltr
-
-DIR        = '/Users/charly/Documents/projects/asset_management/data'
-URL        = 'https://ml-finance.ams3.digitaloceanspaces.com'
-PATH       = 'fundamentals'
-FILE       = 'stocks.csv'
-DATA_PATH  = f'{URL}/{PATH}/{FILE}'
-PERIOD     = 'annual'
+import plotter_defaults as dft
 
 USE_NAME = True # use company name instead of ticker
 TRUNC    = 15   # of characters to keep in company name
@@ -62,13 +56,14 @@ def extract_peers(target_ticker:str, filt:dict):
     expressed as fractions of the target market cap
     returns a set of tickers
     '''
-    stocks       = pd.read_csv(DATA_PATH) # load stock data from cloud storage
+    stocks       = pd.read_csv(dft.get_data_path()) # load stock data from cloud storage
     target_stock = stocks[stocks.symbol == target_ticker]
 
     #Returns list of company tickers matching filter values tagged as True'''
     for key in list(filt.keys()):
         if filt[key][1] is True:
             if key == 'mktCapUSD':
+                #CHECK THAT THIS WORKS
                 lower  = target_stock[key].values[0] * filt['mktCap_interval'][0]
                 upper  = target_stock[key].values[0] * filt['mktCap_interval'][1]
                 stocks = stocks[(stocks[key] >= lower) & (stocks[key] <= upper)]
@@ -96,7 +91,7 @@ def aggregate_peers(target_ticker:str, peers:list, req_metrix:list, year:str):
     '''
     idx = 'company'
     company = cny.Company(ticker          = target_ticker,
-                          period          = PERIOD,
+                          period          = dft.PERIOD,
                           expiration_date = EXPIRATION_DATE,
                           )
     if USE_NAME is True:
@@ -119,8 +114,8 @@ def aggregate_peers(target_ticker:str, peers:list, req_metrix:list, year:str):
     # Add peer companies to  metric dataframe
     for peer in peers:
         company = cny.Company(ticker          = peer,
-                          period          = PERIOD,
-                          expiration_date = EXPIRATION_DATE,
+                              period          = dft.PERIOD,
+                              expiration_date = EXPIRATION_DATE,
                           )
         if USE_NAME is True:
             ticker = company.get_company_name()[0:TRUNC]
@@ -136,8 +131,8 @@ def aggregate_peers(target_ticker:str, peers:list, req_metrix:list, year:str):
         metric_df = metric_df.append(temp_df, ignore_index = False)
     # Add peer companies to change in metric dataframe
     for peer in peers:
-        company = cny.Company(ticker          = peer,
-                          period          = PERIOD,
+        company = cny.Company(ticker      = peer,
+                          period          = dft.PERIOD,
                           expiration_date = EXPIRATION_DATE,
                           )
         if USE_NAME is True:
@@ -163,10 +158,10 @@ def aggregate_peers(target_ticker:str, peers:list, req_metrix:list, year:str):
 
 if __name__ == '__main__':
     prefix = f'{TARGET_TICKER}_peers_{YEAR}'
-    securities = pd.read_csv(DATA_PATH)
+    securities = pd.read_csv(dft.get_data_path())
     target_security = securities[securities.symbol == TARGET_TICKER]
     cie = cny.Company(ticker          = TARGET_TICKER,
-                      period          = PERIOD,
+                      period          = dft.PERIOD,
                       expiration_date = EXPIRATION_DATE,
                       )
     filter_d = {'industry':          (target_security['industry'].values[0], INDUSTRY),
@@ -187,11 +182,10 @@ if __name__ == '__main__':
                                   )
     peer_list.discard(TARGET_TICKER) # If it exists, remove target stock to avoid duplicate
     print(f'main: {len(peer_list)} peers returned: {peer_list}')
-    plot_types = ['bs']
+    plot_types = ['bs', 'income', 'income2', 'wb', 'dupont']
     for plot_type in plot_types:
         metrics_set = f'{plot_type}_metrics'
         req_metrics = list(getattr(mtr, metrics_set).keys())
-        print(f'{plot_type}_metrics: {req_metrics}\n')
         peer_names, df = aggregate_peers(target_ticker = TARGET_TICKER,
                                          peers         = peer_list,
                                          req_metrix    = req_metrics,
@@ -202,7 +196,8 @@ if __name__ == '__main__':
                                            peer_names = peer_names,
                                            year       = YEAR,
                                            )
-        output_file = os.path.join(DIR, prefix + f'_{plot_type}.html')
+        output_file = os.path.join(dft.get_plot_directory(),
+                                   prefix + f'_{plot_type}.html')
         subtitle    = mtr.metrics_set_names[metrics_set]
         plotter.plot(plot_type = plot_type,
                      subtitle  = subtitle,

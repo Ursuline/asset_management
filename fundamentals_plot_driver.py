@@ -12,8 +12,7 @@ import pandas as pd
 import company as cny
 import metrics as mtr
 import fundamentals_plotter as f_pltr
-
-DIR = '/Users/charly/Documents/projects/asset_management/data'
+import plotter_defaults as dft
 
 EXPIRATION_DATE = '2021-12-31'
 TICKER   = 'MC.PA'
@@ -46,5 +45,7 @@ if __name__ == '__main__':
                                             )
         plotter.plot(plot_type = plot_type,
                      subtitle  = subtitle,
-                     filename  = os.path.join(DIR, prefix + f'_{plot_type}.html'),
+                     filename  = os.path.join(dft.get_plot_directory(),
+                                              prefix + f'_{plot_type}.html',
+                                              ),
                      )
