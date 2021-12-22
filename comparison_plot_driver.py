@@ -178,12 +178,12 @@ if __name__ == '__main__':
                      currency = cie.get_currency_symbol(),
                      )
     peer_list = extract_peers(target_ticker = TARGET_TICKER,
-                                  filt          = filter_d,
-                                  )
+                              filt          = filter_d,
+                              )
     peer_list.discard(TARGET_TICKER) # If it exists, remove target stock to avoid duplicate
-    print(f'main: {len(peer_list)} peers returned: {peer_list}')
-    plot_types = ['bs', 'income', 'income2', 'wb', 'dupont']
-    for plot_type in plot_types:
+    print(f'{len(peer_list)} peers returned: {peer_list}')
+
+    for plot_type in mtr.get_metric_set_prefixes():
         metrics_set = f'{plot_type}_metrics'
         req_metrics = list(getattr(mtr, metrics_set).keys())
         peer_names, df = aggregate_peers(target_ticker = TARGET_TICKER,
