@@ -9,7 +9,14 @@ Handles default values for Plotter class
 
 @author: charly
 """
+import os
 from bokeh.palettes import Dark2_8
+
+PLOT_DIR   = '/Users/charly/Documents/projects/asset_management/plots'
+URL        = 'https://ml-finance.ams3.digitaloceanspaces.com/fundamentals'
+FILE       = 'stocks.csv'
+DATA_PATH  =  os.path.join(URL, FILE)
+PERIOD     = 'annual'
 
 # General
 THEME = 'light_minimal'
@@ -65,6 +72,12 @@ BENCHMARK_FONT_SIZE = '9pt'
 #Labels
 LABEL_ALPHA = .75
 LABEL_FONT_SIZE = '10pt'
+
+def get_plot_directory():
+    return PLOT_DIR
+
+def get_data_path():
+    return DATA_PATH
 
 def get_plot_defaults():
     '''Returns a dictionary of default plot settings'''
