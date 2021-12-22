@@ -25,32 +25,37 @@ roe = NI / Equity & croe = FCF / Equity
 """
 import inspect
 
+
 # Set name and plot title
-metrics_set_names = {#'mktcap_metrics': 'Assets, Revenue & Market Cap',
-                     'wb_metrics':'"Warren Buffet" metrics',
-                     'dupont_metrics': 'Dupont metrics',
-                     'bs_metrics': 'Balance sheet metrics',
-                     'income_metrics': 'Income & Free cash flow metrics',
-                     'income2_metrics': 'Income & Free cash flow metrics #2',
-                     'valuation_metrics': 'Valuation metrics',
-                     'valuation2_metrics': 'Valuation metrics #2',
-                     'dividend_metrics': 'Dividend metrics',
-                     'debt_metrics': 'Debt metrics',
+metrics_set_names = {'bs_metrics'         : 'Balance sheet metrics',
+                     'income_metrics'     : 'Income & Free cash flow metrics',
+                     'income2_metrics'    : 'Income & Free cash flow metrics #2',
+                     'wb_metrics'         :'"Warren Buffet" metrics',
+                     'dupont_metrics'     : 'Dupont metrics',
+                     'debt_metrics'       : 'Debt metrics',
+                     'valuation_metrics'  : 'Valuation metrics',
+                     'valuation2_metrics' : 'Valuation metrics #2',
+                     'dividend_metrics'   : 'Dividend metrics',
                      }
 
-#mktcap_metrics = {'totalAssets': 0., 'revenue': 0., 'marketCap': 0.,}
-bs_metrics = {'totalAssets': 0., 'totalLiabilities': 0., 'totalStockholdersEquity': 0.,}
-income_metrics = {'revenue': 0., 'ebit': 0., 'freeCashFlow': 0.,}
-income2_metrics = {'grossProfitRatio': 0., 'ebitPerRevenue': 0., 'freeCashFlowToRevenue': 0.,'croic':0}
-wb_metrics  = {'returnOnEquity':.08, 'debtToEquity':0.5, 'currentRatio':1.5,}
-valuation_metrics = {'priceToBookRatio':0, 'peg':0,}
+def get_metric_set_names():
+    return list(metrics_set_names.keys())
+
+def get_metric_set_prefixes():
+    return [name.replace('_metrics', '') for name in get_metric_set_names()]
+
+bs_metrics         = {'totalAssets': 0., 'totalLiabilities': 0., 'totalStockholdersEquity': 0.,}
+income_metrics     = {'revenue': 0., 'ebit': 0., 'freeCashFlow': 0.,}
+income2_metrics    = {'grossProfitRatio': 0., 'ebitPerRevenue': 0., 'freeCashFlowToRevenue': 0.,'croic':0}
+wb_metrics         = {'returnOnEquity':.08, 'debtToEquity':0.5, 'currentRatio':1.5,}
+dupont_metrics     = {'returnOnEquity':.08, 'netProfitMargin':0, 'assetTurnover':0, 'equityMultiplier':0,}
+debt_metrics       = {'debtToEquity':0.5, 'debtToAssets':0, 'interestCoverage':0, \
+                      'shortTermCoverageRatios':0,}
+valuation_metrics  = {'priceToBookRatio':0, 'peg':0,}
 valuation2_metrics = {'peRatio':0, 'evToebit':0, 'priceToSalesRatio':0,}
-dividend_metrics = {'dividendYield':0, 'payoutRatio':0,}
-dupont_metrics = {'returnOnEquity':.08, 'netProfitMargin':0, 'assetTurnover':0, 'equityMultiplier':0,}
-full_dupont_metrics = {'cashReturnOnEquity':0, 'returnOnEquity':.08, 'netProfitMargin':0, 'assetTurnover':0,\
-                       'equityMultiplier':0, 'cashConv':0, 'roa':0,}
-debt_metrics = {'debtToEquity':0.5, 'debtToAssets':0, 'interestCoverage':0, \
-                'shortTermCoverageRatios':0,}
+dividend_metrics   = {'dividendYield':0, 'payoutRatio':0,}
+full_dupont_metrics = {'cashReturnOnEquity':0, 'returnOnEquity':.08, 'netProfitMargin':0, \
+                       'assetTurnover':0, 'equityMultiplier':0, 'cashConv':0, 'roa':0,}
 
 captions = {'assetTurnover':     'Asset turnover: Sales / Mean total assets',
             'cashConversion':    'Cash conversion: Free cash flow / Net income',
