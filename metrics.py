@@ -137,3 +137,51 @@ def get_metrics(group:str, metric:str=None):
         raise ValueError(msg)
     except:
         raise ValueError(f'metrics.py > get_metrics: unknown metric "{group}"')
+
+#REFACTOR AS A COMPREHENSION
+def map_items_to_names(items:list):
+    '''Recursively calls map_item_to_name() on elements in items'''
+    names = []
+    for item in items:
+        names.append(map_item_to_name(item))
+    return names
+
+
+def map_item_to_name(item:str):
+    '''Converts column name to readable metric (WIP)'''
+    if item.startswith('d_'):
+        return '\u0394 ' + map_item_to_name(item[2:])
+    itemdict = {'assetturnover':           'Asset turnover',
+                'croic':                   'Cash ROIC',
+                'currentratio':            'Current ratio',
+                'debttoassets':            'Debt-to-assets ratio',
+                'debttoequity':            'Debt-to-equity ratio',
+                'dividendyield':           'Dividend yield',
+                'ebit':                    'EBIT',
+                'ebitperrevenue':          'EBIT-to-revenue',
+                'evtoebit':                'E.V.-to-ebit',
+                'equitymultiplier':        'Equity multiplier',
+                'freecashflow':            'FCF',
+                'grossprofitratio':        'Gross profit margin',
+                'interestcoverage':        'Interest coverage',
+                'freecashflowtorevenue':   'FCF-to-revenue',
+                'netdebttoebit':           'Net debt-to-ebit',
+                'netprofitmargin':         'Net profit margin',
+                'payoutratio':             'Payout ratio',
+                'peg':                     'P/E-to-growth',
+                'peratio':                 'P/E ratio',
+                'pricetobookratio':        'Price-to-book ratio',
+                'pricetosalesratio':       'Price-to-sales ratio',
+                'returnonequity':          'ROE',
+                'revenue':                 'Revenue',
+                'roic':                    'ROIC',
+                'shorttermcoverageratios': 'Short term coverage ratio',
+                'totalassets':             'Total assets',
+                'totalliabilities':        'Total liabilities',
+                'totalstockholdersequity': "Total stockholders' equity",
+                }
+    try:
+        return itemdict[item.lower()]
+    except:
+        print(f'map_item_to_name(): No mapping for item "{item}"')
+        return ''
