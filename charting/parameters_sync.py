@@ -38,8 +38,8 @@ PORTFOLIO_FILES  = ['indices.csv', 'indices_short.csv']
 # Holdings
 PORTFOLIO_FILES += ['charly_crypto.csv', 'charly_crypto_short.csv']
 PORTFOLIO_FILES += ['charly_saxo.csv']
-PORTFOLIO_FILES += ['saxo_cycliques.csv']
-PORTFOLIO_FILES += ['pea_mc.csv', 'adrien.csv']
+PORTFOLIO_FILES += ['saxo_cycliques.csv', 'pea_mc.csv']
+PORTFOLIO_FILES += ['adrien.csv']
 PORTFOLIO_FILES += ['pea_pme.csv', 'abs.csv']
 # Prospective
 PORTFOLIO_FILES += ['watchlist.csv', 'watchlist_short.csv']
