@@ -113,19 +113,21 @@ class ComparisonPlotter(pltr.Plotter):
 
     def _build_bar_tooltip(self, fig, barplot, companies:list, plot_type:str, position:str, defaults:dict):
         '''Build tooltips for bar plots'''
+        if position == 'top':
+            tooltip = [('','@metric')]
+        else:
+            tooltip = [('','\u0394@metric')]
 
         for company in companies:
             if position == 'top':
-                tooltip = [('','@metric')]
-                if plot_type in ['income', 'bs']:
+                if plot_type in ['income', 'bs']: # currency plots
                     prefix = f'{self._base_cie.get_currency_symbol()}'
                     value =  prefix + '@{' + company + '}{0.0a}'
-                elif plot_type in ['income2']:
+                elif plot_type in ['income2']: # % plots
                     value =  '@{' + company + '}{0.0%}'
-                else:
+                else: # ratio plots
                     value =  '@{' + company + '}{0.0a}'
             elif position == 'bottom':
-                tooltip = [('','\u0394@metric')]
                 value =  '@{' + company + '}{0.0%}'
             tooltip.append((company, value))
         hover_tool = HoverTool(tooltips   = tooltip,
