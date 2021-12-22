@@ -111,80 +111,23 @@ class ComparisonPlotter(pltr.Plotter):
                 self._build_zero_growth_line(fig, defaults)
 
 
-
-    # def _build_top_bar_plot(self, fig, defaults:dict, companies:list, metrics:list, plot_type:str, source:ColumnDataSource):
-    #     '''Builds bar plots (metrics) on primary axis'''
-    #     x_pos = self._get_initial_x_offset(companies)
-    #     bar_shift = self._get_bar_shift(companies)
-    #     bar_width = defaults['bar_width_shift_ratio'] * bar_shift
-    #     for i, company in enumerate(companies):
-    #         hatch_pattern = ' '
-    #         if i == 0:
-    #             hatch_pattern = '/'
-    #         vbar = fig.vbar(x      = dodge('metric', x_pos, FactorRange(*metrics)),
-    #                         bottom = 1e-6,
-    #                         top    = company,
-    #                         width  = bar_width,
-    #                         source = source,
-    #                         color  = defaults['palette'][i],
-    #                         hatch_pattern = hatch_pattern,
-    #                         hatch_color = 'white',
-    #                         hatch_alpha = 95,
-    #                         legend_label = company,
-    #                         )
-    #         self._build_bar_tooltip(fig=fig,
-    #                                 barplot=vbar,
-    #                                 companies=companies,
-    #                                 plot_type=plot_type,
-    #                                 position='top',
-    #                                 defaults=defaults)
-    #         x_pos += bar_shift
-
-
-    # def _build_bottom_bar_plot(self, fig, defaults:dict, companies:list, metrics:list, source:ColumnDataSource):
-    #     ''''Builds bar plots (metrics) on primary axis'''
-    #     x_pos = self._get_initial_x_offset(companies)
-    #     bar_shift = self._get_bar_shift(companies)
-    #     bar_width = defaults['bar_width_shift_ratio'] * bar_shift
-
-    #     for i, company in enumerate(companies):
-    #         hatch_pattern = ' '
-    #         if i == 0:
-    #             hatch_pattern = '/'
-    #         vbar = fig.vbar(x      = dodge('metric', x_pos, FactorRange(*metrics)),
-    #                         bottom = 1e-6,
-    #                         top    = company,
-    #                         width  = bar_width,
-    #                         source = source,
-    #                         color  = defaults['palette'][i],
-    #                         hatch_pattern = hatch_pattern,
-    #                         hatch_color   = 'white',
-    #                         hatch_alpha   = 95,
-    #                         legend_label  = company,
-    #                         )
-    #         self._build_bar_tooltip(fig=fig,
-    #                                 barplot=vbar,
-    #                                 companies=companies,
-    #                                 plot_type='',
-    #                                 position='bottom',
-    #                                 defaults=defaults)
-    #         x_pos += bar_shift
-    #     self._build_zero_growth_line(fig, defaults)
-
-
     def _build_bar_tooltip(self, fig, barplot, companies:list, plot_type:str, position:str, defaults:dict):
         '''Build tooltips for bar plots'''
-        tooltip = [('','@metric')]
+
         for company in companies:
-            prefix = ''
             if position == 'top':
-                if plot_type not in ['wb', 'dupont', 'valuation', 'valuation2']:
+                tooltip = [('','@metric')]
+                if plot_type in ['income', 'bs']:
                     prefix = f'{self._base_cie.get_currency_symbol()}'
-                value =  prefix + '@{' + company + '}{0.0a}'
-                tooltip.append((company, value))
+                    value =  prefix + '@{' + company + '}{0.0a}'
+                elif plot_type in ['income2']:
+                    value =  '@{' + company + '}{0.0%}'
+                else:
+                    value =  '@{' + company + '}{0.0a}'
             elif position == 'bottom':
+                tooltip = [('','\u0394@metric')]
                 value =  '@{' + company + '}{0.0%}'
-                tooltip.append((company, value))
+            tooltip.append((company, value))
         hover_tool = HoverTool(tooltips   = tooltip,
                                show_arrow = True,
                                renderers  = [barplot],
