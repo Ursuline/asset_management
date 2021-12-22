@@ -19,7 +19,7 @@ TICKER   = 'MC.PA'
 YEAR_0   = int('2013')
 YEAR_1   = int('2020')
 
-def aggregate_metrics(metrics:str, yr_0:int, yr_1:int):
+def aggregate_metrics(cie:cny.Compay, metrics:str, yr_0:int, yr_1:int):
     '''Extract metrics corresponding to plot type and aggregate with changes'''
     return pd.merge(cie.load_cie_metrics_over_time(metrics=metrics, yr_start=yr_0, yr_end=yr_1, change=False),
                     cie.load_cie_metrics_over_time(metrics=metrics, yr_start=yr_0, yr_end=yr_1, change=True),
@@ -30,15 +30,15 @@ def aggregate_metrics(metrics:str, yr_0:int, yr_1:int):
 
 if __name__ == '__main__':
     prefix = f'{TICKER}_{YEAR_0}-{YEAR_1}_{EXPIRATION_DATE}'
-    cie = cny.Company(ticker=TICKER, period='annual', expiration_date=EXPIRATION_DATE)
+    company = cny.Company(ticker=TICKER, period='annual', expiration_date=EXPIRATION_DATE)
 
-    plot_types = ['bs', 'income', 'income2', 'wb', 'dupont', 'debt', 'valuation', 'valuation2', 'dividend']
-    for plot_type in plot_types:
+    for plot_type in mtr.get_metric_set_prefixes():
         subtitle  = mtr.metrics_set_names[f'{plot_type}_metrics']
         if plot_type.startswith('valuation'):
-            subtitle += f' (5-year \u03b2={cie.get_beta():.1f})'
-        plotter = f_pltr.FundamentalsPlotter(cie,
-                                             cie_data = aggregate_metrics(metrics = mtr.get_metrics(f'{plot_type}_metrics'),
+            subtitle += f' (5-year \u03b2={company.get_beta():.1f})'
+        plotter = f_pltr.FundamentalsPlotter(cie      = company,
+                                             cie_data = aggregate_metrics(cie     = company,
+                                                                          metrics = mtr.get_metrics(f'{plot_type}_metrics'),
                                                                           yr_0    = YEAR_0,
                                                                           yr_1    = YEAR_1,
                                                                           ),
