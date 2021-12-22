@@ -734,7 +734,7 @@ class Company:
             yr_start -= 1 # start one year prior to get relative change
 
         for year in range(yr_start, yr_end + 1):
-            dic_yr = self.load_cie_metrics(year, metrics)
+            dic_yr = self.load_cie_metrics(year=year, req_metrics=metrics)
             dic_met[year]= dic_yr
         dfr = pd.DataFrame(dic_met).transpose()
         dfr.index.name = 'year'
@@ -751,10 +751,10 @@ class Company:
         return dfr
 
     # REFACTOR THIS: THERE'S GOTTA BE A BETTER WAY
-    def load_cie_metrics(self, year:str, requested_metrics:list):
+    def load_cie_metrics(self, year:str, req_metrics:list):
         '''load metrics values corresponding to keys in cie_metrics, save as dictionary & return'''
         cie_metrics = {}
-        for metric in requested_metrics:
+        for metric in req_metrics:
             if metric == 'assetTurnover':
                 cie_metrics['assetTurnover'] = self.get_assetTurnover(year=year)
             elif metric =='cashConv':
