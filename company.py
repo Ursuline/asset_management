@@ -353,7 +353,7 @@ class Company:
             return 0
         else :
             data.index = data.index.astype(int)
-            return data.loc[year]
+            return data.loc[int(year)]
 
 
     def get_netIncome(self, year:str, change:bool=False):
@@ -430,7 +430,7 @@ class Company:
             return 0
         else :
             data.index = data.index.astype(int)
-            return data.loc[year]
+            return data.loc[int(year)]
 
 
     def get_freeCashFlow(self, year:str, change:bool=False):
@@ -454,7 +454,7 @@ class Company:
             return 0
         else :
             data.index = data.index.astype(int)
-            query = data.loc[year]
+            query = data.loc[int(year)]
             if query is None:
                 print(f'_get_financial_ratios_item(): item {item} is None in the data set')
                 return 0
@@ -528,7 +528,7 @@ class Company:
             return 0
         else :
             data.index = data.index.astype(int)
-            return data.loc[year]
+            return data.loc[int(year)]
 
 
     def get_enterpriseValue(self, year:str, change:bool=False):
