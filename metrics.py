@@ -184,4 +184,4 @@ def map_item_to_name(item:str):
         return itemdict[item.lower()]
     except:
         print(f'map_item_to_name(): No mapping for item "{item}"')
-        return ''
+        return item # return as is if not in dictionary

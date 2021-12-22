@@ -18,6 +18,7 @@ import utilities as util
 import metrics as mtr
 import company as cny
 
+
 class Plotter:
     '''Super class for plots'''
     def __init__(self, base_cie:cny.Company, cie_data:pd.DataFrame):
@@ -48,53 +49,6 @@ class Plotter:
             y_axis_label = 'growth'
             fmt = '0.%'
         return y_axis_label, fmt
-
-    # @staticmethod
-    # def get_plot_defaults():
-    #     '''Returns a dictionary of default plot settings'''
-    #     defaults = {}
-    #     defaults['plot_width']  = 1200
-    #     defaults['plot_height'] = 525
-    #     defaults['plot_bottom_height'] = 150
-    #     defaults['theme']     = 'light_minimal'
-    #     defaults['palette']   = Dark2_8
-    #     defaults['text_font'] = 'helvetica'
-    #     # Title
-    #     defaults['title_color']        = '#333333'
-    #     defaults['title_font_size']    = '22pt'
-    #     defaults['subtitle_font_size'] = '18pt'
-    #     # Legend
-    #     defaults['legend_font_size'] = '11pt'
-    #     # Bars
-    #     defaults['bar_width_shift_ratio'] = .9 # bar width/shift
-    #     # Lines
-    #     defaults['line_dash'] = ''
-    #     defaults['zero_growth_line_color']     = 'red'
-    #     defaults['zero_growth_line_thickness'] = .5
-    #     defaults['zero_growth_line_dash']      = 'dashed'
-    #     defaults['zero_growth_font_size']      = '8pt'
-    #     defaults['zero_growth_font_color']     = 'dimgray'
-    #     # WB Benchmarks:
-    #     defaults['returnOnEquity_benchmark'] = .08
-    #     defaults['debtToEquity_benchmark']   = .5
-    #     defaults['currentRatio_benchmark']   = 1.5
-    #     defaults['priceToBookRatio_benchmark'] = 1.0
-    #     defaults['pegRatio_benchmark']        = 1.0
-    #     defaults['benchmark_line_dash']      = 'dashed'
-    #     defaults['benchmark_line_thickness'] = 2
-    #     defaults['benchmark_font_size']      = '9pt'
-    #     # Means
-    #     defaults['means_line_dash']      = 'dotted'
-    #     defaults['means_line_thickness'] = 1
-    #     defaults['means_font_size']      = '9pt'
-
-    #     defaults['label_alpha']     = .75
-    #     defaults['label_font_size'] = '10pt'
-    #     # Axes
-    #     defaults['top_axis_label_text_font_size']    = '12pt'
-    #     defaults['bottom_axis_label_text_font_size'] = '8pt'
-    #     defaults['axis_label_text_color']            = 'dimgray'
-    #     return defaults
 
     @staticmethod
     def _initialize_plot(position:str, axis_type:str, defaults:dict, source:ColumnDataSource, x_range_name:str ,min_y:float, max_y:float, linked_figure=None):
