@@ -47,7 +47,7 @@ class ComparisonPlotter(pltr.Plotter):
 
 
     def _build_cds(self):
-        '''Builds column data source corresponding to the time series'''
+        '''Builds 2 column data sources corresponding to the time series'''
         rows      = self._cie_data.index.tolist()
         metrics   = rows[0:int(len(rows)/2)]
         d_metrics = rows[int(len(rows)/2):]
@@ -95,15 +95,15 @@ class ComparisonPlotter(pltr.Plotter):
                             source = source,
                             color  = self._defaults['palette'][i],
                             hatch_pattern = hatch_pattern,
-                            hatch_color = 'white',
-                            hatch_alpha = 95,
-                            legend_label = company,
+                            hatch_color   = 'white',
+                            hatch_alpha   = 95,
+                            legend_label  = company,
                             )
-            self._build_bar_tooltip(fig       = fig,
-                                    barplot   = vbar,
-                                    companies = companies,
+            self._build_bar_tooltip(fig        = fig,
+                                    barplot    = vbar,
+                                    companies  = companies,
                                     metric_set = metric_set,
-                                    position  = position,
+                                    position   = position,
                                     )
             x_pos += bar_shift
             if position == 'bottom':
@@ -112,14 +112,14 @@ class ComparisonPlotter(pltr.Plotter):
 
     def _build_bar_tooltip(self, fig, barplot, companies:list, metric_set:str, position:str):
         '''Build tooltips for bar plots'''
+        fmt = mtr.get_tooltip_format(metric_set) # tooltip format
         #First row of tooltips is the metric name
         if position == 'top':
             tooltip = [('','@metric')]
         else: #botom plot is change
             year = int(self._year)
             tooltip = [('', '\u0394 @metric'),
-                       ('', f'({year-1}-{year})'),]
-        fmt = mtr.get_tooltip_format(metric_set) # tooltip format
+                       ('', f'({year-1}-{year})'),] #reference year in 2nd row
 
         for company in companies:
             prefix = ''
@@ -150,8 +150,8 @@ class ComparisonPlotter(pltr.Plotter):
 
         panels = [] # 2 panels: linear and log plots
         for axis_type in ['linear', 'log']:
-            min_y, max_y = self._get_minmax_y(ts_df     = self._cie_data.loc[metrics],
-                                              axis_type = axis_type,
+            min_y, max_y = self._get_minmax_y(ts_df      = self._cie_data.loc[metrics],
+                                              axis_type  = axis_type,
                                               metric_set = metric_set,
                                               plot_position = 'top',
                                               )
@@ -163,8 +163,8 @@ class ComparisonPlotter(pltr.Plotter):
                                              x_range_name = 'metric',
                                              )
             # Initialize bottom plot (changes / lines)
-            min_y, max_y = self._get_minmax_y(ts_df     = self._cie_data.loc[d_metrics],
-                                              axis_type = axis_type,
+            min_y, max_y = self._get_minmax_y(ts_df      = self._cie_data.loc[d_metrics],
+                                              axis_type  = axis_type,
                                               metric_set = metric_set,
                                               plot_position = 'bottom',
                                               )
@@ -173,7 +173,7 @@ class ComparisonPlotter(pltr.Plotter):
                                                 max_y     = max_y,
                                                 axis_type = 'linear',
                                                 source    = self._bottom_cds,
-                                                x_range_name = 'metric',
+                                                x_range_name  = 'metric',
                                                 linked_figure = plot_top
                                                 )
             # Add title to top plot
@@ -181,34 +181,34 @@ class ComparisonPlotter(pltr.Plotter):
                               subtitle = subtitle,
                               )
             # Add bars to top plot
-            self._build_bar_plot(fig       = plot_top,
-                                 companies = self._peer_names,
-                                 metrics   = mtr.map_items_to_names(metrics),
+            self._build_bar_plot(fig        = plot_top,
+                                 companies  = self._peer_names,
+                                 metrics    = mtr.map_items_to_names(metrics),
                                  metric_set = metric_set,
-                                 source    = self._top_cds,
-                                 position  = 'top',
+                                 source     = self._top_cds,
+                                 position   = 'top',
                                  )
             # Add growth bars to bottom plot
-            self._build_bar_plot(fig       = plot_bottom,
-                                 companies = self._peer_names,
-                                 metrics   = mtr.map_items_to_names(metrics),
-                                 source    = self._bottom_cds,
+            self._build_bar_plot(fig        = plot_bottom,
+                                 companies  = self._peer_names,
+                                 metrics    = mtr.map_items_to_names(metrics),
+                                 source     = self._bottom_cds,
                                  metric_set = metric_set,
-                                 position  = 'bottom',
+                                 position   = 'bottom',
                                  )
             # Format axes and legends on top & bottom plots
             for plot in [plot_top, plot_bottom]:
                 if plot == plot_top: #top plot
                     position     = 'top'
                     y_axis_label, fmt = self._get_y_axis_format(metric_set = metric_set,
-                                                                position  = position,
-                                                                axis_type = axis_type,
+                                                                position   = position,
+                                                                axis_type  = axis_type,
                                                                 )
                 else: #bottom plot
                     position = 'bottom'
                     y_axis_label, fmt = self._get_y_axis_format(metric_set = metric_set,
-                                                                position  = position,
-                                                                axis_type ='linear',
+                                                                position   = position,
+                                                                axis_type  ='linear',
                                                                 )
                 self._build_axes(fig      = plot,
                                  position = position,
