@@ -165,22 +165,23 @@ class FundamentalsPlotter(pltr.Plotter):
 
     def _build_bar_tooltip(self, fig, barplot, means:dict, metrics:list, metric_set:str):
         '''Build tooltips for bar plots'''
+        fmt = mtr.get_tooltip_format(metric_set) # tooltip format
         tooltip = [('','@year')]
         for metric in metrics:
             prefix = ''
-            if metric_set in ['wb_metrics', 'dupont_metrics', 'valuation_metrics', 'valuation2_merics']:
+            if metric_set in ['wb_metrics', 'dupont_metrics', 'valuation_metrics', 'valuation2_metrics']:
                 text  = f' (mean = {means[metric]:.1f})'
                 if metric_set == 'wb_metrics':
                     bmark = self._defaults[f'{metric}_benchmark']
                     text  = f' (mean = {means[metric]:.1f} | benchmark = {bmark})'
-                value = prefix + f'@{metric}' + "{0.0a}" + text
-            elif metric_set in ['dividend_mettrics', 'debt_metrics', 'income2_metrics']:
+                value = prefix + f'@{metric}' + f'{fmt}' + text
+            elif metric_set in ['dividend_metrics', 'debt_metrics', 'income2_metrics']:
                 text = f' (mean = {means[metric]:.1%})'
-                value = prefix + f'@{metric}' + "{0.0%}" + text
+                value = prefix + f'@{metric}' + f'{fmt}' + text
             else:
                 prefix = f'{self._base_cie.get_currency_symbol()}'
                 text = f' (mean = {prefix}{numerize.numerize(means[metric], 1)})'
-                value = prefix + f'@{metric}' + "{0.0a}" + text
+                value = prefix + f'@{metric}' + f'{fmt}' + text
             tooltip.append((mtr.map_item_to_name(metric), value))
         hover_tool = HoverTool(tooltips   = tooltip,
                                show_arrow = True,
@@ -263,7 +264,6 @@ class FundamentalsPlotter(pltr.Plotter):
         panels = [] # 2 panels: linear and log plots
         for axis_type in ['linear', 'log']:
             # Initialize top plot (metrics / bars)
-            print('plot:', metric_set, self._cie_data[metrics])
             min_y, max_y = self._get_minmax_y(ts_df     = self._cie_data[metrics],
                                               axis_type = axis_type,
                                               metric_set = metric_set,
@@ -295,6 +295,7 @@ class FundamentalsPlotter(pltr.Plotter):
                               subtitle = subtitle,
                               )
             # Add bars to top plot
+            print(f'plot: metric={metrics} / metric_set={metric_set}')
             self._build_bar_plots(fig       = plot_top, # top blot is bar plot
                                   years     = self._cie_data.index.tolist(),
                                   metrics   = metrics,
