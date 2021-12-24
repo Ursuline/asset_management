@@ -36,7 +36,7 @@ TARGET_TICKER   = 'RMS.PA'
 YEAR            = '2019'
 
 
-def extract_peers(target_ticker:str, filt:dict):
+def extract_peers(target_ticker:str, stocks:pd.DataFrame, filt:dict):
     '''
     Extracts list of peers. Expects:
     target ticker
@@ -56,7 +56,7 @@ def extract_peers(target_ticker:str, filt:dict):
     expressed as fractions of the target market cap
     returns a set of tickers
     '''
-    stocks       = pd.read_csv(dft.get_data_path()) # load stock data from cloud storage
+    #stocks       = pd.read_csv(dft.get_cloud_path()) # load stock data from cloud storage
     target_stock = stocks[stocks.symbol == target_ticker]
 
     #Returns list of company tickers matching filter values tagged as True'''
@@ -158,7 +158,7 @@ def aggregate_peers(target_ticker:str, peers:list, req_metrix:list, year:str):
 
 if __name__ == '__main__':
     prefix = f'{TARGET_TICKER}_peers_{YEAR}'
-    securities = pd.read_csv(dft.get_data_path())
+    securities = pd.read_csv(dft.get_cloud_path())
     target_security = securities[securities.symbol == TARGET_TICKER]
     cie = cny.Company(ticker          = TARGET_TICKER,
                       period          = dft.PERIOD,
@@ -178,6 +178,7 @@ if __name__ == '__main__':
                      currency = cie.get_currency_symbol(),
                      )
     peer_list = extract_peers(target_ticker = TARGET_TICKER,
+                              stocks        = securities,
                               filt          = filter_d,
                               )
     peer_list.discard(TARGET_TICKER) # If it exists, remove target stock to avoid duplicate
