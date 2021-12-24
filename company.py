@@ -20,7 +20,6 @@ import FundamentalAnalysis as fa
 import cache as ksh
 import api_keys as keys
 import metrics as mtr
-import utilities as util
 
 API_KEY = keys.FMP
 
@@ -552,8 +551,10 @@ class Company:
     def get_interestCoverage(self, year:str, change:bool=False):
         '''Returns *inverse of* interest coverage or its change'''
         item = 'interestCoverage'
-        return 1.0 / self._get_key_metrics_item(item=item, year=year, change=change)
-
+        try:
+            return 1.0 / self._get_key_metrics_item(item=item, year=year, change=change)
+        except ZeroDivisionError:
+            return 0
 
     def get_currentRatio(self, year:str, change:bool=False):
         '''Returns current ratio or change in current ratio'''
@@ -709,11 +710,6 @@ class Company:
             d_cash_conv = self.get_cashConversion(year=year, change=True)
             return d_roe*cash_conv + roe*d_cash_conv
         return roe*cash_conv
-
-
-    # def get_peers(self):
-    #     '''return peers as defined in API (***not preferred method***)'''
-    #     return util.extract_peers(self._ticker, API_KEY)
 
 
     def get_metric_over_time(self, items:list, yr_0:int, yr_1:int):

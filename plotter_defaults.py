@@ -52,12 +52,13 @@ ZERO_GROWTH_LINE_COLOR = 'red'
 ZERO_GROWTH_LINE_THICKNESS = .5
 ZERO_GROWTH_LINE_DASH = 'dashed'
 ZERO_GROWTH_FONT_SIZE = '8pt'
-ZERO_GROWTH_FONT_COLOR = 'dimgrey'
+ZERO_GROWTH_FONT_COLOR = 'dimgray'
 
 # Means lines
 MEANS_LINE_DASH = 'dotted'
 MEANS_LINE_THICKNESS = 1
 MEANS_FONT_SIZE = '9pt'
+MEANS_FONT_COLOR = 'dimgray'
 
 # Benchmarks
 ROE_BENCHMARK = .08
@@ -68,10 +69,14 @@ PEG_RATIO_BENCHMARK = 1.0
 BENCHMARK_LINE_DASH = 'dashed'
 BENCHMARK_LINE_THICKNESS = 2
 BENCHMARK_FONT_SIZE = '9pt'
+BENCHMARK_FONT_COLOR = 'dimgray'
 
 #Labels
 LABEL_ALPHA = .75
 LABEL_FONT_SIZE = '10pt'
+
+#Captions
+CAPTION_COLOR = 'dimgray'
 
 def get_plot_directory():
     return PLOT_DIR
@@ -90,7 +95,7 @@ def get_plot_defaults():
     defaults['theme']     = THEME
     defaults['palette']   = PALETTE
     defaults['text_font'] = TEXT_FONT
-    # Ttiles
+    # Titles
     defaults['title_color']        = TITLE_COLOR
     defaults['title_font_size']    = TITLE_FONT_SIZE
     defaults['subtitle_font_size'] = SUBTITLE_FONT_SIZE
@@ -113,15 +118,19 @@ def get_plot_defaults():
     defaults['benchmark_line_dash']        = BENCHMARK_LINE_DASH
     defaults['benchmark_line_thickness']   = BENCHMARK_LINE_THICKNESS
     defaults['benchmark_font_size']        = BENCHMARK_FONT_SIZE
+    defaults['benchmark_font_color']       = BENCHMARK_FONT_COLOR
     # Means
     defaults['means_line_dash']      = MEANS_LINE_DASH
     defaults['means_line_thickness'] = MEANS_LINE_THICKNESS
     defaults['means_font_size']      = MEANS_FONT_SIZE
+    defaults['means_font_color']     = MEANS_FONT_COLOR
     # Labels
     defaults['label_alpha']     = LABEL_ALPHA
     defaults['label_font_size'] = LABEL_FONT_SIZE
     # Axes
     defaults['top_axis_label_font_size']    = TOP_AXIS_LABEL_FONT_SIZE
     defaults['bottom_axis_label_font_size'] = BOTTOM_AXIS_LABEL_FONT_SIZE
-    defaults['axis_label_color']       = AXIS_LABEL_COLOR
+    defaults['axis_label_color']            = AXIS_LABEL_COLOR
+    # Captions
+    defaults['caption_color'] = CAPTION_COLOR
     return defaults

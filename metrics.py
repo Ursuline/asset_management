@@ -5,7 +5,7 @@ Created on Tue Oct 26 12:35:47 2021
 
 metrics.py - metrics/ratio & values
 
-ratios & related-utilities
+metrics-related definitions & utilities
 
 Dupont metrics split cash return on equity (CROE) into:
 net profit margin * asset turnover * equity multiplier * cash conversion
@@ -21,8 +21,12 @@ equity multiplier = asset/equity -> leverage
 cash conversion -> Free cash flow / Net income
 roe = NI / Equity & croe = FCF / Equity
 
-@author: charly
+metric_set : bs_metrics etc
+metrics: collection of metrics
+
+@author: charles megnin
 """
+import sys
 import inspect
 
 
@@ -30,7 +34,7 @@ import inspect
 metrics_set_names = {'bs_metrics'         : 'Balance sheet metrics',
                      'income_metrics'     : 'Income & Free cash flow metrics',
                      'income2_metrics'    : 'Income & Free cash flow metrics #2',
-                     'wb_metrics'         :'"Warren Buffet" metrics',
+                     'wb_metrics'         : '"Warren Buffet" metrics',
                      'dupont_metrics'     : 'Dupont metrics',
                      'debt_metrics'       : 'Debt metrics',
                      'valuation_metrics'  : 'Valuation metrics',
@@ -38,10 +42,23 @@ metrics_set_names = {'bs_metrics'         : 'Balance sheet metrics',
                      'dividend_metrics'   : 'Dividend metrics',
                      }
 
+metrics_tooltip_format = {'bs_metrics'         : '{0.0a}',
+                          'income_metrics'     : '{0.0a}',
+                          'income2_metrics'    : '{0.0%}',
+                          'wb_metrics'         : '{0.0a}',
+                          'dupont_metrics'     : '{0.0a}',
+                          'debt_metrics'       : '{0.0%}',
+                          'valuation_metrics'  : '{0.0a}',
+                          'valuation2_metrics' : '{0.0a}',
+                          'dividend_metrics'   : '{0.0%}',
+                          }
+
+def get_tooltip_format(metric):
+    return metrics_tooltip_format[metric]
+
 def get_metric_set_names():
     return list(metrics_set_names.keys())
 
-def get_metric_set_prefixes():
     return [name.replace('_metrics', '') for name in get_metric_set_names()]
 
 bs_metrics         = {'totalAssets': 0., 'totalLiabilities': 0., 'totalStockholdersEquity': 0.,}
@@ -56,6 +73,7 @@ valuation2_metrics = {'peRatio':0, 'evToebit':0, 'priceToSalesRatio':0,}
 dividend_metrics   = {'dividendYield':0, 'payoutRatio':0,}
 full_dupont_metrics = {'cashReturnOnEquity':0, 'returnOnEquity':.08, 'netProfitMargin':0, \
                        'assetTurnover':0, 'equityMultiplier':0, 'cashConv':0, 'roa':0,}
+
 
 captions = {'assetTurnover':     'Asset turnover: Sales / Mean total assets',
             'cashConversion':    'Cash conversion: Free cash flow / Net income',
@@ -76,74 +94,50 @@ captions = {'assetTurnover':     'Asset turnover: Sales / Mean total assets',
             'peRatio':           'P/E ratio: Market cap / Net income',
             'priceToBookRatio':  'P/B: Market cap / Total shareholder equity',
             'priceToSalesRatio': 'P/B: Market cap / Revenue',
-            'shortTermCoverageRatios': 'ST coverage ratio: ST debt / Operationg cash flow',
+            'shortTermCoverageRatios': 'ST coverage ratio: ST debt / Operating cash flow',
             'ROE':               'ROE: Net income / Total shareholder equity',
             }
 
-metrics_captions = {'dupont'    : f'{captions["ROE"]} | {captions["netProfitMargin"]} | \
+# Captions appear at the bottom of the plots
+metrics_captions = {'dupont_metrics'    : f'{captions["ROE"]} | {captions["netProfitMargin"]} | \
                     {captions["assetTurnover"]} | {captions["equityMultiplier"]}',
-                    'wb'        : f'{captions["ROE"]} | {captions["debtToEquity"]} | {captions["currentRatio"]}',
-                    'valuation' : f'{captions["priceToBookRatio"]} | {captions["peg"]}',
-                    'valuation2': f'{captions["peRatio"]} | {captions["evToebit"]}| {captions["priceToSalesRatio"]}',
-                    'income2'   : f'{captions["grossProfitRatio"]} | {captions["ebitPerRevenue"]}| {captions["freeCashFlowToRevenue"]}',
-                    'dividend'  : f'{captions["dividendYield"]} | {captions["payoutRatio"]}',
-                    'debt'      : f'{captions["debtToEquity"]} | {captions["debtToAssets"]} | \
+                    'wb_metrics'        : f'{captions["ROE"]} | {captions["debtToEquity"]} | {captions["currentRatio"]}',
+                    'valuation_metrics' : f'{captions["priceToBookRatio"]} | {captions["peg"]}',
+                    'valuation2_metrics': f'{captions["peRatio"]} | {captions["evToebit"]} | {captions["priceToSalesRatio"]}',
+                    'income2_metrics'   : f'{captions["grossProfitRatio"]} | {captions["ebitPerRevenue"]}| {captions["freeCashFlowToRevenue"]}',
+                    'dividend_metrics'  : f'{captions["dividendYield"]} | {captions["payoutRatio"]}',
+                    'debt_metrics'      : f'{captions["debtToEquity"]} | {captions["debtToAssets"]} | \
                     {captions["netDebtToebit"]} | {captions["interestCoverage"]} | {captions["shortTermCoverageRatios"]}',
+                    'bs_metrics'        : '',
+                    'income_metrics'    : '',
                     }
+
+
+def get_metrics_set_caption(metrics_set):
+    '''Utility to return metrics_captions value from key. If no caption, return blank'''
+    try:
+        return metrics_captions[metrics_set]
+    except:
+        print(f'get_metrics_set_caption: metrics_set {metrics_set} has no associated caption')
+        return ''
+
 
 def get_metrics(group:str, metric:str=None):
     '''returns metric value group=dictionary name / metric=metric kind.
         If no metric specified, return dictionary'''
     try:
-        if group == 'wb_metrics':
-            if metric is None:
-                return wb_metrics #return dictionary
-            return wb_metrics[metric] # return value
-        if group == 'dupont_metrics':
-            if metric is None:
-                return dupont_metrics #return dictionary
-            return dupont_metrics[metric] # return value
-        if group == 'bs_metrics':
-            if metric is None:
-                return bs_metrics #return dictionary
-            return bs_metrics[metric] # return value
-        if group == 'income_metrics':
-            if metric is None:
-                return income_metrics #return dictionary
-            return income_metrics[metric] # return value
-        if group == 'income2_metrics':
-            if metric is None:
-                return income2_metrics #return dictionary
-            return income2_metrics[metric] # return value
-        if group == 'income_metrics':
-            if metric is None:
-                return income_metrics #return dictionary
-            return income_metrics[metric] # return value
-        if group == 'valuation_metrics':
-            if metric is None:
-                return valuation_metrics #return dictionary
-            return valuation_metrics[metric] # return value
-        if group == 'valuation2_metrics':
-            if metric is None:
-                return valuation2_metrics #return dictionary
-            return valuation2_metrics[metric] # return value
-        if group == 'dividend_metrics':
-            if metric is None:
-                return dividend_metrics #return dictionary
-            return dividend_metrics[metric] # return value
-        if group == 'debt_metrics':
-            if metric is None:
-                return debt_metrics #return dictionary
-            return debt_metrics[metric] # return value
-
+        if metric is None:
+            exec(f'return {group}')
+        exec(f'return {group}[{metric}]')
         caller_name = inspect.stack()[1][3]
         func_name   = inspect.stack()[0][3]
         msg         = f'{func_name}: non-existent group in {caller_name}'
         raise ValueError(msg)
     except:
-        raise ValueError(f'metrics.py > get_metrics: unknown metric "{group}"')
+        raise ValueError(f'get_metrics: unknown metric "{group}"')
 
-#REFACTOR AS A COMPREHENSION
+
+#REFACTOR AS A LIST COMPREHENSION
 def map_items_to_names(items:list):
     '''Recursively calls map_item_to_name() on elements in items'''
     names = []

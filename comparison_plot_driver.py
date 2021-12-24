@@ -27,12 +27,12 @@ COUNTRY  = False
 XCHANGE  = False
 
 # Window of mktCap to include as a fraction of target company mktCap
-MKT_CAP_WINDOW = {'lower': .1,
-                  'upper': 10}
+MKT_CAP_WINDOW = {'lower': .2,
+                  'upper': 5}
 EXPIRATION_DATE = '2021-12-31'
 
 # Target company specs
-TARGET_TICKER   = 'MC.PA'
+TARGET_TICKER   = 'RMS.PA'
 YEAR            = '2019'
 
 
@@ -107,10 +107,10 @@ def aggregate_peers(target_ticker:str, peers:list, req_metrix:list, year:str):
                                          idx        = idx,
                                          )
     d_metric_df = company.load_cie_metrics_over_time(metrics  = req_metrix,
-                                                 yr_start = int(year),
-                                                 yr_end   = int(year),
-                                                 change   = True,
-                                                 )
+                                                     yr_start = int(year),
+                                                     yr_end   = int(year),
+                                                     change   = True,
+                                                     )
     # Add peer companies to  metric dataframe
     for peer in peers:
         company = cny.Company(ticker          = peer,
@@ -183,9 +183,8 @@ if __name__ == '__main__':
     peer_list.discard(TARGET_TICKER) # If it exists, remove target stock to avoid duplicate
     print(f'{len(peer_list)} peers returned: {peer_list}')
 
-    for plot_type in mtr.get_metric_set_prefixes():
-        metrics_set = f'{plot_type}_metrics'
-        req_metrics = list(getattr(mtr, metrics_set).keys())
+    for metric_set in mtr.get_metric_set_names():
+        req_metrics = list(getattr(mtr, metric_set).keys())
         peer_names, df = aggregate_peers(target_ticker = TARGET_TICKER,
                                          peers         = peer_list,
                                          req_metrix    = req_metrics,
@@ -197,9 +196,9 @@ if __name__ == '__main__':
                                            year       = YEAR,
                                            )
         output_file = os.path.join(dft.get_plot_directory(),
-                                   prefix + f'_{plot_type}.html')
-        subtitle    = mtr.metrics_set_names[metrics_set]
-        plotter.plot(plot_type = plot_type,
+                                   prefix + f'_{metric_set}.html')
+        subtitle = mtr.metrics_set_names[metric_set]
+        plotter.plot(metric_set = metric_set,
                      subtitle  = subtitle,
                      filename  = output_file,
                      )
