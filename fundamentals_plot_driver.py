@@ -21,7 +21,6 @@ YEAR_1   = int('2020')
 
 def aggregate_metrics(cie:cny.Company, metrics:str, yr_0:int, yr_1:int):
     '''Extract metrics corresponding to plot type and aggregate with changes'''
-    print(f'aggregate_metrics: metrics={metrics}')
     return pd.merge(cie.load_cie_metrics_over_time(metrics=metrics, yr_start=yr_0, yr_end=yr_1, change=False),
                     cie.load_cie_metrics_over_time(metrics=metrics, yr_start=yr_0, yr_end=yr_1, change=True),
                     on  = 'year',
@@ -36,7 +35,6 @@ if __name__ == '__main__':
     for metric_set in mtr.get_metric_set_names():
         print(f'main: metric set = {metric_set}')
         subtitle  = mtr.metrics_set_names[f'{metric_set}']
-        print(f'subtitle={subtitle}')
         if metric_set.startswith('valuation'):
             subtitle += f' (5-year \u03b2={company.get_beta():.1f})'
         req_metrics = list(getattr(mtr, metric_set).keys())
