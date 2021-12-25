@@ -31,7 +31,7 @@ class ComparisonPlotter(pltr.Plotter):
         '''Build ColumnDataSource for top plot (metrics)'''
         dataframe         = dataframe.transpose()
         for column in dataframe.columns:
-            dataframe.rename(columns={column : mtr.map_item_to_name(column)}, inplace=True)
+            dataframe.rename(columns={column : mtr.map_metric_to_name(column)}, inplace=True)
         dataframe         = dataframe.transpose()
         self._top_cds  = ColumnDataSource(data = dataframe)
 
@@ -41,7 +41,7 @@ class ComparisonPlotter(pltr.Plotter):
         dataframe         = dataframe.transpose()
         dataframe.columns = dataframe.columns.str.replace('d_', '')
         for column in dataframe.columns:
-            dataframe.rename(columns={column : mtr.map_item_to_name(column)}, inplace=True)
+            dataframe.rename(columns={column : mtr.map_metric_to_name(column)}, inplace=True)
         dataframe         = dataframe.transpose()
         self._bottom_cds = ColumnDataSource(data = dataframe)
 
@@ -184,7 +184,7 @@ class ComparisonPlotter(pltr.Plotter):
             # Add bars to top plot
             self._build_bar_plot(fig        = plot_top,
                                  companies  = self._peer_names,
-                                 metrics    = mtr.map_items_to_names(metrics),
+                                 metrics    = mtr.map_metrics_to_names(metrics),
                                  metric_set = metric_set,
                                  source     = self._top_cds,
                                  position   = 'top',
@@ -192,7 +192,7 @@ class ComparisonPlotter(pltr.Plotter):
             # Add growth bars to bottom plot
             self._build_bar_plot(fig        = plot_bottom,
                                  companies  = self._peer_names,
-                                 metrics    = mtr.map_items_to_names(metrics),
+                                 metrics    = mtr.map_metrics_to_names(metrics),
                                  source     = self._bottom_cds,
                                  metric_set = metric_set,
                                  position   = 'bottom',

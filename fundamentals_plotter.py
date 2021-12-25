@@ -89,7 +89,7 @@ class FundamentalsPlotter(pltr.Plotter):
                             width  = bar_width,
                             source = source,
                             color  = self._defaults['palette'][i],
-                            legend_label = mtr.map_item_to_name(metric),
+                            legend_label = mtr.map_metric_to_name(metric),
                             )
             self._build_bar_tooltip(fig=fig, barplot=vbar, means=means, metrics=metrics, metric_set=metric_set)
             x_pos += bar_shift
@@ -98,7 +98,7 @@ class FundamentalsPlotter(pltr.Plotter):
     def _build_line_plots(self, fig, metrics:list, source:ColumnDataSource):
         '''Builds line plots (metrics change) on secondary axis'''
         for i, metric in enumerate(metrics):
-            legend_label = mtr.map_item_to_name(metric)
+            legend_label = mtr.map_metric_to_name(metric)
             line = fig.line(x = 'year',
                             y = metric,
                             line_width = 1,
@@ -123,7 +123,7 @@ class FundamentalsPlotter(pltr.Plotter):
         '''Build tooltips for line plots'''
         tooltips = [('Growth','@year')]
         for metric in metrics:
-            tooltips.append( (mtr.map_item_to_name(metric),
+            tooltips.append( (mtr.map_metric_to_name(metric),
                               f'@{metric}'+"{0.0%}")
                             )
             hover_tool = HoverTool(tooltips   = tooltips,
@@ -145,7 +145,7 @@ class FundamentalsPlotter(pltr.Plotter):
                               )
             fig.add_layout(mean_line)
             #Add annotation
-            text  = 'mean ' + mtr.map_item_to_name(metric).lower() + ': '
+            text  = 'mean ' + mtr.map_metric_to_name(metric).lower() + ': '
             if metric_set in ['bs_metrics', 'income_metrics']:
                 text += f'{self._base_cie.get_currency_symbol()}'
             if metric_set in ['debt_metrics', 'dividend_metrics', 'income2_metrics']:
@@ -182,7 +182,7 @@ class FundamentalsPlotter(pltr.Plotter):
                 prefix = f'{self._base_cie.get_currency_symbol()}'
                 text = f' (mean = {prefix}{numerize.numerize(means[metric], 1)})'
                 value = prefix + f'@{metric}' + f'{fmt}' + text
-            tooltip.append((mtr.map_item_to_name(metric), value))
+            tooltip.append((mtr.map_metric_to_name(metric), value))
         hover_tool = HoverTool(tooltips   = tooltip,
                                show_arrow = True,
                                renderers  = [barplot],
