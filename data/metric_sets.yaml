@@ -56,7 +56,6 @@ valuation_metrics :
     metrics:
         - priceToBookRatio
         - peg
-
 valuation2_metrics :
     description: "Valuation metrics #2"
     caption: ""
