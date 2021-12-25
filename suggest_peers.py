@@ -19,13 +19,13 @@ import utilities as util
 INDUSTRY = True
 SECTOR   = True
 MKTCAP   = True
-CURRENCY = True
+CURRENCY = False
 COUNTRY  = False
 XCHANGE  = False
 
 # Window of mktCap to include as a fraction of target company mktCap
-MKT_CAP_WINDOW = {'lower': .2,
-                  'upper': 5}
+MKT_CAP_WINDOW = {'lower': .1,
+                  'upper': 10}
 EXPIRATION_DATE = '2021-12-31'
 
 # Target company specs
