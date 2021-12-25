@@ -18,6 +18,7 @@ FILE       = 'stocks.csv'
 PLOT_DIR   = os.path.join(ROOT, 'plots')
 DATA_DIR   = os.path.join(ROOT, 'data')
 CLOUD_PATH  =  os.path.join(URL, FILE)
+METRIC_SETS_PATH = os.path.join(DATA_DIR, 'metric_sets.yaml')
 METRICS_PATH = os.path.join(DATA_DIR, 'metrics.yaml')
 PERIOD     = 'annual'
 
@@ -83,6 +84,12 @@ CAPTION_COLOR = 'dimgray'
 
 def get_data_directory():
     return DATA_DIR
+
+def get_metric_sets_path():
+    return METRIC_SETS_PATH
+
+def get_metrics_path():
+    return METRICS_PATH
 
 def get_plot_directory():
     return PLOT_DIR
