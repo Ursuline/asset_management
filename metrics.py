@@ -26,53 +26,73 @@ metrics: collection of metrics
 
 @author: charles megnin
 """
-import sys
+#import sys
 import inspect
+import yaml
+import plotter_defaults as dft
+
+def get_metric_set_data():
+    '''Returns metric-set data from yaml file'''
+    with open(dft.get_metric_sets_path()) as file:
+        try:
+            data = yaml.safe_load(file)
+        except yaml.YAMLError as exception:
+            print(exception)
+    return data
 
 
-# Set name and plot title
-metrics_set_names = {'bs_metrics'         : 'Balance sheet metrics',
-                     'income_metrics'     : 'Income & Free cash flow metrics',
-                     'income2_metrics'    : 'Income & Free cash flow metrics #2',
-                     'wb_metrics'         : '"Warren Buffet" metrics',
-                     'dupont_metrics'     : 'Dupont metrics',
-                     'debt_metrics'       : 'Debt metrics',
-                     'valuation_metrics'  : 'Valuation metrics',
-                     'valuation2_metrics' : 'Valuation metrics #2',
-                     'dividend_metrics'   : 'Dividend metrics',
-                     }
+def get_metrics_data():
+    '''Returns individual metrics data from yaml file'''
+    with open(dft.get_metrics_path()) as file:
+        try:
+            data = yaml.safe_load(file)
+        except yaml.YAMLError as exception:
+            print(exception)
+        except FileNotFoundError as exception:
+            print(exception)
+    return data
 
-metrics_tooltip_format = {'bs_metrics'         : '{0.0a}',
-                          'income_metrics'     : '{0.0a}',
-                          'income2_metrics'    : '{0.0%}',
-                          'wb_metrics'         : '{0.0a}',
-                          'dupont_metrics'     : '{0.0a}',
-                          'debt_metrics'       : '{0.0%}',
-                          'valuation_metrics'  : '{0.0a}',
-                          'valuation2_metrics' : '{0.0a}',
-                          'dividend_metrics'   : '{0.0%}',
-                          }
 
 def get_tooltip_format(metric):
-    return metrics_tooltip_format[metric]
+    '''Return tooltip format from yaml file'''
+    yaml_data = get_metric_set_data()
+    return yaml_data[metric]['tooltip_format']
+
 
 def get_metric_set_names():
-    return list(metrics_set_names.keys())
+    '''Returns the names of the metric sets'''
+    yaml_data = get_metric_set_data()
+    return list(yaml_data.keys())
 
-    return [name.replace('_metrics', '') for name in get_metric_set_names()]
 
-bs_metrics         = {'totalAssets': 0., 'totalLiabilities': 0., 'totalStockholdersEquity': 0.,}
-income_metrics     = {'revenue': 0., 'ebit': 0., 'freeCashFlow': 0.,}
-income2_metrics    = {'grossProfitRatio': 0., 'ebitPerRevenue': 0., 'freeCashFlowToRevenue': 0.,'croic':0}
-wb_metrics         = {'returnOnEquity':.08, 'debtToEquity':0.5, 'currentRatio':1.5,}
-dupont_metrics     = {'returnOnEquity':.08, 'netProfitMargin':0, 'assetTurnover':0, 'equityMultiplier':0,}
-debt_metrics       = {'debtToEquity':0.5, 'debtToAssets':0, 'interestCoverage':0, \
-                      'shortTermCoverageRatios':0,}
-valuation_metrics  = {'priceToBookRatio':0, 'peg':0,}
-valuation2_metrics = {'peRatio':0, 'evToebit':0, 'priceToSalesRatio':0,}
-dividend_metrics   = {'dividendYield':0, 'payoutRatio':0,}
-full_dupont_metrics = {'cashReturnOnEquity':0, 'returnOnEquity':.08, 'netProfitMargin':0, \
-                       'assetTurnover':0, 'equityMultiplier':0, 'cashConv':0, 'roa':0,}
+def get_metric_set_description(met_set:str):
+    '''Returns the desciption of a metric sets'''
+    yaml_data = get_metric_set_data()
+    return yaml_data[met_set]['description']
+
+
+def get_set_metrics(met_set:str):
+    '''Return metrics in a metric set'''
+    yaml_data = get_metric_set_data()
+    return yaml_data[met_set]['metrics']
+
+
+def map_item_to_name(metric:str):
+    '''Converts metric code to readable format defined in yaml file'''
+    if metric.startswith('d_'):
+        return '\u0394 ' + map_item_to_name(metric[2:])
+    yaml_data = get_metrics_data()
+    keys      = list(yaml_data.keys()) # clone keys
+    for key in keys: # set all keys to lower case
+        if key.lower() != key:
+            yaml_data[key.lower()] = yaml_data[key]
+            del yaml_data[key]
+    try:
+        return yaml_data[metric.lower()]['name']
+    except:
+        print(f'map_item_to_name(): No mapping for "{metric}"')
+        return metric # return as is if not in dictionary
+    return yaml_data[metric.lower()]['name']
 
 
 captions = {'assetTurnover':     'Asset turnover: Sales / Mean total assets',
@@ -144,43 +164,3 @@ def map_items_to_names(items:list):
     for item in items:
         names.append(map_item_to_name(item))
     return names
-
-
-def map_item_to_name(item:str):
-    '''Converts column name to readable metric (WIP)'''
-    if item.startswith('d_'):
-        return '\u0394 ' + map_item_to_name(item[2:])
-    itemdict = {'assetturnover':           'Asset turnover',
-                'croic':                   'Cash ROIC',
-                'currentratio':            'Current ratio',
-                'debttoassets':            'Debt-to-assets ratio',
-                'debttoequity':            'Debt-to-equity ratio',
-                'dividendyield':           'Dividend yield',
-                'ebit':                    'EBIT',
-                'ebitperrevenue':          'EBIT-to-revenue',
-                'evtoebit':                'E.V.-to-ebit',
-                'equitymultiplier':        'Equity multiplier',
-                'freecashflow':            'FCF',
-                'grossprofitratio':        'Gross profit margin',
-                'interestcoverage':        'Interest coverage',
-                'freecashflowtorevenue':   'FCF-to-revenue',
-                'netdebttoebit':           'Net debt-to-ebit',
-                'netprofitmargin':         'Net profit margin',
-                'payoutratio':             'Payout ratio',
-                'peg':                     'P/E-to-growth',
-                'peratio':                 'P/E ratio',
-                'pricetobookratio':        'Price-to-book ratio',
-                'pricetosalesratio':       'Price-to-sales ratio',
-                'returnonequity':          'ROE',
-                'revenue':                 'Revenue',
-                'roic':                    'ROIC',
-                'shorttermcoverageratios': 'Short term coverage ratio',
-                'totalassets':             'Total assets',
-                'totalliabilities':        'Total liabilities',
-                'totalstockholdersequity': "Total stockholders' equity",
-                }
-    try:
-        return itemdict[item.lower()]
-    except:
-        print(f'map_item_to_name(): No mapping for item "{item}"')
-        return item # return as is if not in dictionary
