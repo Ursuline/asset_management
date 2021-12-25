@@ -18,6 +18,7 @@ FILE       = 'stocks.csv'
 PLOT_DIR   = os.path.join(ROOT, 'plots')
 DATA_DIR   = os.path.join(ROOT, 'data')
 CLOUD_PATH  =  os.path.join(URL, FILE)
+METRICS_PATH = os.path.join(DATA_DIR, 'metrics.yaml')
 PERIOD     = 'annual'
 
 # General
