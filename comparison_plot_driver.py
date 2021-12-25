@@ -146,4 +146,4 @@ if __name__ == '__main__':
                      subtitle  = subtitle,
                      filename  = output_file,
                      )
-        print(f"Total elapsed time: {util.convert_seconds(time.time()-start_tm)}")
+    print(f"Total elapsed time: {util.convert_seconds(time.time()-start_tm)}")
