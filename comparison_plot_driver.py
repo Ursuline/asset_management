@@ -128,7 +128,7 @@ if __name__ == '__main__':
                       )
 
     for metric_set in mtr.get_metric_set_names():
-        req_metrics = list(getattr(mtr, metric_set).keys())
+        req_metrics = mtr.get_set_metrics(metric_set)
         peer_names, df = aggregate_peers(target_ticker = TARGET_TICKER,
                                          peers         = peer_list,
                                          req_metrix    = req_metrics,
@@ -141,7 +141,7 @@ if __name__ == '__main__':
                                            )
         output_file = os.path.join(dft.get_plot_directory(),
                                    prefix + f'_{metric_set}.html')
-        subtitle = mtr.metrics_set_names[metric_set]
+        subtitle = mtr.get_metric_set_description(metric_set)
         plotter.plot(metric_set = metric_set,
                      subtitle  = subtitle,
                      filename  = output_file,

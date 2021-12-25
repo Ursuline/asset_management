@@ -35,10 +35,10 @@ if __name__ == '__main__':
     company = cny.Company(ticker=TICKER, period='annual', expiration_date=EXPIRATION_DATE)
 
     for metric_set in mtr.get_metric_set_names():
-        subtitle  = mtr.metrics_set_names[f'{metric_set}']
+        subtitle  = mtr.get_metric_set_description(metric_set)
         if metric_set.startswith('valuation'):
             subtitle += f' (5-year \u03b2={company.get_beta():.1f})'
-        req_metrics = list(getattr(mtr, metric_set).keys())
+        req_metrics = mtr.get_set_metrics(metric_set)
         plotter = f_pltr.FundamentalsPlotter(cie      = company,
                                              cie_data = aggregate_metrics(cie     = company,
                                                                           metrics = req_metrics,
