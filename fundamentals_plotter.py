@@ -129,7 +129,7 @@ class FundamentalsPlotter(pltr.Plotter):
             hover_tool = HoverTool(tooltips   = tooltips,
                                    show_arrow = True,
                                    renderers  = [line],
-                                   #mode       = 'vline',
+                                   mode       = 'mouse',
                                    )
             fig.add_tools(hover_tool)
 
@@ -277,8 +277,8 @@ class FundamentalsPlotter(pltr.Plotter):
                                              x_range_name = 'year',
                                              )
             # Initialize bottom plot (changes / lines)
-            min_y, max_y = self._get_minmax_y(ts_df     = self._cie_data[d_metrics],
-                                              axis_type = axis_type,
+            min_y, max_y = self._get_minmax_y(ts_df      = self._cie_data[d_metrics],
+                                              axis_type  = axis_type,
                                               metric_set = metric_set,
                                               plot_position = 'bottom',
                                               )
@@ -295,16 +295,15 @@ class FundamentalsPlotter(pltr.Plotter):
                               subtitle = subtitle,
                               )
             # Add bars to top plot
-            print(f'plot: metric={metrics} / metric_set={metric_set}')
-            self._build_bar_plots(fig       = plot_top, # top blot is bar plot
-                                  years     = self._cie_data.index.tolist(),
-                                  metrics   = metrics,
+            self._build_bar_plots(fig        = plot_top, # top blot is bar plot
+                                  years      = self._cie_data.index.tolist(),
+                                  metrics    = metrics,
                                   metric_set = metric_set,
-                                  means     = means,
-                                  source    = self._cds,
+                                  means      = means,
+                                  source     = self._cds,
                                   )
-            self._build_means_lines(fig       = plot_top,
-                                    means     = means,
+            self._build_means_lines(fig        = plot_top,
+                                    means      = means,
                                     metric_set = metric_set,
                                     )
             if metric_set == 'wb_metrics': # Add benchmarks to WB plot
