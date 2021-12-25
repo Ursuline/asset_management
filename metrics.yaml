@@ -1,0 +1,67 @@
+---
+bs_metrics :
+    description: Balance sheet metrics
+    tooltip_format: '{0.0a}'
+    metrics:
+        - totalAssets
+        - totalLiabilities
+        - totalStockholdersEquity
+income_metrics     :
+    description: Income & Free cash flow metrics
+    tooltip_format: '{0.0a}'
+    metrics:
+        - revenue
+        - ebit
+        - freeCashFlow
+income2_metrics :
+    description: "Income & Free cash flow metrics #2"
+    tooltip_format: '{0.0%}'
+    metrics:
+        - grossProfitRatio
+        - ebitPerRevenue
+        - freeCashFlowToRevenue
+wb_metrics :
+    description: Warren Buffet metrics
+    tooltip_format: '{0.0a}'
+    metrics:
+        - returnOnEquity
+        - debtToEquity
+        - currentRatio
+dupont_metrics :
+    description: Dupont metrics
+    tooltip_format: '{0.0a}'
+    metrics:
+        - returnOnEquity
+        - netProfitMargin
+        - assetTurnover
+        - equityMultiplier
+debt_metrics :
+    description: Debt metrics
+    tooltip_format: '{0.0%}'
+    metrics:
+        - debtToEquity
+        - debtToAssets
+        - interestCoverage
+        - shortTermCoverageRatios
+valuation_metrics :
+    description: Valuation metrics
+    tooltip_format: '{0.0a}'
+    metrics:
+        - priceToBookRatio
+        - peg
+
+valuation2_metrics :
+    description: "Valuation metrics #2"
+    tooltip_format: '{0.0a}'
+    metrics:
+        - peRatio
+        - evToebit
+        - priceToSalesRatio
+dividend_metrics :
+    description: Dividend metrics
+    tooltip_format: '{0.0%}'
+    metrics:
+        - dividendYield
+        - payoutRatio
+
+...
