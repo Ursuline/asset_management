@@ -26,62 +26,71 @@ metrics: collection of metrics
 
 @author: charles megnin
 """
-#import sys
 import inspect
+import sys
 import yaml
+import urllib
 import plotter_defaults as dft
 
-def get_metric_set_data():
-    '''Returns metric-set data from yaml file'''
-    with open(dft.get_metric_sets_path()) as file:
-        try:
-            data = yaml.safe_load(file)
-        except yaml.YAMLError as exception:
-            print(exception)
+# ----- YAML loader methods -----
+def yaml_load(file_handle):
+    try:
+        data = yaml.safe_load(file_handle)
+    except yaml.YAMLError as exception:
+        print(exception)
+        sys.exit()
     return data
 
 
-def get_metrics_data():
-    '''Returns individual metrics data from yaml file'''
-    with open(dft.get_metrics_path()) as file:
-        try:
-            data = yaml.safe_load(file)
-        except yaml.YAMLError as exception:
-            print(exception)
-        except FileNotFoundError as exception:
-            print(exception)
-    return data
+def get_yaml_data(datatype:str):
+    '''Returns metric-set (metric_set) or metrics (metrics) data from yaml file'''
+    if datatype == 'metric_set':
+        func = dft.get_metric_sets_path()
+    elif datatype == 'metrics':
+        func = dft.get_metrics_path()
+    else:
+        msg = f'datatype {datatype} should be "metric_set" or "metrics"'
+        raise KeyError(msg)
 
-
-def get_tooltip_format(metric):
-    '''Return tooltip format from yaml file'''
-    yaml_data = get_metric_set_data()
-    return yaml_data[metric]['tooltip_format']
-
+    if dft.METRICS_SOURCE == 'URL':
+        return yaml_load(urllib.request.urlopen(func))
+    else:
+        with open(func) as file:
+            return yaml_load(file)
+# --------------------------
 
 def get_metric_set_names():
     '''Returns the names of the metric sets'''
-    yaml_data = get_metric_set_data()
+    yaml_data = get_yaml_data(datatype='metric_set')
     return list(yaml_data.keys())
+
+
+def get_set_metrics(met_set:str):
+    '''Return the metrics in a metric set as a list'''
+    yaml_data = get_yaml_data(datatype='metric_set')
+    try:
+        return yaml_data[met_set]['metrics']
+    except KeyError as exception:
+        print(exception)
 
 
 def get_metric_set_description(met_set:str):
     '''Returns the desciption of a metric sets'''
-    yaml_data = get_metric_set_data()
+    yaml_data = get_yaml_data(datatype='metric_set')
     return yaml_data[met_set]['description']
 
 
-def get_set_metrics(met_set:str):
-    '''Return metrics in a metric set'''
-    yaml_data = get_metric_set_data()
-    return yaml_data[met_set]['metrics']
+def get_tooltip_format(metric:str):
+    '''Return tooltip format from yaml file'''
+    yaml_data = get_yaml_data(datatype='metric_set')
+    return yaml_data[metric]['tooltip_format']
 
 
-def map_item_to_name(metric:str):
+def map_metric_to_name(metric:str):
     '''Converts metric code to readable format defined in yaml file'''
     if metric.startswith('d_'):
-        return '\u0394 ' + map_item_to_name(metric[2:])
-    yaml_data = get_metrics_data()
+        return '\u0394 ' + map_metric_to_name(metric[2:])
+    yaml_data = get_yaml_data(datatype='metrics')
     keys      = list(yaml_data.keys()) # clone keys
     for key in keys: # set all keys to lower case
         if key.lower() != key:
@@ -90,56 +99,22 @@ def map_item_to_name(metric:str):
     try:
         return yaml_data[metric.lower()]['name']
     except:
-        print(f'map_item_to_name(): No mapping for "{metric}"')
+        print(f'map_metric_to_name(): No mapping for "{metric}"')
         return metric # return as is if not in dictionary
     return yaml_data[metric.lower()]['name']
 
 
-captions = {'assetTurnover':     'Asset turnover: Sales / Mean total assets',
-            'cashConversion':    'Cash conversion: Free cash flow / Net income',
-            'currentRatio':      'Current ratio: Total current assets / Total current liabilities',
-            'debtToEquity':      'Debt-to-equity ratio: LT debt / Total shareholder equity',
-            'debtToAssets':      'Debt-to-assets ratio: LT debt / Total assets',
-            'dividendYield':     'Dividend yield: Dividend paid / Market cap',
-            'ebitPerRevenue':    'Ebit-to-sales: ebit / Revenue',
-            'equityMultiplier':  'Equity multiplier: Total assets / Total equity',
-            'evToebit':          'E.V.-to-ebit: Enterprise value / ebit',
-            'freeCashFlowToRevenue': 'FCF-to-revenue: FCF / Revenue',
-            'grossProfitRatio':  'Gross margin: Gross profit / Revenue',
-            'interestCoverage':  'Interest coverage: Interest expense / ebit',
-            'netDebtToebit':     'Net debt-to-ebit: (Total debt - Cash & Cash equivalents) / ebit',
-            'netProfitMargin':   'Net profit margin: Net income / Sales',
-            'payoutRatio':       'Payout ratio: Dividend paid / Net income',
-            'peg':               'P/E-to-growth: P/E ratio / expected growth',
-            'peRatio':           'P/E ratio: Market cap / Net income',
-            'priceToBookRatio':  'P/B: Market cap / Total shareholder equity',
-            'priceToSalesRatio': 'P/B: Market cap / Revenue',
-            'shortTermCoverageRatios': 'ST coverage ratio: ST debt / Operating cash flow',
-            'ROE':               'ROE: Net income / Total shareholder equity',
-            }
-
-# Captions appear at the bottom of the plots
-metrics_captions = {'dupont_metrics'    : f'{captions["ROE"]} | {captions["netProfitMargin"]} | \
-                    {captions["assetTurnover"]} | {captions["equityMultiplier"]}',
-                    'wb_metrics'        : f'{captions["ROE"]} | {captions["debtToEquity"]} | {captions["currentRatio"]}',
-                    'valuation_metrics' : f'{captions["priceToBookRatio"]} | {captions["peg"]}',
-                    'valuation2_metrics': f'{captions["peRatio"]} | {captions["evToebit"]} | {captions["priceToSalesRatio"]}',
-                    'income2_metrics'   : f'{captions["grossProfitRatio"]} | {captions["ebitPerRevenue"]}| {captions["freeCashFlowToRevenue"]}',
-                    'dividend_metrics'  : f'{captions["dividendYield"]} | {captions["payoutRatio"]}',
-                    'debt_metrics'      : f'{captions["debtToEquity"]} | {captions["debtToAssets"]} | \
-                    {captions["netDebtToebit"]} | {captions["interestCoverage"]} | {captions["shortTermCoverageRatios"]}',
-                    'bs_metrics'        : '',
-                    'income_metrics'    : '',
-                    }
-
-
-def get_metrics_set_caption(metrics_set):
-    '''Utility to return metrics_captions value from key. If no caption, return blank'''
-    try:
-        return metrics_captions[metrics_set]
-    except:
-        print(f'get_metrics_set_caption: metrics_set {metrics_set} has no associated caption')
-        return ''
+def get_metrics_set_caption(met_set):
+    metrics_data = get_yaml_data(datatype='metrics')
+    metrics = get_set_metrics(met_set)
+    caption = ''
+    for i, metric in enumerate(metrics):
+        temp = metrics_data[metric]['definition']
+        if temp != '':
+            caption += temp
+            if i != len(metrics)-1: #don't add a separation after last metric
+                caption += ' | '
+    return caption
 
 
 def get_metrics(group:str, metric:str=None):
@@ -158,9 +133,9 @@ def get_metrics(group:str, metric:str=None):
 
 
 #REFACTOR AS A LIST COMPREHENSION
-def map_items_to_names(items:list):
+def map_metrics_to_names(items:list):
     '''Recursively calls map_item_to_name() on elements in items'''
     names = []
     for item in items:
-        names.append(map_item_to_name(item))
+        names.append(map_metric_to_name(item))
     return names
