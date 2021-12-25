@@ -115,7 +115,7 @@ class ComparisonPlotter(pltr.Plotter):
         fmt = mtr.get_tooltip_format(metric_set) # tooltip format
         #First row of tooltips is the metric name
         if position == 'top':
-            tooltip = [('','@metric')]
+            tooltip = [('', '@metric')]
         else: #botom plot is change
             year = int(self._year)
             tooltip = [('', '\u0394 @metric'),
@@ -127,6 +127,7 @@ class ComparisonPlotter(pltr.Plotter):
                 if metric_set in ['income_metrics', 'bs_metrics']: # currency plots
                     prefix = f'{self._base_cie.get_currency_symbol()}'
                 value = prefix + '@{' + company + '}' + f'{fmt}'
+
             else: #tooltips for bottom plot
                 value = '@{' + company + '}{0.0%}' # change is always %
             tooltip.append((company, value))
