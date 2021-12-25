@@ -17,9 +17,17 @@ URL        = 'https://ml-finance.ams3.digitaloceanspaces.com/fundamentals'
 FILE       = 'stocks.csv'
 PLOT_DIR   = os.path.join(ROOT, 'plots')
 DATA_DIR   = os.path.join(ROOT, 'data')
-CLOUD_PATH  =  os.path.join(URL, FILE)
-METRIC_SETS_PATH = os.path.join(DATA_DIR, 'metric_sets.yaml')
-METRICS_PATH = os.path.join(DATA_DIR, 'metrics.yaml')
+CLOUD_PATH = os.path.join(URL, FILE)
+# URL (remote) or DIR (local)
+METRICS_SOURCE = 'DIR'
+# ----- Don't change the if/else
+if METRICS_SOURCE == 'URL':
+    METRIC_SETS_PATH = os.path.join(URL, 'metric_sets.yaml')
+    METRICS_PATH = os.path.join(URL, 'metrics.yaml')
+else:
+    METRIC_SETS_PATH = os.path.join(DATA_DIR, 'metric_sets.yaml')
+    METRICS_PATH = os.path.join(DATA_DIR, 'metrics.yaml')
+# ----------
 PERIOD     = 'annual'
 
 # General
