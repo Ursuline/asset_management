@@ -11,18 +11,20 @@ Driver for fundamentals comparison plots
 """
 import os
 import sys
+import time
 import pandas as pd
 import metrics as mtr
 import company as cny
 import comparison_plotter as c_pltr
 import plotter_defaults as dft
+import utilities as util
 
 TRUNC           = 15   # of characters to retain in company name
 EXPIRATION_DATE = '2021-12-31'
 
 # Target company specs
-TARGET_TICKER   = 'RMS.PA'
-YEAR            = '2019'
+TARGET_TICKER = 'RMS.PA'
+YEAR          = '2019'
 
 
 def build_metric_dataframe(company:cny.Company, ticker:str, req_metrix:list, year:str, idx:str):
@@ -111,14 +113,14 @@ def load_peers(argv):
 
 
 if __name__ == '__main__':
-
+    start_tm = time.time()
     try:
         peer_list=load_peers(sys.argv)
     except IndexError:
         print('usage: python comparison_plot_driver.py peer_filename.csv')
         sys.exit()
 
-    prefix = f'{TARGET_TICKER}_peers_{YEAR}'
+    prefix = f'{TARGET_TICKER}_{YEAR}_peers'
 
     cie = cny.Company(ticker          = TARGET_TICKER,
                       period          = dft.PERIOD,
@@ -144,3 +146,4 @@ if __name__ == '__main__':
                      subtitle  = subtitle,
                      filename  = output_file,
                      )
+        print(f"Total elapsed time: {util.convert_seconds(time.time()-start_tm)}")
