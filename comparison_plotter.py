@@ -47,7 +47,9 @@ class ComparisonPlotter(pltr.Plotter):
 
 
     def _build_cds(self):
-        '''Builds 2 column data sources corresponding to the time series'''
+        '''Builds 2 column data sources corresponding to a metric set(top)
+            and its changes(bottom)
+        '''
         rows      = self._cie_data.index.tolist()
         metrics   = rows[0:int(len(rows)/2)]
         d_metrics = rows[int(len(rows)/2):]
