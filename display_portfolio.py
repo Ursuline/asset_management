@@ -4,6 +4,8 @@
 Created on Tue Dec 28 09:02:04 2021
 
 Outputs the contents of a portfolio to screen
+Usage:
+pythobn display_portfolio.py [portfolio_name]
 
 display_portfolio.py
 
@@ -25,7 +27,7 @@ if __name__ == '__main__':
         contents = pd.read_csv(url)
         contents.loc[0] = ['Ticker', 'Position', 'Strategy']
         print(tabulate(contents,
-                       showindex = False,
+                       showindex = True,
                        tablefmt  = 'fancy_grid',
                        )
               )
