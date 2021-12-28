@@ -99,6 +99,7 @@ def aggregate_peers(target_ticker:str, peers:list, req_metrix:list, year:str):
 
 
 def load_peers(argv):
+    '''csv peer list loader'''
     try:
         peers = pd.read_csv(argv[1],
                             header=None)
@@ -106,7 +107,7 @@ def load_peers(argv):
         if peers[0] != TARGET_TICKER:
             print(f'input data file {sys.argv[1]} does not correspond to requested ticker {TARGET_TICKER}')
             sys.exit()
-        return (peers)
+        return peers
     except FileNotFoundError:
         print(f'{argv[1]} does not exist')
         sys.exit()
