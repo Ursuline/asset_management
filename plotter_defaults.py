@@ -31,7 +31,7 @@ else:
 PERIOD     = 'annual'
 
 # General
-THEME = 'light_minimal'
+THEME = 'dark_minimal'
 TEXT_FONT = 'helvetica'
 PALETTE = Dark2_8
 
