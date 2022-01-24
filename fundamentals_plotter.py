@@ -77,8 +77,18 @@ class FundamentalsPlotter(pltr.Plotter):
         return y_axis_label, fmt
 
 
-    def _build_bar_plots(self, fig, years:list, metrics:list, metric_set:str, means:dict, source:ColumnDataSource):
-        '''Builds bar plots (metrics) on primary axis'''
+    def _build_dupont(self, fig, source:ColumnDataSource):
+        '''Builds 2-bar plot for log(ROE) = log(Prof)+log(AT)+log(Leverage)'''
+        metrics = mtr.get_set_metrics('dupont')
+        x_pos = self._get_initial_x_offset(metrics)
+        bar_shift = self._get_bar_shift(metrics)
+        bar_width = self._defaults['bar_width_shift_ratio'] * bar_shift
+        for i, metric in enumerate(metrics):
+            pass
+
+
+    def _build_bar_plot(self, fig, years:list, metrics:list, metric_set:str, means:dict, source:ColumnDataSource):
+        '''Builds bar plot (metrics) on primary axis'''
         x_pos = self._get_initial_x_offset(metrics)
         bar_shift = self._get_bar_shift(metrics)
         bar_width = self._defaults['bar_width_shift_ratio'] * bar_shift
@@ -295,7 +305,7 @@ class FundamentalsPlotter(pltr.Plotter):
                               subtitle = subtitle,
                               )
             # Add bars to top plot
-            self._build_bar_plots(fig        = plot_top, # top blot is bar plot
+            self._build_bar_plot(fig        = plot_top, # top blot is bar plot
                                   years      = self._cie_data.index.tolist(),
                                   metrics    = metrics,
                                   metric_set = metric_set,
