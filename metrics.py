@@ -72,6 +72,7 @@ def get_set_metrics(met_set:str):
         return yaml_data[met_set]['metrics']
     except KeyError as exception:
         print(exception)
+        return ['']
 
 
 def get_metric_set_description(met_set:str):
