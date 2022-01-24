@@ -33,16 +33,16 @@ INDUSTRY = True
 SECTOR   = True
 MKTCAP   = False
 CURRENCY = True
-COUNTRY  = False
+COUNTRY  = True
 XCHANGE  = False
 
 # Window of mktCap to include as a fraction of target company mktCap
 MKT_CAP_WINDOW = {'lower': .1,
                   'upper': 10}
-EXPIRATION_DATE = '2021-12-31'
+EXPIRATION_DATE = '2022-03-31'
 
 # Target company specs
-TARGET_TICKER   = 'BEN.PA'
+TARGET_TICKER   = 'UBI.PA'
 
 
 def extract_peers(target_ticker:str, stocks:pd.DataFrame, filt:dict):
@@ -131,9 +131,13 @@ def get_peer_names_old(peers:list):
 
 def get_peer_names(peers:list):
     names = []
-    for peer in tqdm(peers):
-        cie = yf.Ticker(peer)
-        names.append(cie.info['longName'])
+    for peer in tqdm(peers, desc='Progress'):
+        try:
+            cie = yf.Ticker(peer)
+            names.append(cie.info['longName'])
+        except KeyError:
+            print(f'Could not process ticker {peer}')
+            names.append('')
     return names
 
 
@@ -146,7 +150,7 @@ def save_data(peers:list, file_name:str):
     with open(output_file, 'w') as csv_file:
         writer = csv.writer(csv_file)
         writer.writerows(zip(peers))
-    print(f'\nList of base + suggested peer tickers saved as:\n{output_file}')
+    print(f'\nBase + suggested peer tickers saved as:\n{output_file}')
 
 
 if __name__ == '__main__':
