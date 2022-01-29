@@ -15,14 +15,14 @@ import datetime as dt
 
 from charting import trading_defaults as dft
 from charting import private as pvt
-from charting import parameters_sync as params
+import parameters_sync as params
 from finance import utilities as util
 
 class Recommender():
     '''
     Handles the dispatching of trading recommendations
     '''
-    def __init__(self, ptf_file = None, screen = True, email = True, sms = False):
+    def __init__(self, yaml_data, ptf_file = None, screen = True, email = True, sms = False):
         '''
         Collects recommendations and dispatches to selected notification method
         _screen : print to screen
@@ -39,6 +39,7 @@ class Recommender():
         self._screen = screen
         self._email  = email
         self._sms    = sms
+        self._yaml_data = yaml_data
 
 
     def set_screen(self, screen: bool):
@@ -187,7 +188,7 @@ class Recommender():
         if self._n_actions != 0: # send email if there is something to send
             message = EmailMessage()
             message["From"] = pvt.SENDER_EMAIL
-            message["To"]   = ",".join(params.RECIPIENT_EMAILS)
+            message["To"]   = ",".join(params.get_recipients(self._yaml_data))
             if self._ptf_file is None:
                 message["Subject"] = 'Subject: Trade recommendation'
             else:
@@ -202,7 +203,7 @@ class Recommender():
 
             mail_server = smtplib.SMTP_SSL(dft.SMTP_SERVER, dft.SSL_PORT)
             mail_server.login(pvt.SENDER_EMAIL, pvt.PASSWORD)
-            for recipient_email in params.RECIPIENT_EMAILS:
+            for recipient_email in params.get_recipients(self._yaml_data):
                 mail_server.send_message(message, pvt.SENDER_EMAIL, recipient_email)
 
             mail_server.quit()

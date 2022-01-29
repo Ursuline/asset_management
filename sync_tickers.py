@@ -15,12 +15,11 @@ import pandas as pd
 from charting import trading as tra
 from charting import trading_defaults as dft
 from charting import topo_map as tpm
-from charting import recommender as rec
+import recommender as rec
 from charting import time_series_plot as tsp
 import parameters_sync as par
 from charting import holdings as hld
 from finance import utilities as util
-import yaml_utilities as yaml_util
 
 
 if __name__ == '__main__':
@@ -42,7 +41,8 @@ if __name__ == '__main__':
     for ptf_file in par.get_portfolios(yaml_data):
         holdings = hld.Holdings(par.PORTFOLIO_DIR, ptf_file)
         securities = holdings.get_securities()
-        recommender = rec.Recommender(ptf_file = ptf_file,
+        recommender = rec.Recommender(yaml_data = yaml_data,
+                                      ptf_file = ptf_file,
                                       screen = SCREEN,
                                       email  = EMAIL,
                                       )

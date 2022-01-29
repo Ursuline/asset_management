@@ -90,6 +90,7 @@ def get_refresh_parameters(yml_data):
 
 
 if __name__ == '__main__':
+    '''Test driver'''
     yaml_data  = load_data()
     portfolios = get_portfolios(yaml_data)
     recipients = get_recipients(yaml_data)
