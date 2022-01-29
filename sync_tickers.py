@@ -17,7 +17,7 @@ from charting import trading_defaults as dft
 from charting import topo_map as tpm
 from charting import recommender as rec
 from charting import time_series_plot as tsp
-import parameters_sync_new as par
+import parameters_sync as par
 from charting import holdings as hld
 from finance import utilities as util
 import yaml_utilities as yaml_util
