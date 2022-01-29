@@ -16,8 +16,8 @@ import matplotlib.dates as mdates
 #pd.options.display.float_format = '{:,.2f}'.format
 pd.set_option("precision", 7)
 
-SSL_PORT = 465
-SMTP_SERVER = 'smtp.gmail.com'
+# SSL_PORT = 465
+# SMTP_SERVER = 'smtp.gmail.com'
 
 STATS_LEVEL = .05 # p-value level
 
