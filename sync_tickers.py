@@ -17,29 +17,34 @@ from charting import trading_defaults as dft
 from charting import topo_map as tpm
 from charting import recommender as rec
 from charting import time_series_plot as tsp
-from charting import parameters_sync as par
+import parameters_sync_new as par
 from charting import holdings as hld
 from finance import utilities as util
+import yaml_utilities as yaml_util
 
-DATE_RANGE = par.DATE_RANGE
-ZOOM_RANGE = par.ZOOM_RANGE
-NOTIFY     = par.NOTIFY
-DISPLAY_TIME_SERIES = par.DISPLAY_TIME_SERIES
-REFRESH_YAHOO = par.REFRESH_YAHOO
-REFRESH_EMA   = par.REFRESH_EMA
-#Contour & surface plot formats
-PLOT_FORMATS  = par.CTR_SFC_PLOT_FORMATS
 
 if __name__ == '__main__':
     start_tm = time.time() # total_time
     save_tm  = time.time() # intermediate time
+    # Load several parameters
+    yaml_data  = par.load_data()
+    DATE_RANGE = par.get_time_span(yaml_data)
+    ZOOM_RANGE = DATE_RANGE
+    NOTIFY     = par.get_recommender_parameters(yaml_data)['notify']
+    SCREEN     = par.get_recommender_parameters(yaml_data)['screen']
+    EMAIL      = par.get_recommender_parameters(yaml_data)['email']
+    DISPLAY_TIME_SERIES = par.get_display_parameters(yaml_data)['display_time_series']
+    PLOT_FORMATS  = par.get_display_parameters(yaml_data)['ctr_sfc_plot_formats']
+    REFRESH_YAHOO = par.get_refresh_parameters(yaml_data)['refresh_yahoo']
+    REFRESH_EMA   = par.get_refresh_parameters(yaml_data)['refresh_ema']
 
-    for ptf_file in par.PORTFOLIO_FILES:
+
+    for ptf_file in par.get_portfolios(yaml_data):
         holdings = hld.Holdings(par.PORTFOLIO_DIR, ptf_file)
         securities = holdings.get_securities()
         recommender = rec.Recommender(ptf_file = ptf_file,
-                                      screen = par.SCREEN,
-                                      email  = par.EMAIL,
+                                      screen = SCREEN,
+                                      email  = EMAIL,
                                       )
 
         for i, security in enumerate(securities.Ticker):
