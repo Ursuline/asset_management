@@ -201,7 +201,8 @@ class Recommender():
             # add html plot files to email body
             add_attachments(message, email_nc, email_plot_flags)
 
-            mail_server = smtplib.SMTP_SSL(dft.SMTP_SERVER, dft.SSL_PORT)
+            mail_server = smtplib.SMTP_SSL(params.get_smtp_parameters(self._yaml_data)['ssl_port'],
+                                           params.get_smtp_parameters(self._yaml_data)['smtp_server'])
             mail_server.login(pvt.SENDER_EMAIL, pvt.PASSWORD)
             for recipient_email in params.get_recipients(self._yaml_data):
                 mail_server.send_message(message, pvt.SENDER_EMAIL, recipient_email)

@@ -17,7 +17,7 @@ PORTFOLIO_URL  = 'https://ml-finance.ams3.digitaloceanspaces.com'
 PORTFOLIO_PATH = 'charting/resources'
 PORTFOLIO_DIR  = os.path.join(PORTFOLIO_URL, PORTFOLIO_PATH)
 PORTFOLIO_FILE = 'charting_run.yaml'
-YAML_FILE     = os.path.join(PORTFOLIO_DIR, PORTFOLIO_FILE)
+YAML_FILE      = os.path.join(PORTFOLIO_DIR, PORTFOLIO_FILE)
 
 
 def load_data():
@@ -35,17 +35,7 @@ def get_portfolios(yml_data):
 
 def get_recipients(yml_data):
     '''Return email recipients'''
-    recs = yml_data['recipients']
-    recipients = []
-    for rec in recs:
-        if rec == 'charly':
-            recipients.append(pvt.CHARLY)
-        elif rec == 'mc':
-            recipients.append(pvt.MC)
-        else:
-            msg = f'unkown recipient {rec}'
-            print(msg)
-    return recipients
+    return yml_data['recipients']
 
 
 def get_time_span(yml_data):
@@ -89,6 +79,13 @@ def get_refresh_parameters(yml_data):
     return parameters
 
 
+def get_smtp_parameters(yml_data):
+    smtp_parameters={}
+    smtp_parameters['ssl_port'] = yml_data['ssl_port']
+    smtp_parameters['smtp_server'] = yml_data['smtp_server']
+    return smtp_parameters
+
+
 if __name__ == '__main__':
     '''Test driver'''
     yaml_data  = load_data()
@@ -98,6 +95,8 @@ if __name__ == '__main__':
     recommender_parameters = get_recommender_parameters(yaml_data)
     display_parameters     = get_display_parameters(yaml_data)
     refresh_parameters     = get_refresh_parameters(yaml_data)
+    ssl_port    = get_smtp_parameters(yaml_data)['ssl_port']
+    smtp_server = get_smtp_parameters(yaml_data)['smtp_server']
     for portfolio in portfolios:
         print(portfolio)
     print(recommender_parameters)
@@ -105,3 +104,5 @@ if __name__ == '__main__':
     print(refresh_parameters)
     print(recipients)
     print(time_span)
+    print(ssl_port)
+    print(smtp_server)
