@@ -13,7 +13,6 @@ import mimetypes
 from email.message import EmailMessage
 import datetime as dt
 
-from charting import trading_defaults as dft
 from charting import private as pvt
 import parameters_sync as params
 from finance import utilities as util
