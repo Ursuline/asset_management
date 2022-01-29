@@ -72,3 +72,43 @@ def round_up(val:float, ndigits:int):
 def round_down(val:float, ndigits:int):
     '''round down utility'''
     return (math.floor(val * math.pow(10, ndigits)) - 1) / math.pow(10, ndigits)
+
+
+def convert_seconds(time_s):
+    '''
+    Given a time duration in seconds, convert to DHMS & return as a string
+    DUPLICATE FROM finance directory
+    '''
+    minute = 60
+    hour   = 60 * minute
+    day    = 24 * hour
+    def sec_to_min(sec):
+        time_m = sec // minute
+        time_s = sec % minute
+        return time_m, time_s
+
+    def sec_to_hour(sec):
+        time_h = sec // hour
+        time_s = sec % hour
+        time_m, time_s = sec_to_min(time_s)
+        return time_h, time_m, time_s
+
+    def sec_to_day(sec):
+        time_d = sec // day
+        time_s = sec % day
+        time_h, time_m, time_s = sec_to_hour(time_s)
+        return time_d, time_h, time_m, time_s
+
+    if time_s >= day:
+        time_d, time_h, time_m, time_s = sec_to_day(time_s)
+        suffix = 'day'
+        if time_d > 1:
+            suffix += 's'
+        return f'{time_d:.0f} {suffix} {time_h:.0f}hr:{time_m:.0f}mn:{time_s:.1f}s'
+    if time_s >= hour:
+        time_h, time_m, time_s = sec_to_hour(time_s)
+        return f'{time_h:.0f}hr:{time_m:.0f}mn:{time_s:.1f}s'
+    if time_s >= minute:
+        time_m, time_s = sec_to_min(time_s)
+        return f'{time_m:.0f}mn:{time_s:.1f}s'
+    return f'{time_s:.1f}s'

@@ -5,7 +5,7 @@ Created on Tue Oct 26 12:35:47 2021
 
 metrics.py - metrics/ratio & values
 
-ratios & related-utilities
+metrics-related definitions & utilities
 
 Dupont metrics split cash return on equity (CROE) into:
 net profit margin * asset turnover * equity multiplier * cash conversion
@@ -21,123 +21,122 @@ equity multiplier = asset/equity -> leverage
 cash conversion -> Free cash flow / Net income
 roe = NI / Equity & croe = FCF / Equity
 
-@author: charly
+metric_set : bs_metrics etc
+metrics: collection of metrics
+
+@author: charles megnin
 """
 import inspect
+import sys
+import yaml
+import urllib
+import plotter_defaults as dft
 
-# Set name and plot title
-metrics_set_names = {#'mktcap_metrics': 'Assets, Revenue & Market Cap',
-                     'wb_metrics':'"Warren Buffet" metrics',
-                     'dupont_metrics': 'Dupont metrics',
-                     'bs_metrics': 'Balance sheet metrics',
-                     'income_metrics': 'Income & Free cash flow metrics',
-                     'income2_metrics': 'Income & Free cash flow metrics #2',
-                     'valuation_metrics': 'Valuation metrics',
-                     'valuation2_metrics': 'Valuation metrics #2',
-                     'dividend_metrics': 'Dividend metrics',
-                     'debt_metrics': 'Debt metrics',
-                     }
+# ----- YAML loader methods -----
+def yaml_load(file_handle):
+    try:
+        data = yaml.safe_load(file_handle)
+    except yaml.YAMLError as exception:
+        print(exception)
+        sys.exit()
+    return data
 
-#mktcap_metrics = {'totalAssets': 0., 'revenue': 0., 'marketCap': 0.,}
-bs_metrics = {'totalAssets': 0., 'totalLiabilities': 0., 'totalStockholdersEquity': 0.,}
-income_metrics = {'revenue': 0., 'ebit': 0., 'freeCashFlow': 0.,}
-income2_metrics = {'grossProfitRatio': 0., 'ebitPerRevenue': 0., 'freeCashFlowToRevenue': 0.,'croic':0}
-wb_metrics  = {'returnOnEquity':.08, 'debtToEquity':0.5, 'currentRatio':1.5,}
-valuation_metrics = {'priceToBookRatio':0, 'peg':0,}
-valuation2_metrics = {'peRatio':0, 'evToebit':0, 'priceToSalesRatio':0,}
-dividend_metrics = {'dividendYield':0, 'payoutRatio':0,}
-dupont_metrics = {'returnOnEquity':.08, 'netProfitMargin':0, 'assetTurnover':0, 'equityMultiplier':0,}
-full_dupont_metrics = {'returnOnEquity':.08, 'netProfitMargin':0, 'assetTurnover':0, 'equityMultiplier':0, \
-                       'cashConv':0, 'roa':0, 'cashReturnOnEquity':0,}
-debt_metrics = {'debtToEquity':0.5, 'debtToAssets':0, 'interestCoverage':0, \
-                'shortTermCoverageRatios':0,}
 
-captions = {'assetTurnover':     'Asset turnover: Sales / Mean total assets',
-            'cashConversion':    'Cash conversion: Free cash flow / Net income',
-            'currentRatio':      'Current ratio: Total current assets / Total current liabilities',
-            'debtToEquity':      'Debt-to-equity ratio: LT debt / Total shareholder equity',
-            'debtToAssets':      'Debt-to-assets ratio: LT debt / Total assets',
-            'dividendYield':     'Dividend yield: Dividend paid / Market cap',
-            'ebitPerRevenue':    'Ebit-to-sales: ebit / Revenue',
-            'equityMultiplier':  'Equity multiplier: Total assets / Total equity',
-            'evToebit':          'E.V.-to-ebit: Enterprise value / ebit',
-            'freeCashFlowToRevenue': 'FCF-to-revenue: FCF / Revenue',
-            'grossProfitRatio':  'Gross margin: Gross profit / Revenue',
-            'interestCoverage':  'Interest coverage: Interest expense / ebit',
-            'netDebtToebit':     'Net debt-to-ebit: (Total debt - Cash & Cash equivalents) / ebit',
-            'netProfitMargin':   'Net profit margin: Net income / Sales',
-            'payoutRatio':       'Payout ratio: Dividend paid / Net income',
-            'peg':               'P/E-to-growth: P/E ratio / expected growth',
-            'peRatio':           'P/E ratio: Market cap / Net income',
-            'priceToBookRatio':  'P/B: Market cap / Total shareholder equity',
-            'priceToSalesRatio': 'P/B: Market cap / Revenue',
-            'shortTermCoverageRatios': 'ST coverage ratio: ST debt / Operationg cash flow',
-            'ROE':               'ROE: Net income / Total shareholder equity',
-            }
+def get_yaml_data(datatype:str):
+    '''Returns metric-set (metric_set) or metrics (metrics) data from yaml file'''
+    if datatype == 'metric_set':
+        func = dft.get_metric_sets_path()
+    elif datatype == 'metrics':
+        func = dft.get_metrics_path()
+    else:
+        msg = f'datatype {datatype} should be "metric_set" or "metrics"'
+        raise KeyError(msg)
 
-metrics_captions = {'dupont'    : f'{captions["ROE"]} | {captions["netProfitMargin"]} | \
-                    {captions["assetTurnover"]} | {captions["equityMultiplier"]}',
-                    'wb'        : f'{captions["ROE"]} | {captions["debtToEquity"]} | {captions["currentRatio"]}',
-                    'valuation' : f'{captions["priceToBookRatio"]} | {captions["peg"]}',
-                    'valuation2': f'{captions["peRatio"]} | {captions["evToebit"]}| {captions["priceToSalesRatio"]}',
-                    'income2'   : f'{captions["grossProfitRatio"]} | {captions["ebitPerRevenue"]}| {captions["freeCashFlowToRevenue"]}',
-                    'dividend'  : f'{captions["dividendYield"]} | {captions["payoutRatio"]}',
-                    'debt'      : f'{captions["debtToEquity"]} | {captions["debtToAssets"]} | \
-                    {captions["netDebtToebit"]} | {captions["interestCoverage"]} | {captions["shortTermCoverageRatios"]}',
-                    }
+    if dft.METRICS_SOURCE == 'URL':
+        return yaml_load(urllib.request.urlopen(func))
+    else:
+        with open(func) as file:
+            return yaml_load(file)
+# --------------------------
+
+def get_metric_set_names():
+    '''Returns the names of the metric sets'''
+    yaml_data = get_yaml_data(datatype='metric_set')
+    return list(yaml_data.keys())
+
+
+def get_set_metrics(met_set:str):
+    '''Return the metrics in a metric set as a list'''
+    yaml_data = get_yaml_data(datatype='metric_set')
+    try:
+        return yaml_data[met_set]['metrics']
+    except KeyError as exception:
+        print(exception)
+        return ['']
+
+
+def get_metric_set_description(met_set:str):
+    '''Returns the desciption of a metric sets'''
+    yaml_data = get_yaml_data(datatype='metric_set')
+    return yaml_data[met_set]['description']
+
+
+def get_tooltip_format(metric:str):
+    '''Return tooltip format from yaml file'''
+    yaml_data = get_yaml_data(datatype='metric_set')
+    return yaml_data[metric]['tooltip_format']
+
+
+def map_metric_to_name(metric:str):
+    '''Converts metric code to readable format defined in yaml file'''
+    if metric.startswith('d_'):
+        return '\u0394 ' + map_metric_to_name(metric[2:])
+    yaml_data = get_yaml_data(datatype='metrics')
+    keys      = list(yaml_data.keys()) # clone keys
+    for key in keys: # set all keys to lower case
+        if key.lower() != key:
+            yaml_data[key.lower()] = yaml_data[key]
+            del yaml_data[key]
+    try:
+        return yaml_data[metric.lower()]['name']
+    except:
+        print(f'map_metric_to_name(): No mapping for "{metric}"')
+        return metric # return as is if not in dictionary
+    return yaml_data[metric.lower()]['name']
+
+
+def get_metrics_set_caption(met_set):
+    metrics_data = get_yaml_data(datatype='metrics')
+    metrics = get_set_metrics(met_set)
+    caption = ''
+    for i, metric in enumerate(metrics):
+        temp = metrics_data[metric]['definition']
+        if temp != '':
+            caption += temp
+            if i != len(metrics)-1: #don't add a separation after last metric
+                caption += ' | '
+    return caption
+
 
 def get_metrics(group:str, metric:str=None):
     '''returns metric value group=dictionary name / metric=metric kind.
         If no metric specified, return dictionary'''
     try:
-        if group == 'wb_metrics':
-            if metric is None:
-                return wb_metrics #return dictionary
-            return wb_metrics[metric] # return value
-        if group == 'dupont_metrics':
-            if metric is None:
-                return dupont_metrics #return dictionary
-            return dupont_metrics[metric] # return value
-        # if group == 'mktcap_metrics':
-        #     if metric is None:
-        #         return mktcap_metrics #return dictionary
-        #     return mktcap_metrics[metric] # return value
-        if group == 'bs_metrics':
-            if metric is None:
-                return bs_metrics #return dictionary
-            return bs_metrics[metric] # return value
-        if group == 'income_metrics':
-            if metric is None:
-                return income_metrics #return dictionary
-            return income_metrics[metric] # return value
-        if group == 'income2_metrics':
-            if metric is None:
-                return income2_metrics #return dictionary
-            return income2_metrics[metric] # return value
-        if group == 'income_metrics':
-            if metric is None:
-                return income_metrics #return dictionary
-            return income_metrics[metric] # return value
-        if group == 'valuation_metrics':
-            if metric is None:
-                return valuation_metrics #return dictionary
-            return valuation_metrics[metric] # return value
-        if group == 'valuation2_metrics':
-            if metric is None:
-                return valuation2_metrics #return dictionary
-            return valuation2_metrics[metric] # return value
-        if group == 'dividend_metrics':
-            if metric is None:
-                return dividend_metrics #return dictionary
-            return dividend_metrics[metric] # return value
-        if group == 'debt_metrics':
-            if metric is None:
-                return debt_metrics #return dictionary
-            return debt_metrics[metric] # return value
-
+        if metric is None:
+            exec(f'return {group}')
+        exec(f'return {group}[{metric}]')
         caller_name = inspect.stack()[1][3]
         func_name   = inspect.stack()[0][3]
         msg         = f'{func_name}: non-existent group in {caller_name}'
         raise ValueError(msg)
     except:
-        raise ValueError(f'metrics.py > get_metrics: unknown metric "{group}"')
+        raise ValueError(f'get_metrics: unknown metric "{group}"')
+
+
+#REFACTOR AS A LIST COMPREHENSION
+def map_metrics_to_names(items:list):
+    '''Recursively calls map_item_to_name() on elements in items'''
+    names = []
+    for item in items:
+        names.append(map_metric_to_name(item))
+    return names
