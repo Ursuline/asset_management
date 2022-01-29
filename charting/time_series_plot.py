@@ -181,7 +181,7 @@ class TimeSeriesPlot():
 
     def _build_subtitle(self, plot):
         ''' Build plot subtitle '''
-        title  = f'{self._strat_pos.capitalize()} position | '
+        title  = f'{self._strat_pos.capitalize()} strategy | '
         title += f'EMA max payoff={self._ema:.1%} (hold={self._hold:.1%}) | '
         title += f'{self._span:.0f}-day mean | '
         title += f'opt buffer={self._buffer:.2%}'
@@ -189,7 +189,7 @@ class TimeSeriesPlot():
             denom = self._buy_sell[0] + self._buy_sell[1]
             if denom > 0:
                 turnover = self._trading_days / denom
-                title += f' | tx turnover: {turnover:.0f} days'
+                title += f' | avg tx turnover: {turnover:.0f} days'
 
         plot.add_layout(Title(text=title,
                               text_font_style="normal",
