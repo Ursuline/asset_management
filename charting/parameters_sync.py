@@ -33,19 +33,23 @@ PORTFOLIO_URL  = 'https://ml-finance.ams3.digitaloceanspaces.com'
 PORTFOLIO_PATH = 'charting/portfolios'
 PORTFOLIO_DIR  = f'{PORTFOLIO_URL}/{PORTFOLIO_PATH}/'
 
-# Indices
+# Indices, currency & rates
 PORTFOLIO_FILES  = ['indices.csv', 'indices_short.csv']
+PORTFOLIO_FILES += ['watchlist_currency.csv', 'watchlist_currency_short.csv']
+PORTFOLIO_FILES += ['watchlist_rates.csv', 'watchlist_rates_short.csv']
 # Holdings
 PORTFOLIO_FILES += ['charly_crypto.csv', 'charly_crypto_short.csv']
 PORTFOLIO_FILES += ['charly_saxo.csv']
 PORTFOLIO_FILES += ['saxo_cycliques.csv']
-PORTFOLIO_FILES += ['pea_mc.csv', 'adrien.csv']
+PORTFOLIO_FILES += ['pea_mc.csv',]
+PORTFOLIO_FILES += ['adrien.csv']
 PORTFOLIO_FILES += ['pea_pme.csv', 'abs.csv']
 # Prospective
 PORTFOLIO_FILES += ['watchlist.csv', 'watchlist_short.csv']
 PORTFOLIO_FILES += ['watchlist_gafam.csv', 'watchlist_gafam_short.csv']
 PORTFOLIO_FILES += ['watchlist_ark.csv', 'watchlist_ark_short.csv']
 PORTFOLIO_FILES += ['watchlist_futures.csv', 'watchlist_futures_short.csv']
+
 
 #PORTFOLIO_FILES = ['charly_crypto_short.csv']
 #PORTFOLIO_FILES = ['watchlist.csv', 'watchlist_short.csv']
