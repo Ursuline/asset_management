@@ -20,6 +20,7 @@ import FundamentalAnalysis as fa
 import cache as ksh
 import api_keys as keys
 import metrics as mtr
+import yahoo_utilities as y_util
 
 API_KEY = keys.FMP
 
@@ -82,8 +83,11 @@ class Company:
         self._stock_data = None
         self._stock_data_detailed = None
 
-        self._self_check()
-        self._load_data(expiration_date=expiration_date, start_date=start_date, end_date=end_date)
+        if self._ticker.startswith('^') is True: # Index
+            self._company_name = y_util.get_names_from_tickers(ticker)
+        else: # Everything else: stocks, etfs, etc
+            self._self_check()
+            self._load_data(expiration_date=expiration_date, start_date=start_date, end_date=end_date)
 
 
     def _self_check(self):
@@ -124,6 +128,8 @@ class Company:
             return None
         except IndexError:
             return None
+        except:
+            raise
 
 
     def _load_data(self, expiration_date, start_date, end_date):
