@@ -25,7 +25,7 @@ from finance import utilities as util
 if __name__ == '__main__':
     start_tm = time.time() # total_time
     save_tm  = time.time() # intermediate time
-    # Load several parameters
+    # Load run parameters
     yaml_data  = par.load_data()
     DATE_RANGE = par.get_time_span(yaml_data)
     ZOOM_RANGE = DATE_RANGE
@@ -36,6 +36,9 @@ if __name__ == '__main__':
     PLOT_FORMATS  = par.get_display_parameters(yaml_data)['ctr_sfc_plot_formats']
     REFRESH_YAHOO = par.get_refresh_parameters(yaml_data)['refresh_yahoo']
     REFRESH_EMA   = par.get_refresh_parameters(yaml_data)['refresh_ema']
+    PERSIST       = par.get_db_parameters(yaml_data)['persist']
+
+    print(f'** run time span: {DATE_RANGE} **')
 
 
     for ptf_file in par.get_portfolios(yaml_data):
@@ -148,4 +151,6 @@ if __name__ == '__main__':
                            email_nc  = False, # email n/c positions
                            email_plot_flags = email_plot_flags,
                            )
+        if PERSIST:
+            recommender.persist()
     print(f"Total elapsed time: {util.convert_seconds(time.time()-start_tm)}")

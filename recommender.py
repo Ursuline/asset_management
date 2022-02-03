@@ -12,16 +12,23 @@ import os
 import mimetypes
 from email.message import EmailMessage
 import datetime as dt
+from datetime import date
 
 from charting import private as pvt
 import parameters_sync as params
 from finance import utilities as util
+from db import db_utility as db_util
+from db import keys
+from db import db_charting
+
+USER = "charly"
+PASSWORD = keys.LOCAL_CHARLY
 
 class Recommender():
     '''
     Handles the dispatching of trading recommendations
     '''
-    def __init__(self, yaml_data, ptf_file = None, screen = True, email = True, sms = False):
+    def __init__(self, yaml_data:dict, ptf_file = None, screen = True, email = True, sms = False):
         '''
         Collects recommendations and dispatches to selected notification method
         _screen : print to screen
@@ -102,6 +109,60 @@ class Recommender():
             print(line)
 
 
+    def _persist_recommendation(self, rcm, cnx, crs):
+        name = rcm.get_name()
+        ticker = rcm.get_symbol()
+        if rcm.get_action() is not None:
+            if rcm.get_action() != 'n/c':
+                rec_date = util.date_to_string(rcm.get_date(), '%Y-%m-%d')
+                strategy = rcm.get_strategic_position()
+                position = rcm._holdings.get_current_position(ticker,
+                                                              strategy,
+                                                              )
+                recom     = rcm.get_action()
+                span      = rcm.get_span()
+                buffer    = rcm.get_buffer()
+                portfolio = self._ptf_file
+                comp_dict = {'ticker': ticker,
+                                'name': name,
+                              }
+                rec_date = rec_date.split('-')
+                print(f'{rec_date=}')
+                rec_dict = {'ticker': ticker,
+                              'date': date(int(rec_date[0]),  # YYYY
+                                           int(rec_date[1]),  # MM
+                                           int(rec_date[2])), # DD
+                              'strategy': strategy.lower(),
+                              'position': position.lower(),
+                              'recom': recom.lower(),
+                              'mean': span,
+                              'buffer': buffer,
+                              'portfolio': portfolio.lower(),
+                              }
+                db_charting.add_record(company_dict=comp_dict, recom_dict=rec_dict, db_cx=cnx, cursor=crs)
+            else:
+                print(f'action for {ticker} {name} is n/c')
+        else:
+            print(f'action for {ticker} {name} is None')
+
+
+    def persist(self):
+        '''Stores recommendations to db'''
+        # Open db connection
+        (cnx, crs) = db_util.connect_database(db_name='charting',
+                                              user=USER,
+                                              password=PASSWORD,
+                                              )
+        if self._n_long_recs > 0:
+            for rcm in self._long_recommendations:
+                self._persist_recommendation(rcm=rcm, cnx=cnx, crs=crs)
+
+        if self._n_short_recs > 0:
+            for rcm in self._short_recommendations:
+                self._persist_recommendation(rcm=rcm, cnx=cnx, crs=crs)
+        cnx.close()
+
+
     def _email_recommendations(self, email_nc: bool, email_plot_flags):
         '''Email recommendations when action is required'''
 
@@ -138,6 +199,7 @@ class Recommender():
                             self._n_actions += 1
             return body
 
+
         def add_attachment(msg, plot_path):
             '''Adds a file to the body of the message '''
             mime_type, _ = mimetypes.guess_type(plot_path)
@@ -149,6 +211,7 @@ class Recommender():
                                    filename = os.path.basename(plot_path),
                                    )
             atp.close()
+
 
         def add_attachments(msg, email_nc, email_plot_flags):
             '''
@@ -194,14 +257,15 @@ class Recommender():
                 msg  = f'Subject: Trade recoms for *{self._ptf_file}* '
                 msg += 'portfolio'
                 message["Subject"] = msg
-
             message.set_content(body)
 
             # add html plot files to email body
             add_attachments(message, email_nc, email_plot_flags)
-
-            mail_server = smtplib.SMTP_SSL(params.get_smtp_parameters(self._yaml_data)['ssl_port'],
-                                           params.get_smtp_parameters(self._yaml_data)['smtp_server'])
+            ssl_port    = params.get_smtp_parameters(self._yaml_data)['ssl_port']
+            smtp_server = params.get_smtp_parameters(self._yaml_data)['smtp_server']
+            mail_server = smtplib.SMTP_SSL(port = ssl_port,
+                                           host = smtp_server,
+                                           )
             mail_server.login(pvt.SENDER_EMAIL, pvt.PASSWORD)
             for recipient_email in params.get_recipients(self._yaml_data):
                 mail_server.send_message(message, pvt.SENDER_EMAIL, recipient_email)
@@ -241,6 +305,14 @@ class Recommendations():
         self.set_symbol()
 
     # Getters
+    def get_span(self):
+        '''Return the span (days)'''
+        return self._span
+
+    def get_buffer(self):
+        '''Return the buffer'''
+        return self._buffer
+
     def get_body(self):
         '''Return the body of the recommendation'''
         return self._body
