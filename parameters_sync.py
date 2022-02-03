@@ -9,7 +9,6 @@ Parameter set for sync_tickers.py
 """
 import os
 from charting import trading_defaults as dft
-from charting import private as pvt
 import yaml_utilities as yaml_util
 
 # Cloud server
@@ -86,9 +85,16 @@ def get_smtp_parameters(yml_data):
     return smtp_parameters
 
 
+def get_db_parameters(yml_data):
+    db_parameters={}
+    db_parameters['persist'] = yml_data['persist']
+    return db_parameters
+
+
 if __name__ == '__main__':
     '''Test driver'''
     yaml_data  = load_data()
+    print({type(yaml_data)})
     portfolios = get_portfolios(yaml_data)
     recipients = get_recipients(yaml_data)
     time_span  = get_time_span(yaml_data)
