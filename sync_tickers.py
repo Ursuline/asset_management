@@ -15,10 +15,10 @@ import pandas as pd
 from charting import trading as tra
 from charting import trading_defaults as dft
 from charting import topo_map as tpm
-import recommender as rec
 from charting import time_series_plot as tsp
-import parameters_sync as par
 from charting import holdings as hld
+import recommender as rec
+import parameters_sync as par
 from finance import utilities as util
 
 
