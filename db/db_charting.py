@@ -130,3 +130,19 @@ def increment_table(table_name:str, ticker:str, sql_vars:str, sql_params:str, di
     except:
         print(f'Failed to increment {table_name}')
         raise
+
+
+def get_security_name(ticker:str, cursor):
+    '''Return security name from a ticker symbol from company db'''
+    try:
+        sql = f"SELECT name FROM company where ticker = '{ticker}'"
+        cursor.execute(sql)
+        name = cursor.fetchall()[0][0]
+    except Exception as ex:
+        print(f'Cannot retrieve company name for ticker {ticker} {ex}')
+        return None
+    return name
+
+
+if __name__ == '__main__':
+    pass
