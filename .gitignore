@@ -2,11 +2,13 @@
 .pylintrc_old
 .pylintrc
 .idea
+db/keys.py
 *.sqlite
 *.ipynb
 *old*
 *.sh
 *.html
+db/keys.py
 markets.py
 test.py
 client_secret.json

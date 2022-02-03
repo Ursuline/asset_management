@@ -125,6 +125,11 @@ def list_table_columns(table_name, cursor):
 
 def print_table(table_name:str, cursor, cnx, *args):
     '''Pretty prints table contents to screen args -> sort columns'''
+    sql = f"SELECT count(ticker) FROM {table_name}"
+    print(sql)
+    cursor.execute(sql)
+    cnt=cursor.fetchall()
+    print(f'{cnt} records in table {table_name}')
     results = list_table_records(table_name, cursor, *args)
     headers = list_table_columns(table_name=table_name, cursor=cursor)
     print(tabulate(results, headers=headers, tablefmt='psql'))
