@@ -4,12 +4,13 @@
 Created on Mon Nov  1 19:03:37 2021
 extract_company_data.py
 
-Extract individual industry, sector, market cap, currency & country data from
-fa.profile() and merge with fa.available_companies() data
+Extract individual names, industry, sector, market cap, currency, country & exchange
+data from fa.profile() and merge with fa.available_companies() data
 Add a market cap in USD column
 
 @author: charly
 """
+import os
 import time
 import pandas as pd
 from tqdm import tqdm
@@ -18,9 +19,9 @@ from forex_python.converter import CurrencyRates
 import api_keys as keys
 from finance import utilities as util
 
-API_KEY = keys.FMP
-cur_rates = CurrencyRates()
-
+API_KEY    = keys.FMP
+cur_rates  = CurrencyRates()
+OUTPUT_DIR = '.'
 
 def get_usd_xrate(curr):
     '''
@@ -44,7 +45,7 @@ def add_mktcap_usd(dataframe):
         print(f'Exchange rate = {xrate}')
         df_usd = dataframe[dataframe.currency == currency].copy()
         df_usd['mktCapUSD'] = df_usd['mktCap'] * xrate
-        all_dfs.append(df)
+        all_dfs.append(df_usd)
     return pd.concat(all_dfs)
 
 
@@ -54,7 +55,7 @@ if __name__ == '__main__':
     # Load list of available companies
     companies = fa.available_companies(API_KEY)
 
-    # Filter out non-stock data (etfs, etc)
+    # Filter out non-stock data (etfs, trusts & funds)
     companies = companies[companies.type == 'stock']
     print(f'Processing {companies.shape[0]} companies')
 
@@ -67,7 +68,6 @@ if __name__ == '__main__':
     for company in tqdm(companies.index, position=0, leave=True):
         print(f'Processing {company}')
         company_profile = fa.profile(company, API_KEY)
-
         industries.append(company_profile.loc['industry'][0])
         sectors.append(company_profile.loc['sector'][0])
         mktCaps.append(company_profile.loc['mktCap'][0])
@@ -75,22 +75,23 @@ if __name__ == '__main__':
         countries.append(company_profile.loc['country'][0])
 
     # Aggregate lists into a dataframe with company ticker symbol as index
-    df = pd.DataFrame(
-                     {'industry': industries,
-                      'sector': sectors,
-                      'mktCap': mktCaps,
-                      'currency': currencies,
-                      'country': countries,
-                     }, index=companies.index
-                     )
+    temp_df = pd.DataFrame(
+                           {'industry': industries,
+                            'sector': sectors,
+                            'mktCap': mktCaps,
+                            'currency': currencies,
+                            'country': countries,
+                            }, index=companies.index
+                           )
 
     # Merge with initial data
-    merged = companies.merge(df, on='symbol')
+    merged = companies.merge(temp_df, on='symbol')
 
     #Add column of mktCap in USD
     merged = add_mktcap_usd(merged)
 
     # Save to csv file
-    merged.to_csv('stocks.csv', index=True)
+    pathname = os.path.join(OUTPUT_DIR, 'stocks.csv')
+    merged.to_csv(pathname, index=True)
 
     print(f"Total elapsed time: {util.convert_seconds(time.time()-start_tm)}")
