@@ -127,7 +127,6 @@ class Recommender():
                                 'name': name,
                               }
                 rec_date = rec_date.split('-')
-                print(f'{rec_date=}')
                 rec_dict = {'ticker': ticker,
                               'date': date(int(rec_date[0]),  # YYYY
                                            int(rec_date[1]),  # MM
@@ -140,10 +139,6 @@ class Recommender():
                               'portfolio': portfolio.lower(),
                               }
                 db_charting.add_record(company_dict=comp_dict, recom_dict=rec_dict, db_cx=cnx, cursor=crs)
-            else:
-                print(f'action for {ticker} {name} is n/c')
-        else:
-            print(f'action for {ticker} {name} is None')
 
 
     def persist(self):
