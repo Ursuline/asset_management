@@ -8,6 +8,7 @@ methods specific to charting database
 @author: charly
 """
 from db import keys
+from tabulate import tabulate
 import yahoo_utilities as y_util
 
 USER = "charly"
@@ -132,16 +133,38 @@ def increment_table(table_name:str, ticker:str, sql_vars:str, sql_params:str, di
         raise
 
 
-def get_security_name(ticker:str, cursor):
+def get_security_name_from_db(ticker:str, cursor):
     '''Return security name from a ticker symbol from company db'''
     try:
         sql = f"SELECT name FROM company where ticker = '{ticker}'"
         cursor.execute(sql)
         name = cursor.fetchall()[0][0]
     except Exception as ex:
-        print(f'Cannot retrieve company name for ticker {ticker} {ex}')
-        return None
+        msg = f'Cannot retrieve company name for ticker {ticker} {ex}'
+        raise IndexError(msg)
     return name
+
+
+def get_security_history(ticker:str, strategy:str, cursor):
+    '''Return historic data for a given security / strategy combination'''
+    try:
+        sql = f"SELECT * FROM recommendation where ticker = '{ticker}' AND strategy = '{strategy}' ORDER BY date DESC"
+        cursor.execute(sql)
+        print(tabulate(cursor.fetchall()))
+    except Exception as ex:
+        print(f'cannot get history for {ticker} {ex}')
+
+
+def get_portfolio_history(portfolio:str, cursor):
+    '''Return historic data for a given security / portfolio combination'''
+    try:
+        sql  = "SELECT * FROM recommendation "
+        sql += f"where portfolio = '{portfolio}' "
+        sql += "ORDER BY date DESC"
+        cursor.execute(sql)
+        print(tabulate(cursor.fetchall()))
+    except Exception as ex:
+        print(f'cannot get history for {portfolio} {ex}')
 
 
 if __name__ == '__main__':
