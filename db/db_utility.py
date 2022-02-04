@@ -7,6 +7,7 @@ Generic database utilities
 
 @author: charly
 """
+import pandas as pd
 from tabulate import tabulate
 import mysql.connector
 
@@ -146,3 +147,15 @@ def list_table_records(table_name:str, cursor, *args):
     except:
         print(f' {__name__} Failed to list records from table {table_name}')
         return [()]
+
+
+def db_to_df(table_name:str, db_conn):
+    '''build a pandas dataframe from a mySQL table'''
+    try:
+        sql = f"SELECT * FROM {table_name}"
+        dataframe = pd.read_sql(sql, db_conn)
+    except Exception as e:
+        print(str(e))
+    finally:
+        db_conn.close()
+        return dataframe
