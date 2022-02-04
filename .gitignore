@@ -1,5 +1,7 @@
 .cache
 .pylintrc_old
+charting_run.yaml
+instructions.yaml
 .pylintrc
 .idea
 db/keys.py
