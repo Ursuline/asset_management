@@ -20,10 +20,10 @@ def yaml_load(path, remote:bool=True):
         else:
             data = yaml.safe_load(path)
     except yaml.YAMLError as exception:
-        print(exception)
+        print(f'{__name__}: {exception}')
         raise
     except HTTPError as ex:
-        print(ex)
+        print(f'{__name__}: {ex}')
         raise
     except:
         raise
