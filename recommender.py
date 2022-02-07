@@ -143,10 +143,12 @@ class Recommender():
 
     def persist(self):
         '''Stores recommendations to db'''
+        host = self._yaml_data['db_ip']
         # Open db connection
         (cnx, crs) = db_util.connect_database(db_name='charting',
-                                              user=USER,
-                                              password=PASSWORD,
+                                              user     = USER,
+                                              password = PASSWORD,
+                                              host     = host,
                                               )
         if self._n_long_recs > 0:
             for rcm in self._long_recommendations:

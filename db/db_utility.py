@@ -13,10 +13,10 @@ import mysql.connector
 
 
 ### Database utilities ###
-def create_database(db_name:str, user:str, password:str):
+def create_database(db_name:str, host:str, user:str, password:str):
     '''Build a database & return connector & cursor as a tuple'''
     try:
-        db_cx = mysql.connector.connect(host     = "localhost",
+        db_cx = mysql.connector.connect(host     = host,
                                         user     = user,
                                         password = password,
                                         )
@@ -29,11 +29,11 @@ def create_database(db_name:str, user:str, password:str):
         raise
 
 
-def list_databases(user:str, password:str):
+def list_databases(user:str, host:str, password:str):
     '''Return a list of all databases on the system'''
     try:
         print(f' {__name__} Attempting connecttion to mysql {user} {password}')
-        db_cx = mysql.connector.connect(host     = "localhost",
+        db_cx = mysql.connector.connect(host     = host,
                                         user     = user,
                                         password = password,
                                         )
@@ -46,10 +46,10 @@ def list_databases(user:str, password:str):
         raise
 
 
-def connect_database(db_name:str, user:str, password:str):
+def connect_database(db_name:str, host:str, user:str, password:str):
     '''Connect to an existing database & return connector & cursor as a tuple'''
     try:
-        db_cx = mysql.connector.connect(host     = "localhost",
+        db_cx = mysql.connector.connect(host     = host,
                                         user     = user,
                                         password = password,
                                         database = db_name
@@ -71,9 +71,8 @@ def drop_table(db_name:str, table_name:str, cursor):
             tbls.append(table[0])
         if table_name not in tbls:
             raise IndexError(f'Failed to drop table "{table_name}" from "{db_name}"')
-        else:
-            sql = f"DROP TABLE {table_name}"
-            cursor.execute(sql)
+        sql = f"DROP TABLE {table_name}"
+        cursor.execute(sql)
     except Exception as ex:
         print(f'table "{table_name}" does not exist in "{db_name}" {ex}')
         raise
@@ -83,6 +82,7 @@ def drop_table(db_name:str, table_name:str, cursor):
 
 
 def delete_record(table_name:str, cursor, cnx):
+    '''Delete record from table'''
     try:
         sql = f'delete from {table_name} where std_id=1 and name=rahul'
         cursor.execute(sql)
@@ -100,15 +100,16 @@ def list_tables(cursor):
         sql = 'SHOW TABLES'
         cursor.execute(sql)
         return [x for x in cursor]
-    except:
-        print(f' {__name__} Failed to list tables')
+    except Exception as ex:
+        print(f' {__name__} Failed to list tables: {ex}')
         return [()]
 
 
-def describe_table(db_name:str, table_name:str, user:str, password:str):
+def describe_table(db_name:str, host:str, table_name:str, user:str, password:str):
     '''Outputs to screen a full description of table '''
     headers = ['Field', 'Type', 'Null', 'Key', 'Default', 'Extra']
-    (db_cx, cursor) = connect_database(db_name  = db_name,
+    (_, cursor) = connect_database(db_name  = db_name,
+                                       host     = host,
                                        user     = user,
                                        password = password,
                                        )
@@ -144,8 +145,8 @@ def list_table_records(table_name:str, cursor, *args):
         sql += (', '.join(str(x) for x in args))
         cursor.execute(sql)
         return cursor.fetchall()
-    except:
-        print(f' {__name__} Failed to list records from table {table_name}')
+    except Exception as ex:
+        print(f' {__name__} Failed to list records from table {table_name}: {ex}')
         return [()]
 
 
@@ -154,8 +155,8 @@ def db_to_df(table_name:str, db_conn):
     try:
         sql = f"SELECT * FROM {table_name}"
         dataframe = pd.read_sql(sql, db_conn)
-    except Exception as e:
-        print(str(e))
+    except Exception as exception:
+        print(str(exception))
     finally:
         db_conn.close()
         return dataframe

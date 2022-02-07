@@ -12,6 +12,8 @@ from db import keys
 import yahoo_utilities as y_util
 
 USER = "charly"
+host = "134.122.100.75" # Dedicated UK IP address
+# host = "localhost"
 PASSWORD = keys.LOCAL_CHARLY
 
 def run_tests():
@@ -26,6 +28,7 @@ def run_tests():
     # Connect to charting
     db_name = 'charting'
     (db_cx, cursor) = db_util.connect_database(db_name  = db_name,
+                                               host     = host,
                                                user     = USER,
                                                password = PASSWORD,
                                                )
@@ -91,9 +94,10 @@ def get_security_name(ticker):
 
 if __name__ == '__main__':
     #run_tests()
-    (cnx, crs) = db_util.connect_database(db_name='charting',
-                                          user=USER,
-                                          password=PASSWORD,
+    (cnx, crs) = db_util.connect_database(db_name  ='charting',
+                                          host     = host,
+                                          user     = USER,
+                                          password = PASSWORD,
                                           )
     #db_util.drop_table(db_name='charting', table_name='company', cursor=crs)
     #db_util.drop_table(db_name='charting', table_name='recommendation', cursor=crs)
@@ -109,6 +113,7 @@ if __name__ == '__main__':
                            table_name ='company',
                            user       = USER,
                            password   = PASSWORD,
+                           host       = host,
                            )
     db_util.print_table('company', crs, cnx, 'ticker')
     print()
@@ -117,6 +122,7 @@ if __name__ == '__main__':
                            table_name ='recommendation',
                            user       = USER,
                            password   = PASSWORD,
+                           host       = host,
                            )
     db_util.print_table('recommendation', crs, cnx, 'ticker', 'date')
 
@@ -126,7 +132,5 @@ if __name__ == '__main__':
     db_charting.get_security_history(ticker=TICKER, strategy=STRATEGY, cursor=crs)
     portfolio = 'saxo_cycliques'
     db_charting.get_portfolio_history(portfolio=portfolio, cursor=crs)
-
-
 
     cnx.close()
