@@ -15,20 +15,19 @@ import datetime as dt
 from datetime import date
 
 from charting import private as pvt
-import parameters_sync as params
 from finance import utilities as util
 from db import db_utilities as db_util
-from db import keys
+from db import keys as db_keys
 from db import db_charting
 
 USER = "charly"
-PASSWORD = keys.LOCAL_CHARLY
+PASSWORD = db_keys.LOCAL_CHARLY
 
 class Recommender():
     '''
     Handles the dispatching of trading recommendations
     '''
-    def __init__(self, yaml_data:dict, ptf_file = None, screen = True, email = True, sms = False):
+    def __init__(self, run_parameters:dict, ptf_file = None, screen = True, email = True, sms = False):
         '''
         Collects recommendations and dispatches to selected notification method
         _screen : print to screen
@@ -45,16 +44,18 @@ class Recommender():
         self._screen = screen
         self._email  = email
         self._sms    = sms
-        self._yaml_data = yaml_data
+        self._run_parameters = run_parameters
 
 
     def set_screen(self, screen: bool):
         '''Switch output to screen'''
         self._screen = screen
 
+
     def set_email(self, email: bool):
         '''Switch email'''
         self._email = email
+
 
     def add_recommendation(self, recommendation):
         '''Add a recommendation to the list of recommendations'''
@@ -69,6 +70,7 @@ class Recommender():
             msg += f'position "{recommendation.get_strategic_position()}" '
             msg += 'should be long or short.'
             raise ValueError(msg)
+
 
     def notify(self, screen_nc: bool, email_nc: bool, email_plot_flags=None):
         '''
@@ -147,7 +149,7 @@ class Recommender():
         (cnx, crs) = db_util.connect_database(db_name  = 'charting',
                                               user     = USER,
                                               password = PASSWORD,
-                                              host     = self._yaml_data['db_ip'],
+                                              host     = self._run_parameters.get_db_parameters()['db_ip'],
                                               )
         if self._n_long_recs > 0:
             for rcm in self._long_recommendations:
@@ -177,8 +179,8 @@ class Recommender():
                     symb = rcm.get_symbol()
                     if rcm.get_action() is not None:
                         if email_nc or not (email_nc or rcm.get_action() == 'n/c'):
-                            date = util.date_to_string(rcm.get_date(), '%d %b %Y')
-                            body += f'{name} ({symb}) {date}:\n{rcm.get_body()}\n'
+                            date_string = util.date_to_string(rcm.get_date(), '%d %b %Y')
+                            body += f'{name} ({symb}) {date_string}:\n{rcm.get_body()}\n'
                             self._n_actions += 1
                 body += '\n'
 
@@ -190,8 +192,8 @@ class Recommender():
                     symb = rcm.get_symbol()
                     if rcm.get_action() is not None:
                         if email_nc or not (email_nc or rcm.get_action() == 'n/c'):
-                            date = util.date_to_string(rcm.get_date(), '%d %b %Y')
-                            body += f'{name} ({symb}) {date}:\n{rcm.get_body()}\n'
+                            date_string = util.date_to_string(rcm.get_date(), '%d %b %Y')
+                            body += f'{name} ({symb}) {date_string}:\n{rcm.get_body()}\n'
                             self._n_actions += 1
             return body
 
@@ -246,7 +248,7 @@ class Recommender():
         if self._n_actions != 0: # send email if there is something to send
             message = EmailMessage()
             message["From"] = pvt.SENDER_EMAIL
-            message["To"]   = ",".join(params.get_recipients(self._yaml_data))
+            message["To"]   = ",".join(self._run_parameters.get_recipients())
             if self._ptf_file is None:
                 message["Subject"] = 'Subject: Trade recommendation'
             else:
@@ -257,13 +259,13 @@ class Recommender():
 
             # add html plot files to email body
             add_attachments(message, email_nc, email_plot_flags)
-            ssl_port    = params.get_smtp_parameters(self._yaml_data)['ssl_port']
-            smtp_server = params.get_smtp_parameters(self._yaml_data)['smtp_server']
+            ssl_port    = self._run_parameters.get_smtp_parameters()['ssl_port']
+            smtp_server = self._run_parameters.get_smtp_parameters()['smtp_server']
             mail_server = smtplib.SMTP_SSL(port = ssl_port,
                                            host = smtp_server,
                                            )
             mail_server.login(pvt.SENDER_EMAIL, pvt.PASSWORD)
-            for recipient_email in params.get_recipients(self._yaml_data):
+            for recipient_email in self._run_parameters.get_recipients():
                 mail_server.send_message(message, pvt.SENDER_EMAIL, recipient_email)
 
             mail_server.quit()
@@ -362,8 +364,8 @@ class Recommendations():
     def print_recommendation(self, notify: bool, enhanced = True):
         '''Print recommendation to screen'''
         if notify:
-            date = util.date_to_string(self._date, '%d %b %Y')
-            msg = f'{date}: '
+            date_string = util.date_to_string(self._date, '%d %b %Y')
+            msg = f'{date_string}: '
             msg += f'{self._name} ({self._symbol}) '
             msg += f'action:{self._action} | position: {self._position} | '
             msg += f'span={self._span:.0f} days buffer={self._buffer:.2%}'
@@ -372,7 +374,7 @@ class Recommendations():
             print(msg)
 
 
-class Recommendation_sync(Recommendations):
+class RecommendationSync(Recommendations):
     '''
     encapsulates the recommendation to buy | sell | n/c
     captured in the target date row ACTION column of the ticker object's data
@@ -449,8 +451,9 @@ class Recommendation_sync(Recommendations):
                     return 'sell'
                 if recom_sign == 1:
                     return 'buy'
-            msg = f'current_pos "{current_pos}" should be long short or cash'
-            raise IOError(msg)
+            else:
+                msg = f'current_pos "{current_pos}" should be long short or cash'
+                raise IOError(msg)
 
             if current_pos == recom_pos:
                 return None
@@ -486,8 +489,8 @@ class Recommendation_sync(Recommendations):
     def print_recommendation(self, notify: bool, enhanced = True):
         '''Print recommendation to screen'''
         if notify:
-            date = util.date_to_string(self._date, '%d %b %Y')
-            msg = f'{date}: '
+            date_string = util.date_to_string(self._date, '%d %b %Y')
+            msg = f'{date_string}: '
             msg += f'{self._name} ({self._symbol}) '
             msg += self._body
             if (self._action in ['buy', 'sell']) & enhanced:
