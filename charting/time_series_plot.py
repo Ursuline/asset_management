@@ -25,7 +25,6 @@ from finance import utilities as util
 
 class TimeSeriesPlot():
     '''Bokeh 2.4.2 time series plot'''
-    curdoc().theme = dft.BK_THEMES[0]
 
     @classmethod
     def get_default_display_flags(cls):
@@ -40,7 +39,7 @@ class TimeSeriesPlot():
         flags['statistics'] = False
         return flags
 
-    def __init__(self, ticker_object, topomap, strat_pos, disp_dates, span, buffer, disp_flags):
+    def __init__(self, ticker_object, topomap, strat_pos, disp_dates, span, buffer, run_params):
         self._ticker_obj    = ticker_object
         self._topomap       = topomap
         self._strat_pos     = strat_pos
@@ -55,12 +54,16 @@ class TimeSeriesPlot():
         self._plot          = None
         self._buy_sell      = None
         self._pathname      = None
-        self._display_flags = disp_flags
+        self._theme         = None
+        self._run_params    = run_params # parameters from yaml file
+        self._display_flags = self.get_default_display_flags()
         self.update()
 
 
     def update(self, disp_flags = None, disp_dates=None, span=None, buffer=None, fee=None):
         '''Global (re)-setter'''
+        curdoc().theme = self._run_params['ts_bk_theme']
+        self._theme    = curdoc().theme
         window_start   = self._display_dates[0] - timedelta(days = self._span + 1)
         window_end     = self._display_dates[1]
         volume         = self._ticker_obj.get_volume()
@@ -107,7 +110,7 @@ class TimeSeriesPlot():
 
         # Link the CrossHairTools together
         crosshair = CrosshairTool(dimensions = "both",
-                                  line_color = dft.get_x_hair_color(curdoc().theme),
+                                  line_color = self._get_x_hair_color(),
                                   line_width = 1,
                                   line_alpha = .5,
                                   )
@@ -132,11 +135,8 @@ class TimeSeriesPlot():
     def _build_pathname(self, extension):
         '''Build html file path name'''
         directory = self._get_directory()
-        prefix = self._build_fileprefix()
-        # filename  = f'{self._ticker_obj.get_symbol()}_'
-        # filename += f'{self._display_dates[0].date()}-{self._display_dates[1].date()}_'
-        # filename += f'{self._strat_pos}_tmseries'
-        filename = prefix + f'.{extension}'
+        prefix    = self._build_fileprefix()
+        filename  = prefix + f'.{extension}'
         self._pathname = os.path.join(directory, filename)
 
 
@@ -160,6 +160,20 @@ class TimeSeriesPlot():
         return self._strategy
 
 
+    def _get_x_hair_color(self):
+        '''Set cross-hair color to contrast with the curdoc theme'''
+        # this should be more flexible - refactor
+        themes = self._run_params['ts_bk_themes']
+        light_idx = [1, 4] # yuck
+        light_themes = []
+        for idx in light_idx:
+            light_themes.append(themes[idx])
+        # If theme is light return black & vice-versa
+        if self._theme in light_themes:
+            return 'black'
+        return 'white'
+
+
     def _build_title(self, plot):
         ''' Build plot title '''
         dates         = self._display_dates
@@ -171,10 +185,11 @@ class TimeSeriesPlot():
         if self._buy_sell is not None:
             title += f' | {self._buy_sell[0]} buys {self._buy_sell[1]} sells '
 
-        plot.add_layout(Title(text=title,
-                              text_font_style="bold",
-                              text_font_size="16pt",
-                              align="center"),
+        plot.add_layout(Title(text            = title,
+                              text_font_style = self._run_params['ts_title_style'],
+                              text_font_size  = self._run_params['ts_title_size'],
+                              align           = 'center',
+                              ),
                         'above')
         return plot
 
@@ -191,20 +206,20 @@ class TimeSeriesPlot():
                 turnover = self._trading_days / denom
                 title += f' | avg tx turnover: {turnover:.0f} days'
 
-        plot.add_layout(Title(text=title,
-                              text_font_style="normal",
-                              align="center"),
+        plot.add_layout(Title(text            = title,
+                              text_font_style = self._run_params['ts_subtitle_style'],
+                              align           = "center"),
                         'above')
         return plot
 
 
     def _build_lower_pane(self, source, upper_pane):
         pane = figure(x_axis_type      = "datetime",
-                      plot_width       = dft.PLOT_WIDTH,
-                      plot_height      = dft.PLOT_HDIM_BOT,
+                      plot_width       = self._run_params['ts_plot_width'],
+                      plot_height      = self._run_params['ts_plot_hdim_bot'],
                       y_axis_label     ='Volume',
                       x_range          = upper_pane.x_range,
-                      output_backend   = "webgl",
+                      #output_backend   = "webgl", is this necessary ? let's see
                      )
 
         booleans = [True if ret >= 0 else False for ret in source.data['RET']]
@@ -243,8 +258,8 @@ class TimeSeriesPlot():
         '''
         y_label = f'Price ({self._ticker_obj.get_currency_symbol()})'
         pane = figure(x_axis_type      = 'datetime',
-                      plot_width       = dft.PLOT_WIDTH,
-                      plot_height      = dft.PLOT_HDIM_TOP,
+                      plot_width       = self._run_params['ts_plot_width'],
+                      plot_height      = self._run_params['ts_plot_hdim_top'],
                       y_axis_label     = y_label,
                       toolbar_location = 'right',
                       toolbar_sticky   = False,
@@ -337,7 +352,7 @@ class TimeSeriesPlot():
             line_color   = dft.COLOR_SCHEME[2]
 
         elif axis.lower() == 'ema_buffer':
-            label  = u'EMA \u00b1 '
+            label  = 'EMA \u00b1 '
             label += f'{self._buffer:.2%}'
             y_axis       = 'EMA_PLUS'
             legend_label = label
@@ -350,7 +365,7 @@ class TimeSeriesPlot():
             line_color   = dft.COLOR_SCHEME[3]
 
         elif axis.lower() == 'sma_buffer':
-            label  = u'SMA \u00b1 '
+            label  = 'SMA \u00b1 '
             label += f'{self._buffer:.2%}'
             y_axis       = 'SMA_PLUS'
             legend_label = label
@@ -413,12 +428,13 @@ class TimeSeriesPlot():
         Place a text box with signal statistics
         '''
         summary_stats = util.get_summary_stats(self._strategy.loc[self._display_dates[0]:self._display_dates[1], :],
-                                               dft.STATS_LEVEL,
-                                               'RET')
+                                               self._run_params['ts_stats_level'],
+                                               'RET',
+                                               )
         text  = 'Daily returns:\n'
-        text += u'\u03bc='
+        text += '\u03bc='
         text += f'{summary_stats["mean"]:.2%}\n'
-        text += u'\u03c3='
+        text += '\u03c3='
         text += f'{summary_stats["std"]:.2%}\n'
         text += f'Skewness={summary_stats["skewness"]:.2g}\n'
         text += f'Kurtosis={summary_stats["kurtosis"]:.2g}\n'
