@@ -26,28 +26,27 @@ if __name__ == '__main__':
     start_tm = time.time() # total_time
     save_tm  = time.time() # intermediate time
     # Load run parameters
-    yaml_data  = par.load_data()
-    DATE_RANGE = par.get_time_span(yaml_data)
+    yaml_pars  = par.ChartingParameters()
+    DATE_RANGE = yaml_pars.get_time_span()
     ZOOM_RANGE = DATE_RANGE
-    NOTIFY     = par.get_recommender_parameters(yaml_data)['notify']
-    SCREEN     = par.get_recommender_parameters(yaml_data)['screen']
-    EMAIL      = par.get_recommender_parameters(yaml_data)['email']
-    DISPLAY_TIME_SERIES = par.get_display_parameters(yaml_data)['display_time_series']
-    PLOT_FORMATS  = par.get_display_parameters(yaml_data)['ctr_sfc_plot_formats']
-    REFRESH_YAHOO = par.get_refresh_parameters(yaml_data)['refresh_yahoo']
-    REFRESH_EMA   = par.get_refresh_parameters(yaml_data)['refresh_ema']
-    PERSIST       = par.get_db_parameters(yaml_data)['persist']
+    NOTIFY     = yaml_pars.get_recommender_parameters()['notify']
+    SCREEN     = yaml_pars.get_recommender_parameters()['screen']
+    EMAIL      = yaml_pars.get_recommender_parameters()['email']
+    DISPLAY_TIME_SERIES = yaml_pars.get_display_parameters()['display_time_series']
+    PLOT_FORMATS  = yaml_pars.get_display_parameters()['ctr_sfc_plot_formats']
+    REFRESH_YAHOO = yaml_pars.get_refresh_parameters()['refresh_yahoo']
+    REFRESH_EMA   = yaml_pars.get_refresh_parameters()['refresh_ema']
+    PERSIST       = yaml_pars.get_db_parameters()['persist']
 
-    print(f'** run time span: {DATE_RANGE} **')
+    print(f'*** run time span: {DATE_RANGE} ***\n')
 
-
-    for ptf_file in par.get_portfolios(yaml_data):
+    for ptf_file in yaml_pars.get_portfolios():
         holdings = hld.Holdings(par.PORTFOLIO_DIR, ptf_file)
         securities = holdings.get_securities()
-        recommender = rec.Recommender(yaml_data = yaml_data,
-                                      ptf_file = ptf_file,
-                                      screen = SCREEN,
-                                      email  = EMAIL,
+        recommender = rec.Recommender(run_parameters = yaml_pars,
+                                      ptf_file       = ptf_file,
+                                      screen         = SCREEN,
+                                      email          = EMAIL,
                                       )
 
         for i, security in enumerate(securities.Ticker):
@@ -129,13 +128,13 @@ if __name__ == '__main__':
 
                 # Determine the action to take for the given END_DATE
                 # instantiate recommendation
-                rcm = rec.Recommendation_sync(ticker_object = ticker_obj,
-                                              topomap       = topomap,
-                                              holdings      = holdings,
-                                              target_date   = date_range[1],
-                                              span          = best_span,
-                                              buffer        = best_buffer,
-                                              ts_plot       = ts_plot,
+                rcm = rec.RecommendationSync(ticker_object = ticker_obj,
+                                              topomap      = topomap,
+                                              holdings     = holdings,
+                                              target_date  = date_range[1],
+                                              span         = best_span,
+                                              buffer       = best_buffer,
+                                              ts_plot      = ts_plot,
                                               )
                 rcm.print_recommendation(notify = NOTIFY)
                 recommender.add_recommendation(rcm)
