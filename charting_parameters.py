@@ -19,13 +19,20 @@ PORTFOLIO_FILE = 'charting_run.yaml'
 
 
 class ChartingParameters():
-    '''`Encapsulates charting run data (in remote charting_run.yaml)'''
+    '''`Encapsulates the charting_run parameters in remote charting_run.yaml
+        and offers thematic data-extraction functionality
+    '''
     def __init__(self):
+        '''Load yaml data from remote server'''
         self._yaml_data =  yaml_util.yaml_load(path = os.path.join(PORTFOLIO_DIR,
                                                                    PORTFOLIO_FILE,
                                                                    ),
                                                remote = True,
                                                )
+
+    def get_yaml_data(self):
+        '''Returns undifferentiated data'''
+        return self._yaml_data
 
 
     def get_portfolios(self):
@@ -39,7 +46,7 @@ class ChartingParameters():
 
 
     def get_recipients(self):
-        '''Return email recipients'''
+        '''Returns email recipients'''
         return self._yaml_data['recipients']
 
 
