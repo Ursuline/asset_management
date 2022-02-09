@@ -18,7 +18,7 @@ from charting import topo_map as tpm
 from charting import time_series_plot as tsp
 from charting import holdings as hld
 import recommender as rec
-import parameters_sync as par
+import charting_parameters as par
 from finance import utilities as util
 
 
@@ -104,7 +104,7 @@ if __name__ == '__main__':
                                                 ZOOM_RANGE[1],
                                                 )
                 #display flags:
-                display_flags = tsp.TimeSeriesPlot.get_default_display_flags()
+                #display_flags = tsp.TimeSeriesPlot.get_default_display_flags()
 
                 # Plot time series with default parameters from best EMA
                 ts_plot = tsp.TimeSeriesPlot(ticker_object = ticker_obj,
@@ -113,7 +113,8 @@ if __name__ == '__main__':
                                              disp_dates    = date_range,
                                              span          = best_span,
                                              buffer        = best_buffer,
-                                             disp_flags    = display_flags,
+                                             run_params    = yaml_pars.get_yaml_data(),
+                                             #disp_flags    = display_flags,
                                              )
 
                 #Combine close, volume and return data
