@@ -9,14 +9,9 @@ Created on Wed Mar 24 15:56:37 2021
 """
 from datetime import datetime
 from datetime import timedelta
-import pandas as pd
 import matplotlib.pyplot as plt
 import matplotlib.dates as mdates
 
-# pd.options.display.float_format = '{:,.2f}'.format
-# pd.set_option("precision", 7)
-
-STATS_LEVEL = .05 # p-value level
 
 DATA_DIR  = 'charting/data'
 PLOT_DIR  = 'charting/plots'
@@ -64,16 +59,17 @@ FEE_PCT        = .004  # broker's fee
 
 #### PLOT DEFAULTS ####
 # Bokeh Time series
-PLOT_WIDTH   = 1500
-PLOT_HDIM_TOP = 600
-PLOT_HDIM_BOT = 250
-BK_THEMES = ['dark_minimal', 'light_minimal', 'night_sky', 'contrast', 'caliber']
+# STATS_LEVEL = .05 # p-value level
+# PLOT_WIDTH   = 1500
+# PLOT_HDIM_TOP = 600
+# PLOT_HDIM_BOT = 250
+# BK_THEMES = ['dark_minimal', 'light_minimal', 'night_sky', 'contrast', 'caliber']
 
-def get_x_hair_color(theme):
-    '''Set cross-hair color'''
-    if theme in [BK_THEMES[1], BK_THEMES[4]]:
-        return 'black'
-    return 'white'
+# def get_x_hair_color(theme):
+#     '''Set cross-hair color'''
+#     if theme in [BK_THEMES[1], BK_THEMES[4]]:
+#         return 'black'
+#     return 'white'
 
 DPI = 360
 plt.rcParams['font.family'] = 'sans-serif'
